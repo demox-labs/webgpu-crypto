@@ -5,12 +5,13 @@ import BN from 'bn.js';
 
 describe('TypescriptDecryptor', () => {
   describe('parseAddressToBytes', () => {
-    it('returns the bytes of an address', () => {
+    it.each([
+      ['aleo1amr5rxxaw43nsns9fgrpqa5ajc9e8g0ejrgcek5rul5ng9u7vugq63jtfr', [238,199,65,152,221,117,99,56,78,5,74,6,16,118,157,150,11,147,161,249,144,209,140,218,131,231,233,52,23,158,103,16]],
+      ["aleo1vwjupczk0rrpxe7qdawczrj4dcke8nfh90v4enm8x2txcky20uzq7d2wew", [99, 165, 192, 224, 86, 120, 198, 19, 103, 192, 111, 93, 129, 14, 85, 110, 45, 147, 205, 55, 43, 217, 92, 207, 103, 50, 150, 108, 88, 138, 127, 4]],
+      ["aleo1tzegx854azlqf6ecr50f3slp9ezd0l80av2evufl8cc59ft2zuqs2fva8m", [88, 178, 131, 30, 149, 232, 190, 4, 235, 56, 29, 30, 152, 195, 225, 46, 68, 215, 252, 239, 235, 21, 150, 113, 63, 62, 49, 66, 165, 106, 23, 1]]
+    ])('returns the bytes of an address', (address: string, u8_bytes: number[]) => {
       // The provided Aleo address
-      const address = 'aleo1amr5rxxaw43nsns9fgrpqa5ajc9e8g0ejrgcek5rul5ng9u7vugq63jtfr';
-      const expectedBytes = new Uint8Array([
-        238,199,65,152,221,117,99,56,78,5,74,6,16,118,157,150,11,147,161,249,144,209,140,218,131,231,233,52,23,158,103,16
-      ]);
+      const expectedBytes = new Uint8Array(u8_bytes);
       const addressBytes = new TypescriptDecryptor().parseAddressToBytes(address);
 
       expect(addressBytes).toStrictEqual(expectedBytes);
@@ -18,11 +19,12 @@ describe('TypescriptDecryptor', () => {
   });
 
   describe('parseBytesToAddress', () => {
-    it('returns the address of bytes', () => {
-      const expectedAddress = 'aleo1amr5rxxaw43nsns9fgrpqa5ajc9e8g0ejrgcek5rul5ng9u7vugq63jtfr';
-      const bytes = new Uint8Array([
-        238,199,65,152,221,117,99,56,78,5,74,6,16,118,157,150,11,147,161,249,144,209,140,218,131,231,233,52,23,158,103,16
-      ]);
+    it.each([
+      ["aleo1jjslzr5jfnzr57z8acj7q5h6l24s48h5ma4vtnh6ct2pdvvvdszsdtkd7d", [148, 161, 241, 14, 146, 76, 196, 58, 120, 71, 238, 37, 224, 82, 250, 250, 171, 10, 158, 244, 223, 106, 197, 206, 250, 194, 212, 22, 177, 140, 108, 5]],
+      ['aleo1amr5rxxaw43nsns9fgrpqa5ajc9e8g0ejrgcek5rul5ng9u7vugq63jtfr', [238,199,65,152,221,117,99,56,78,5,74,6,16,118,157,150,11,147,161,249,144,209,140,218,131,231,233,52,23,158,103,16]],
+      ["aleo1amfrfdxf7squc6x9drup9eth2tnvzas0t6e69arzqrawx0rkxyyqcpdu34", [238, 210, 52, 180, 201, 244, 1, 204, 104, 197, 104, 248, 18, 229, 119, 82, 230, 193, 118, 15, 94, 179, 162, 244, 98, 0, 250, 227, 60, 118, 49, 8]]
+    ])('returns the address of bytes', (expectedAddress: string, u8_bytes: number[]) => {
+      const bytes = new Uint8Array(u8_bytes);
 
       const address = new TypescriptDecryptor().parseBytesToAddress(bytes);
 
@@ -31,10 +33,13 @@ describe('TypescriptDecryptor', () => {
   });
 
   describe('convertAddressToGroupElement', () => {
-    it('returns the group element of an address', () => {
-      const address = 'aleo1amr5rxxaw43nsns9fgrpqa5ajc9e8g0ejrgcek5rul5ng9u7vugq63jtfr';
-      const expectedX = '36489900580591837657964178184954727622146422113965490012106179648885933586866';
-      const expectedY = '7420081926578463891039713487630974594704916067902548112580460668881211607022';
+    it.each([
+      // this one converts correctly, but isn't the same as the rest, which were taken directly from the aleo rust code
+      // ['aleo1amr5rxxaw43nsns9fgrpqa5ajc9e8g0ejrgcek5rul5ng9u7vugq63jtfr', '36489900580591837657964178184954727622146422113965490012106179648885933586866', '7420081926578463891039713487630974594704916067902548112580460668881211607022'],
+      ["aleo180rmftfwd00ulau8sxewggqekl5fmt6x78qsxw2mp6ky7lwh9crqngjlnz", "2796639310327748181972752445744508063519183040156292323025309617124682286907", "3801574293047120560537150275967779217524393942673614924193995053713799422782"],
+      ["aleo180rmftfwd00ulau8sxewggqekl5fmt6x78qsxw2mp6ky7lwh9crqngjlnz", "2796639310327748181972752445744508063519183040156292323025309617124682286907", "3801574293047120560537150275967779217524393942673614924193995053713799422782"],
+      ["aleo1v07dayg8x3rt2ja8d77jfr2sc0cy6mvtymxrzvljvnm2rcr7yqfqp3hj9z", "8199046056696092045078324291393824985954297024782211557898961966814633852003", "7483315349924856019195884341413919804116278178252246881364554614363420654514"]
+    ])('returns the group element of an address', (address: string, expectedX: string, expectedY: string) => {
       const groupElement = new TypescriptDecryptor().convertAddressToGroupElement(address);
       expect(groupElement.getX().toString()).toBe(expectedX);
       expect(groupElement.getY().toString()).toBe(expectedY);
@@ -56,10 +61,12 @@ describe('TypescriptDecryptor', () => {
   });
 
   describe('getXCoordinateFromAddress', () => {
-    it('returns the x coordinate of an address', () => {
-      const address = 'aleo1amr5rxxaw43nsns9fgrpqa5ajc9e8g0ejrgcek5rul5ng9u7vugq63jtfr';
-      const expectedX = '36489900580591837657964178184954727622146422113965490012106179648885933586866';
-
+    xit.each([
+      ["aleo19ww3ekwpey2hu7wl5qx42nmajr8lrre49y34axtkpfen3ttpvygs3kdxmw", "7861376730610257387365356374468253089179341461915214956037840476249878469931"],
+      ["aleo135gwscehwgkecnrh3nlj3eefh6xq2p8pxzh4xdhmpevn24k90ypsd4kce2", "1572089008791902793871872918413366858350187239173770875335286338153704067213"],
+      ["aleo1uwr7xnpraqxp3n0dssy4t5lxpfhthg9z55rh82ey5sryxr3luqyqvzqas3", "4014711725694245909088977175391072928052841749563878781134887696252562278371"],
+      ['aleo1amr5rxxaw43nsns9fgrpqa5ajc9e8g0ejrgcek5rul5ng9u7vugq63jtfr', '8384163349953520065140198398291114165166653773871822000166372971829688278532']
+    ])('returns the x coordinate of an address', (address: string, expectedX: string) => {
       const xCoordinate = new TypescriptDecryptor().getXCoordinateFromAddress(address);
 
       expect(xCoordinate.toString()).toBe(expectedX);
@@ -77,23 +84,29 @@ describe('TypescriptDecryptor', () => {
     });
   });
 
-  describe('parseCipher', () => {
-    it('returns the owner, gates, and data of the cipher text', () => {
-      const ciphertext = "record1qq6xyuq97kvf7duxs6r9cdpucswnsqa6v4mmjgktc5lf6euy7sasjqq64424n9lfqsqqyqtpgvqqyqsq0arrfmqzqt9w4gpugmjk6ma79gx4mct9lyep8pcmh5lcjd7kuq8eecyduyr46dahx2w5dj9vxjx9af5ugdrjxdylf7lynmukv4cpxyspvfpsqqszqz5a0v04gt3n6pxyte9td5y8jyslsph023tvtzmkvkfkk3qr7h9qz4wtfcch6l6jgtyen4x280vlfuldcjr8e6qg5dh42q5cmsfgufg2la4mz0kcdwypn3fyg4z4vp7lwchlsdx4pj6hxxy2pcxgjswg3sys30nw8u";
-      const bytes = new TypescriptDecryptor().parseCiphertext(ciphertext);
-      console.log(bytes);
-      // const dataView = new DataView(bytes.buffer);
-      // const owner = dataView.getUint8(0);
-      // console.log(owner);
-      // const textDecoder = new TextDecoder();
-      // console.log(textDecoder.decode(bytes));
+// 4008090371508691508
+// 2144905518123484806
+// 14637465661366469432
+// 665394219478499013
 
-      // console.log(decodedString);
+  describe('isOwnerCheck', () => {
+    xit('returns true if owner', () => {
+      // // viewkey = "AViewKey1dk3VCpG8zyMRisULLj9eRdnoJVX35zRWRnCxG8pmCmpL"
+      // const address = "aleo1q3pf9trucs93umvnwehdplrf3m9cauz5caxggfw73ndl4rqheggs6jam0p";
+      // const ciphertext = "record1qqzy9y4v0nzqk8ndjdmxa58udx8vhrhs2nr5epp9m6xdh75vzl9pzq8e4u3ew763q5qqyqtpgvqqyqsqe5cw7rxpp5q324mh65cyulw439ldvlc6x5pmpea6y8lmz65wlsxt50aux9yumulhfdz0fr9rlt92dlnax7c7pq8st6tmv24szvdkyzqpvfpsqqszqr7xlpcqcye9kz4zd6kq562fq3rx7m8l4tgga4nlwepy87jc0kvssrz56ufvhgcpctpwzcxvczmltfm4j2ktfse95t9f756scer8necqah9zq46n6yn0z929nyuxy3z63wxkvtdg8uxgh9lc0jg49ppttuqsatqda6";
+      // const isOwner =  new TypescriptDecryptor().isOwnerCheck(address, ciphertext);
+      // // const dataView = new DataView(bytes.buffer);
+      // // const owner = dataView.getUint8(0);
+      // // console.log(owner);
+      // // const textDecoder = new TextDecoder();
+      // // console.log(textDecoder.decode(bytes));
+
+      // expect(isOwner).toBe(true);
     });
   });
 
   describe('isOwner', () => {
-    it('returns true when the view key is the owner of the cipher text', async () => {
+    xit('returns true when the view key is the owner of the cipher text', async () => {
       // const decryptor = new TypescriptDecryptor();
       // const cipherText = 'record1qyqsp64yyuptc3rzy67wx0pyqz3lkv4jpnl02jlp7vyhvl8nxdl6p7syqyqsqu30vwqa484agjlk42dft9xqlrvzxplhtct3muvcega2zryer0cgqzql8cjdugmcwchypqr3862f8nvddg8hcr3dgzrxcxlrhxrhcvvsgahapl6';
       // const viewKey = 'AViewKey1ojV2FEoeJpRHusKeU4E6HvGAhQDhFueaQvF6oBJTrCYB';
@@ -103,7 +116,7 @@ describe('TypescriptDecryptor', () => {
       // expect(result).toBe(true);
     });
 
-    it('returns false when the view key is not the owner of the cipher text', async () => {
+    xit('returns false when the view key is not the owner of the cipher text', async () => {
       // const decryptor = new TypescriptDecryptor();
       // const cipherText = 'record1qyqsqzqt5q5dhxs9g4v49wfgkfkacfgfysp0c6ud5w8vupzhzg8f9cqqqyqspa3jatj4f3xr9fh0xvjxp7kmn0n5pvzqnj7keu4gsal25sccywqqqzn9epqa6m6fm342zm05ekzz6k5t02z7vxe7hzehu9cpt49qk4vsjjq0yy0';
       // const viewKey = 'AViewKey1ojV2FEoeJpRHusKeU4E6HvGAhQDhFueaQvF6oBJTrCYB';

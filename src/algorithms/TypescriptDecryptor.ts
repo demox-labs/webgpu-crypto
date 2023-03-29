@@ -38,7 +38,7 @@ export class TypescriptDecryptor implements IDecryptor {
     return groupElement;
   }
 
-  public parseCiphertext(ciphertext: string) {
+  public isOwnerCheck(address: string, ciphertext: string) {
     const RECORD_PREFIX = 'record';
     // fn from_str(ciphertext: &str) -> Result<Self, Self::Err> {
     const { prefix, words: data } = bech32m.decode(ciphertext, Infinity);
@@ -60,14 +60,22 @@ export class TypescriptDecryptor implements IDecryptor {
     byteOffset += 1;
     // public
     if (owner === 0) {
-      const addressXCoordinate = dataView.getBigUint64(byteOffset, true);
-      byteOffset += 4;
-      const address = this.getAddressFromXCoordinate(new BN(addressXCoordinate.toString()));
-      console.log(address);
+      const bytesArray: number[] = [];
+      for (let i = 0; i < 32; i++) {
+        bytesArray.push(dataView.getUint8(byteOffset));
+        byteOffset += 1;
+      }
+      console.log(bytesArray);
+      const addressXCoordinate = new BN(bytesArray, 16, 'le');
+      let passedAddressXCoordinate = this.getXCoordinateFromAddress(address);
+      let xequalsx = addressXCoordinate.eq(passedAddressXCoordinate);
+      const recordAddress = this.getAddressFromXCoordinate(addressXCoordinate);
+      return recordAddress === address;
     }
     // private
     else if (owner === 1) {
-      
+      const numFields = dataView.getUint16(byteOffset, true);
+      console.log(numFields);
     }
     else {
       throw new Error('Invalid owner: ' + owner);
