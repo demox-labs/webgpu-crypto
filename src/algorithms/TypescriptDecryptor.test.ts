@@ -1,6 +1,7 @@
 import { bech32m } from 'bech32';
 import { TypescriptDecryptor } from "./TypescriptDecryptor";
 import { eddsa } from 'elliptic';
+import BN from 'bn.js';
 
 describe('TypescriptDecryptor', () => {
   describe('parseAddressToBytes', () => {
@@ -40,15 +41,6 @@ describe('TypescriptDecryptor', () => {
 
       const convertedAddress = new TypescriptDecryptor().convertGroupElementToAddress(groupElement);
       console.log(convertedAddress);
-      // const decryptor = new TypescriptDecryptor();
-      // const byteArray = Array.from(decryptor.parseAddressToBytes(address));
-      // console.log(byteArray);
-    
-      // // Decode the address data from u5 to u8, and into an account address.
-      // const twistedEdwards = new eddsa('ed25519');
-      // // Convert the decoded address bytes to a Twisted Edwards group element
-      // const groupElement = twistedEdwards.decodePoint((byteArray as unknown as eddsa.Bytes));
-      // const bytes = twistedEdwards.en
     });
   });
 
@@ -60,6 +52,43 @@ describe('TypescriptDecryptor', () => {
       const convertedAddress = new TypescriptDecryptor().convertGroupElementToAddress(groupElement);
 
       expect(convertedAddress).toBe(address);
+    });
+  });
+
+  describe('getXCoordinateFromAddress', () => {
+    it('returns the x coordinate of an address', () => {
+      const address = 'aleo1amr5rxxaw43nsns9fgrpqa5ajc9e8g0ejrgcek5rul5ng9u7vugq63jtfr';
+      const expectedX = '36489900580591837657964178184954727622146422113965490012106179648885933586866';
+
+      const xCoordinate = new TypescriptDecryptor().getXCoordinateFromAddress(address);
+
+      expect(xCoordinate.toString()).toBe(expectedX);
+    });
+  });
+
+  describe('getAddressFromXCoordinate', () => {
+    it('returns the address of an x coordinate', () => {
+      const expectedAddress = 'aleo1amr5rxxaw43nsns9fgrpqa5ajc9e8g0ejrgcek5rul5ng9u7vugq63jtfr';
+      const xCoordinate = '36489900580591837657964178184954727622146422113965490012106179648885933586866';
+      const xCoordinateBN = new BN(xCoordinate);
+      const address = new TypescriptDecryptor().getAddressFromXCoordinate(xCoordinateBN);
+
+      expect(address).toBe(expectedAddress);
+    });
+  });
+
+  describe('parseCipher', () => {
+    it('returns the owner, gates, and data of the cipher text', () => {
+      const ciphertext = "record1qq6xyuq97kvf7duxs6r9cdpucswnsqa6v4mmjgktc5lf6euy7sasjqq64424n9lfqsqqyqtpgvqqyqsq0arrfmqzqt9w4gpugmjk6ma79gx4mct9lyep8pcmh5lcjd7kuq8eecyduyr46dahx2w5dj9vxjx9af5ugdrjxdylf7lynmukv4cpxyspvfpsqqszqz5a0v04gt3n6pxyte9td5y8jyslsph023tvtzmkvkfkk3qr7h9qz4wtfcch6l6jgtyen4x280vlfuldcjr8e6qg5dh42q5cmsfgufg2la4mz0kcdwypn3fyg4z4vp7lwchlsdx4pj6hxxy2pcxgjswg3sys30nw8u";
+      const bytes = new TypescriptDecryptor().parseCiphertext(ciphertext);
+      console.log(bytes);
+      // const dataView = new DataView(bytes.buffer);
+      // const owner = dataView.getUint8(0);
+      // console.log(owner);
+      // const textDecoder = new TextDecoder();
+      // console.log(textDecoder.decode(bytes));
+
+      // console.log(decodedString);
     });
   });
 
