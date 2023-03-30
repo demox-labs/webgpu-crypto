@@ -26,7 +26,19 @@ export class TypescriptDecryptor implements IDecryptor {
   }
 
   public convertXCoordinateToGroupElement(xCoordinateField: string): curve.base.BasePoint {
-    
+    const twistedEdwards = new eddsa('ed25519');
+    const xCoordinateBN = new BN(xCoordinateField, 16, 'le');
+    const groupElementOdd = twistedEdwards.curve.pointFromX(xCoordinateBN, true);
+    const groupElementEven = twistedEdwards.curve.pointFromX(xCoordinateBN, false);
+
+    const characteristic = twistedEdwards.curve.n;
+    const multipliedOddPoint = groupElementOdd.mul(characteristic);
+    // don't know how this works, don't care
+    if (multipliedOddPoint.isInfinity()) {
+      return groupElementOdd;
+    } else {
+      return groupElementEven;
+    }
   }
 
   public convertGroupElementToAddress(groupElement: curve.base.BasePoint): string {

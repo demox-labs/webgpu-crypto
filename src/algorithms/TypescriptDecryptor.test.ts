@@ -48,8 +48,32 @@ describe('TypescriptDecryptor', () => {
   });
 
   describe('convertXCoordinateToGroupElement', () => {
-    it('returns the group element of an x coordinate', () => {
+    fit.each([
+      ["5816346478540318749636178808862223041791897975785303922248317295060114323643",
+      "1475412146681682656635879236057074006202038593264799994712264809843383650638",
+      "5816346478540318749636178808862223041791897975785303922248317295060114323643"
+    ]
+    ])('returns the group element of an x coordinate', (expectedX: string, expectedY: string, xCoordinate: string) => {
+      const expectedXBN = new BN(expectedX, 16, 'le');
+      const expectedYCoordinate = new BN(expectedY, 16, 'le');
 
+      const groupElement = new TypescriptDecryptor().convertXCoordinateToGroupElement(xCoordinate);
+
+      console.log(groupElement.inspect())
+      // convert from red to normal
+      // const expectedRedX = BN.red(expectedXCoordinate);
+      const redX = (groupElement as any).x;
+      const xreduction = redX.red as BN.ReductionContext;
+      const redY = (groupElement as any).y;
+      const yreduction = redY.red as BN.ReductionContext;
+      const expectedRedXCoordinate = expectedXBN.toRed(xreduction);
+      const expectedRedYCoordinate = expectedYCoordinate.toRed(yreduction);
+      const backToX = expectedRedXCoordinate.fromRed();
+      const backToX16 = new BN(backToX, 16, 'le');
+      const x = groupElement.getX();
+      const y = groupElement.getY();
+      expect(x.toString()).toBe(expectedRedXCoordinate.toString());
+      expect(y.toString()).toBe(expectedRedYCoordinate.toString());
     });
   });
 
