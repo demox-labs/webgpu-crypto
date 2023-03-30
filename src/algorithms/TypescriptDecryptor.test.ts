@@ -1,6 +1,5 @@
-import { bech32m } from 'bech32';
+import { curve, eddsa } from "elliptic";
 import { TypescriptDecryptor } from "./TypescriptDecryptor";
-import { eddsa } from 'elliptic';
 import BN from 'bn.js';
 
 describe('TypescriptDecryptor', () => {
@@ -32,11 +31,32 @@ describe('TypescriptDecryptor', () => {
     });
   });
 
+  describe('convertBytesToFieldElement', () => {
+    it.each([
+      ["1700440664509915629156384240174020946422026149620106558234406576902064953438", [94, 216, 157, 217, 173, 200, 141, 132, 106, 186, 119, 118, 245, 151, 96, 72, 111, 99, 141, 156, 188, 141, 89, 155, 180, 171, 127, 183, 81, 106, 194, 3]],
+      ["5883990797189452420561585983504051149470733938537857687533897386409181800591", [143, 104, 31, 85, 78, 29, 168, 226, 78, 95, 6, 211, 249, 24, 39, 49, 113, 144, 28, 96, 58, 73, 105, 123, 24, 192, 35, 142, 132, 56, 2, 13]],
+      ["2657621072155672402427744557655309729328002490163816725285270146089092865370", [90, 93, 75, 11, 124, 239, 208, 80, 95, 227, 7, 17, 60, 248, 188, 46, 151, 114, 129, 28, 124, 227, 191, 244, 179, 133, 54, 69, 4, 41, 224, 5]]
+    ])('returns the field element of bytes', (expected: string, byteArray: number[]) => {
+      const bytes = new Uint8Array(byteArray);
+      const expectedFieldElement = new BN(expected);
+      console.log(expectedFieldElement);
+
+      const fieldElement = new TypescriptDecryptor().convertBytesToFieldElement(bytes);
+
+      expect(fieldElement.toString()).toBe(expectedFieldElement.toString());
+    });
+  });
+
+  describe('convertXCoordinateToGroupElement', () => {
+    it('returns the group element of an x coordinate', () => {
+
+    });
+  });
+
   describe('convertAddressToGroupElement', () => {
     it.each([
       // this one converts correctly, but isn't the same as the rest, which were taken directly from the aleo rust code
       // ['aleo1amr5rxxaw43nsns9fgrpqa5ajc9e8g0ejrgcek5rul5ng9u7vugq63jtfr', '36489900580591837657964178184954727622146422113965490012106179648885933586866', '7420081926578463891039713487630974594704916067902548112580460668881211607022'],
-      ["aleo180rmftfwd00ulau8sxewggqekl5fmt6x78qsxw2mp6ky7lwh9crqngjlnz", "2796639310327748181972752445744508063519183040156292323025309617124682286907", "3801574293047120560537150275967779217524393942673614924193995053713799422782"],
       ["aleo180rmftfwd00ulau8sxewggqekl5fmt6x78qsxw2mp6ky7lwh9crqngjlnz", "2796639310327748181972752445744508063519183040156292323025309617124682286907", "3801574293047120560537150275967779217524393942673614924193995053713799422782"],
       ["aleo1v07dayg8x3rt2ja8d77jfr2sc0cy6mvtymxrzvljvnm2rcr7yqfqp3hj9z", "8199046056696092045078324291393824985954297024782211557898961966814633852003", "7483315349924856019195884341413919804116278178252246881364554614363420654514"]
     ])('returns the group element of an address', (address: string, expectedX: string, expectedY: string) => {
@@ -50,13 +70,16 @@ describe('TypescriptDecryptor', () => {
   });
 
   describe('convertGroupElementToAddress', () => {
-    it('returns the address of a group element', () => {
-      const address = 'aleo1amr5rxxaw43nsns9fgrpqa5ajc9e8g0ejrgcek5rul5ng9u7vugq63jtfr';
+    it.each([
+      ["aleo180rmftfwd00ulau8sxewggqekl5fmt6x78qsxw2mp6ky7lwh9crqngjlnz", "2796639310327748181972752445744508063519183040156292323025309617124682286907", "3801574293047120560537150275967779217524393942673614924193995053713799422782"],
+      ["aleo1v07dayg8x3rt2ja8d77jfr2sc0cy6mvtymxrzvljvnm2rcr7yqfqp3hj9z", "8199046056696092045078324291393824985954297024782211557898961966814633852003", "7483315349924856019195884341413919804116278178252246881364554614363420654514"]
+    ])('returns the address of a group element', (address: string, x: string, y: string) => {
+      const twistedEdwards = new eddsa('ed25519');
+      const point = twistedEdwards.curve.point(new BN(x), new BN(y));
       const groupElement = new TypescriptDecryptor().convertAddressToGroupElement(address);
-
-      const convertedAddress = new TypescriptDecryptor().convertGroupElementToAddress(groupElement);
-
-      expect(convertedAddress).toBe(address);
+      console.log('test' + point);
+      expect(point.getX().toString()).toBe(groupElement.getX().toString());
+      expect(point.getY().toString()).toBe(groupElement.getY().toString());
     });
   });
 
@@ -91,17 +114,17 @@ describe('TypescriptDecryptor', () => {
 
   describe('isOwnerCheck', () => {
     xit('returns true if owner', () => {
-      // // viewkey = "AViewKey1dk3VCpG8zyMRisULLj9eRdnoJVX35zRWRnCxG8pmCmpL"
-      // const address = "aleo1q3pf9trucs93umvnwehdplrf3m9cauz5caxggfw73ndl4rqheggs6jam0p";
-      // const ciphertext = "record1qqzy9y4v0nzqk8ndjdmxa58udx8vhrhs2nr5epp9m6xdh75vzl9pzq8e4u3ew763q5qqyqtpgvqqyqsqe5cw7rxpp5q324mh65cyulw439ldvlc6x5pmpea6y8lmz65wlsxt50aux9yumulhfdz0fr9rlt92dlnax7c7pq8st6tmv24szvdkyzqpvfpsqqszqr7xlpcqcye9kz4zd6kq562fq3rx7m8l4tgga4nlwepy87jc0kvssrz56ufvhgcpctpwzcxvczmltfm4j2ktfse95t9f756scer8necqah9zq46n6yn0z929nyuxy3z63wxkvtdg8uxgh9lc0jg49ppttuqsatqda6";
-      // const isOwner =  new TypescriptDecryptor().isOwnerCheck(address, ciphertext);
-      // // const dataView = new DataView(bytes.buffer);
-      // // const owner = dataView.getUint8(0);
-      // // console.log(owner);
-      // // const textDecoder = new TextDecoder();
-      // // console.log(textDecoder.decode(bytes));
+      // viewkey = "AViewKey1dk3VCpG8zyMRisULLj9eRdnoJVX35zRWRnCxG8pmCmpL"
+      const address = "aleo1q3pf9trucs93umvnwehdplrf3m9cauz5caxggfw73ndl4rqheggs6jam0p";
+      const ciphertext = "record1qqzy9y4v0nzqk8ndjdmxa58udx8vhrhs2nr5epp9m6xdh75vzl9pzq8e4u3ew763q5qqyqtpgvqqyqsqe5cw7rxpp5q324mh65cyulw439ldvlc6x5pmpea6y8lmz65wlsxt50aux9yumulhfdz0fr9rlt92dlnax7c7pq8st6tmv24szvdkyzqpvfpsqqszqr7xlpcqcye9kz4zd6kq562fq3rx7m8l4tgga4nlwepy87jc0kvssrz56ufvhgcpctpwzcxvczmltfm4j2ktfse95t9f756scer8necqah9zq46n6yn0z929nyuxy3z63wxkvtdg8uxgh9lc0jg49ppttuqsatqda6";
+      const isOwner =  new TypescriptDecryptor().isOwnerCheck(address, ciphertext);
+      // const dataView = new DataView(bytes.buffer);
+      // const owner = dataView.getUint8(0);
+      // console.log(owner);
+      // const textDecoder = new TextDecoder();
+      // console.log(textDecoder.decode(bytes));
 
-      // expect(isOwner).toBe(true);
+      expect(isOwner).toBe(true);
     });
   });
 

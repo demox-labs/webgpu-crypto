@@ -20,6 +20,15 @@ export class TypescriptDecryptor implements IDecryptor {
     throw new Error('not implemented');
   }
 
+  public convertBytesToFieldElement(bytes: Uint8Array): string {
+    const fieldElement = new BN(bytes, 16, 'le');
+    return fieldElement.toString();
+  }
+
+  public convertXCoordinateToGroupElement(xCoordinateField: string): curve.base.BasePoint {
+    
+  }
+
   public convertGroupElementToAddress(groupElement: curve.base.BasePoint): string {
     const twistedEdwards = new eddsa('ed25519');
     const bytesBuffer = twistedEdwards.encodePoint(groupElement);
@@ -29,8 +38,8 @@ export class TypescriptDecryptor implements IDecryptor {
 
   public convertAddressToGroupElement(address: string) {
     const byteArray = Array.from(this.parseAddressToBytes(address));
+    // const fieldElement = this.convertBytesToFieldElement(new Uint8Array(byteArray));
     
-    // Decode the address data from u5 to u8, and into an account address.
     const twistedEdwards = new eddsa('ed25519');
     // Convert the decoded address bytes to a Twisted Edwards group element
     const groupElement = twistedEdwards.decodePoint((byteArray as unknown as eddsa.Bytes));
