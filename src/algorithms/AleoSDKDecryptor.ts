@@ -1,6 +1,6 @@
 // import * as Aleo from '@demox-labs/aleo-sdk';
 import { IDecryptResult, IDecryptor } from './IDecryptor';
-import { loadWasmModule } from '../utils/wasm-loader';
+import { loadWasmModule } from '../wasm-loader/wasm-loader';
 
 export class AleoSDKDecryptor implements IDecryptor {
   public async isOwner(cipherText: string, viewKey: string): Promise<boolean> {

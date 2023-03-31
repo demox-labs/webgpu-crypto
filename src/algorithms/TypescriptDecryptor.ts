@@ -1,7 +1,7 @@
+import { bytesToAddress } from "../utils/helper";
 import { IDecryptResult, IDecryptor } from "./IDecryptor";
 import { bech32m } from 'bech32';
-import BN from "bn.js";
-import { curve, eddsa } from 'elliptic';
+import BN from 'bn.js';
 
 export class TypescriptDecryptor implements IDecryptor {
   public async isOwner(cipherText: string, viewKey: string): Promise<boolean> {
@@ -20,52 +20,9 @@ export class TypescriptDecryptor implements IDecryptor {
     throw new Error('not implemented');
   }
 
-  public convertBytesToFieldElement(bytes: Uint8Array): string {
-    const fieldElement = new BN(bytes, 16, 'le');
-    return fieldElement.toString();
-  }
-
-  public convertXCoordinateToGroupElement(xCoordinateField: string): curve.base.BasePoint[] {
-    let twistedEdwards = new eddsa('ed25519');
-    const a = twistedEdwards.curve.a;
-    const d = twistedEdwards.curve.d;
-    // const xCoordinateBN = new BN(xCoordinateField, 16, 'le');
-    const groupElementEven = twistedEdwards.curve.pointFromX(xCoordinateField, false);
-    const groupElementOdd = twistedEdwards.curve.pointFromX(xCoordinateField, true);
-
-    const characteristic = twistedEdwards.curve.n;
-    const multipliedOddPoint = groupElementOdd.mul(characteristic);
-    return [groupElementOdd, groupElementEven];
-    // // don't know how this works, don't care
-    // if (multipliedOddPoint.isInfinity()) {
-    //   return groupElementOdd;
-    // } else {
-    //   return groupElementEven;
-    // }
-  }
-
-  public convertGroupElementToAddress(groupElement: curve.base.BasePoint): string {
-    const twistedEdwards = new eddsa('ed25519');
-    const bytesBuffer = twistedEdwards.encodePoint(groupElement);
-    const bytes = new Uint8Array(bytesBuffer);
-    return this.parseBytesToAddress(bytes);
-  }
-
-  public convertAddressToGroupElement(address: string) {
-    const byteArray = Array.from(this.parseAddressToBytes(address));
-    // const fieldElement = this.convertBytesToFieldElement(new Uint8Array(byteArray));
-    
-    const twistedEdwards = new eddsa('ed25519');
-    // Convert the decoded address bytes to a Twisted Edwards group element
-    const groupElement = twistedEdwards.decodePoint((byteArray as unknown as eddsa.Bytes));
-
-    return groupElement;
-  }
-
-  public isOwnerCheck(address: string, ciphertext: string) {
+  public async isOwnerCheck(cipherText: string, viewKey: string, address: string): Promise<boolean> {
     const RECORD_PREFIX = 'record';
-    // fn from_str(ciphertext: &str) -> Result<Self, Self::Err> {
-    const { prefix, words: data } = bech32m.decode(ciphertext, Infinity);
+    const { prefix, words: data } = bech32m.decode(cipherText, Infinity);
     if (prefix !== RECORD_PREFIX) {
       throw new Error(`Failed to decode address: '${prefix}' is an invalid prefix`);
     } else if (data.length === 0) {
@@ -84,74 +41,36 @@ export class TypescriptDecryptor implements IDecryptor {
     byteOffset += 1;
     // public
     if (owner === 0) {
-      const bytesArray: number[] = [];
+      const bytesArray: Uint8Array = new Uint8Array(32);
       for (let i = 0; i < 32; i++) {
-        bytesArray.push(dataView.getUint8(byteOffset));
+        bytesArray[i] = (dataView.getUint8(byteOffset));
         byteOffset += 1;
       }
-      console.log(bytesArray);
-      const addressXCoordinate = new BN(bytesArray, 16, 'le');
-      let passedAddressXCoordinate = this.getXCoordinateFromAddress(address);
-      let xequalsx = addressXCoordinate.eq(passedAddressXCoordinate);
-      const recordAddress = this.getAddressFromXCoordinate(addressXCoordinate);
-      return recordAddress === address;
+      const recordOwner = await bytesToAddress(bytesArray);
+      return recordOwner === address;
     }
     // private
     else if (owner === 1) {
       const numFields = dataView.getUint16(byteOffset, true);
       console.log(numFields);
+      byteOffset += 2;
+      const fieldByteSize = 32;
+      const privateFieldBytes = new Uint8Array(fieldByteSize);
+      for (let i = 0; i < fieldByteSize; i++) {
+        privateFieldBytes[i] = (dataView.getUint8(byteOffset));
+        byteOffset += 1;
+      }
+      const field = this.convertBytesToFieldElement(privateFieldBytes);
+      console.log(field);
+      throw new Error('not implemented');
     }
     else {
       throw new Error('Invalid owner: ' + owner);
     }
   }
 
-  public getXCoordinateFromAddress(address: string): BN {
-    const groupElement = this.convertAddressToGroupElement(address);
-    return groupElement.getX();
-  }
-
-  public getAddressFromXCoordinate(xCoordinate: BN): string {
-    const twistedEdwards = new eddsa('ed25519');
-    const groupElementOdd = twistedEdwards.curve.pointFromX(xCoordinate, true);
-    const groupElementEven = twistedEdwards.curve.pointFromX(xCoordinate, false);
-
-    const characteristic = twistedEdwards.curve.n;
-    const multipliedOddPoint = groupElementOdd.mul(characteristic);
-    // don't know how this works, don't care
-    if (multipliedOddPoint.isInfinity()) {
-      return this.convertGroupElementToAddress(groupElementOdd);
-    } else {
-      return this.convertGroupElementToAddress(groupElementEven);
-    }
-  }
-
-  public parseAddressToBytes(address: string): Uint8Array {
-    const ADDRESS_PREFIX = "aleo";
-    // Ensure the address string length is 63 characters.
-    if (address.length !== 63) {
-      throw new Error(`Invalid account address length: found ${address.length}, expected 63`);
-    }
-    
-    // Decode the address string from bech32m.
-    const { prefix, words: data } = bech32m.decode(address);
-
-    if (prefix !== ADDRESS_PREFIX) {
-      throw new Error(`Failed to decode address: '${prefix}' is an invalid prefix`);
-    } else if (data.length === 0) {
-      throw new Error("Failed to decode address: data field is empty");
-    }
-    
-    const u8Data = bech32m.fromWords(data);
-    // Decode the address data from u5 to u8, and into an account address.
-    return new Uint8Array(u8Data);
-  }
-
-  // very important -- the bytes in the Uint8Array should be u8, not u5
-  public parseBytesToAddress(bytes: Uint8Array): string {
-    // Encode the address data from u8 to u5.
-    const words = bech32m.toWords(bytes);
-    const prefix = 'aleo';
-    return bech32m.encode(prefix, words);
+  public convertBytesToFieldElement(bytes: Uint8Array): string {
+    const fieldElement = new BN(bytes, 16, 'le');
+    return fieldElement.toString();
   }
 }
