@@ -37,6 +37,7 @@ export function viewkey_to_string(a: number, b: number): void;
 export function viewkey_to_address(a: number): number;
 export function viewkey_decrypt(a: number, b: number, c: number, d: number): void;
 export function viewkey_filter_owned(a: number, b: number): number;
+export function viewkey_filter_owned_fast(a: number, b: number): number;
 export function viewkey_to_scalar(a: number, b: number): void;
 export function __wbg_recordciphertext_free(a: number): void;
 export function recordciphertext_fromString(a: number, b: number, c: number): void;

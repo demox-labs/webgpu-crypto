@@ -924,6 +924,14 @@ export class ViewKey {
         return takeObject(ret);
     }
     /**
+    * @param {Array<any>} ciphertexts
+    * @returns {Array<any>}
+    */
+    filter_owned_fast(ciphertexts) {
+        const ret = wasm.viewkey_filter_owned_fast(this.ptr, addHeapObject(ciphertexts));
+        return takeObject(ret);
+    }
+    /**
     * @returns {string}
     */
     to_scalar() {

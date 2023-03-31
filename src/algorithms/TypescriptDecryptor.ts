@@ -54,18 +54,18 @@ export class TypescriptDecryptor implements IDecryptor {
     // private
     else if (owner === 1) {
       const numFields = dataView.getUint16(byteOffset, true);
-      console.log(numFields);
+      // console.log(numFields);
       byteOffset += 2;
       const ownerFieldBytes = this.readFieldBytes(dataView, byteOffset);
       byteOffset += this.fieldByteSize;
       const ownerField = this.convertBytesToFieldElement(ownerFieldBytes);
       
-      console.log(ownerField);
+      // console.log(ownerField);
       // nonce is at the end of the record
       const nonceOffset = dataView.byteLength - this.fieldByteSize;
       const nonceFieldBytes = this.readFieldBytes(dataView, nonceOffset);
       const nonceField = this.convertBytesToFieldElement(nonceFieldBytes);
-      console.log(nonceField);
+      // console.log(nonceField);
       throw new Error('not implemented');
     }
     else {

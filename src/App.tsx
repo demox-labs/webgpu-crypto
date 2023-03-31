@@ -1,7 +1,7 @@
 import React from 'react';
 import logo from './logo.svg';
 import './App.css';
-import PerformanceButton from './performanceButton';
+// import PerformanceButton from './performanceButton';
 
 
 function App() {
@@ -12,7 +12,7 @@ function App() {
         <p>
           Edit <code>src/App.tsx</code> and save to reload.
         </p>
-        <PerformanceButton />
+        {/* <PerformanceButton /> */}
       </header>
     </div>
   );

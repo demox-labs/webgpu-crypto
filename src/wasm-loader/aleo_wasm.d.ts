@@ -264,6 +264,11 @@ export class ViewKey {
 */
   filter_owned(ciphertexts: Array<any>): Array<any>;
 /**
+* @param {Array<any>} ciphertexts
+* @returns {Array<any>}
+*/
+  filter_owned_fast(ciphertexts: Array<any>): Array<any>;
+/**
 * @returns {string}
 */
   to_scalar(): string;
