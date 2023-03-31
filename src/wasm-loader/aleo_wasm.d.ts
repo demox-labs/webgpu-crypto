@@ -165,6 +165,10 @@ export class RecordCiphertext {
 */
   decrypt(view_key: ViewKey): RecordPlaintext;
 /**
+* @returns {string}
+*/
+  get_nonce(): string;
+/**
 * Returns `true` if the view key can decrypt the record ciphertext.
 * @param {ViewKey} view_key
 * @returns {boolean}
@@ -254,6 +258,11 @@ export class ViewKey {
 * @returns {string}
 */
   decrypt(ciphertext: string): string;
+/**
+* @param {Array<any>} ciphertexts
+* @returns {Array<any>}
+*/
+  filter_owned(ciphertexts: Array<any>): Array<any>;
 /**
 * @returns {string}
 */

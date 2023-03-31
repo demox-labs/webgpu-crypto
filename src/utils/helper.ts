@@ -21,7 +21,7 @@ export const bytesToAddress = async (bytes: Uint8Array): Promise<string> => {
 export const cipherTextToNonce = async (cipherText: string): Promise<string> => {
   const aleo = await loadWasmModule();
   const aleoCipherText = aleo.RecordCiphertext.fromString(cipherText);
-  return aleoCipherText.to_nonce();
+  return aleoCipherText.get_nonce();
 }
 
 // export const cipherTextRandomizer = async (cipherText: string): Promise<string> => {
@@ -30,4 +30,4 @@ export const cipherTextToNonce = async (cipherText: string): Promise<string> => 
 //   return aleoCipherText.randomizer();
 // }
 
-export const 
+// export const 

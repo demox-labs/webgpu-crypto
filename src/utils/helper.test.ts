@@ -1,4 +1,4 @@
-import { addressToXCoordinate, bytesToAddress, viewKeyToScalar } from "./helper";
+import { addressToXCoordinate, bytesToAddress, cipherTextToNonce, viewKeyToScalar } from "./helper";
 
 describe('helper', () => {
   describe('addressToXCoordinate', () => {
@@ -35,6 +35,27 @@ describe('helper', () => {
       const address = await bytesToAddress(byteArray);
 
       expect(address).toBe(expectedAddress);
+    });
+  });
+
+  describe('ciperTextNonce', () => {
+    it.each([
+      [
+        'record1qyqsqznpsugytlzjlmwa4ph9f620e44m0d5lvxteczyn26g2ewe5ymqvqpmuhezn8jcq5qqzq9s5xqqzqgqrpcrdrdmzl3elxuq559fpn8c8qkvteegx4h5n7hhrfsfy4utswr4kmzed72qfgtw372u7nwj7s0lmwy4zvgg3fwdc3qldds9cx8saqqqkyscqqgpqqd8gvs4rg35hf77u3yeyjjyhwswvmw0844962w0q0ph4claswzsfpnrnm380ce7k2lsm2altphvx5mnfx9hcpt7y3rl8504x2nmj8uy25l4txqu0zf4tlp7x7zadjt2xlu46ac9kd07hn4x7ngev88ma2rqqvdmr8',
+        '5805798880562779867421891619304004909223021394739424149671824560040641789610group'
+      ],
+      [
+        'record1qyqsp5d37exam4q9py09ftt7gne2xft57gcwwl75kz2vedj8huvq2fsxqyqsq7xnvkr20pj09l6rwvjd3tt7xmpej2k62aqf84vxnay8hls7sggfqgqkzscqqgpqpwxhqnvweshdzcja22hvg4utclhdm7sjmqg5zm30u8lrulcsmzg0uev5rd6tc2mrnxkcxxwnrvmgghnzsqfl4n2kewvtkd66c7t95s8qzcjrqqpqyq9rfh0gflwf563nmkrx6pq6huh79hvpft3rm2amgdu4teu9cfzupmarg56p73nd3l09mqqzu0h9jj6kpageeej5775htpvug927we3sa6z76wclst836272234ydwekf6kefxv3350nnz5gufr8re28mycgdd0l4v',
+        '3879094293319221702222284459898244046604190069373278658101168595158716079848group'
+      ],
+      [
+        'record1qyqsqvtkx825anv3ehlnnvr6gapw4rryr67ladsnlqye6zrm0hvgn5s2qpuftv6hkw9quqqzq9s5xqqzqgqql5dptt006z9j8rwdy6fv2u2trn849nhgcpcfzhngq07lged3jywdr4g77fataxzr03gs86ujjpfe5as4fxsdudwnp9gr8slcpk04puqkyscqqgpqph2llwm55nlmfdezuuqe86jrt2ckk47lln2vmu5nza7fv6ac4lsyncnxdctye00dhyyl7jsxkshq0zkum6zzcmlqmnsv3s6l8vn2e5ps9pvf9w7nntz0f5nu6vljjd0fd92aklsfqa4jtthdwd83kxkgjys6vqlpa',
+        '8384881220057642545728502405300265352890458140372558862955255602587854537986group'
+      ]
+    ])('returns the nonce of a cipher text', async (ciphertext: string, expectedNonce: string) => {
+      const nonce = await cipherTextToNonce(ciphertext);
+
+      expect(nonce).toBe(expectedNonce);
     });
   });
 });

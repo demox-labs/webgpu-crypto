@@ -109,6 +109,10 @@ function passStringToWasm0(arg, malloc, realloc) {
     return ptr;
 }
 
+function isLikeNone(x) {
+    return x === undefined || x === null;
+}
+
 let cachedInt32Memory0 = null;
 
 function getInt32Memory0() {
@@ -623,6 +627,21 @@ export class RecordCiphertext {
         }
     }
     /**
+    * @returns {string}
+    */
+    get_nonce() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.recordciphertext_get_nonce(retptr, this.ptr);
+            var r0 = getInt32Memory0()[retptr / 4 + 0];
+            var r1 = getInt32Memory0()[retptr / 4 + 1];
+            return getStringFromWasm0(r0, r1);
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+            wasm.__wbindgen_free(r0, r1);
+        }
+    }
+    /**
     * Returns `true` if the view key can decrypt the record ciphertext.
     * @param {ViewKey} view_key
     * @returns {boolean}
@@ -897,6 +916,14 @@ export class ViewKey {
         }
     }
     /**
+    * @param {Array<any>} ciphertexts
+    * @returns {Array<any>}
+    */
+    filter_owned(ciphertexts) {
+        const ret = wasm.viewkey_filter_owned(this.ptr, addHeapObject(ciphertexts));
+        return takeObject(ret);
+    }
+    /**
     * @returns {string}
     */
     to_scalar() {
@@ -918,6 +945,19 @@ export function __wbindgen_string_new(arg0, arg1) {
     return addHeapObject(ret);
 };
 
+export function __wbindgen_object_drop_ref(arg0) {
+    takeObject(arg0);
+};
+
+export function __wbindgen_string_get(arg0, arg1) {
+    const obj = getObject(arg1);
+    const ret = typeof(obj) === 'string' ? obj : undefined;
+    var ptr0 = isLikeNone(ret) ? 0 : passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    var len0 = WASM_VECTOR_LEN;
+    getInt32Memory0()[arg0 / 4 + 1] = len0;
+    getInt32Memory0()[arg0 / 4 + 0] = ptr0;
+};
+
 export function __wbg_new_abda76e883ba8a5f() {
     const ret = new Error();
     return addHeapObject(ret);
@@ -937,10 +977,6 @@ export function __wbg_error_f851667af71bcfc6(arg0, arg1) {
     } finally {
         wasm.__wbindgen_free(arg0, arg1);
     }
-};
-
-export function __wbindgen_object_drop_ref(arg0) {
-    takeObject(arg0);
 };
 
 export function __wbindgen_object_clone_ref(arg0) {
@@ -1002,6 +1038,21 @@ export function __wbg_randomFillSync_6894564c2c334c42() { return handleError(fun
     getObject(arg0).randomFillSync(getArrayU8FromWasm0(arg1, arg2));
 }, arguments) };
 
+export function __wbg_get_27fe3dac1c4d0224(arg0, arg1) {
+    const ret = getObject(arg0)[arg1 >>> 0];
+    return addHeapObject(ret);
+};
+
+export function __wbg_length_e498fbc24f9c1d4f(arg0) {
+    const ret = getObject(arg0).length;
+    return ret;
+};
+
+export function __wbg_new_b525de17f44a8943() {
+    const ret = new Array();
+    return addHeapObject(ret);
+};
+
 export function __wbg_newnoargs_2b8b6bd7753c76ba(arg0, arg1) {
     const ret = new Function(getStringFromWasm0(arg0, arg1));
     return addHeapObject(ret);
@@ -1034,6 +1085,11 @@ export function __wbg_global_c85a9259e621f3db() { return handleError(function ()
 
 export function __wbindgen_is_undefined(arg0) {
     const ret = getObject(arg0) === undefined;
+    return ret;
+};
+
+export function __wbg_push_49c286f04dd3bf59(arg0, arg1) {
+    const ret = getObject(arg0).push(getObject(arg1));
     return ret;
 };
 

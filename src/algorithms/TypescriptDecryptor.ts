@@ -4,6 +4,8 @@ import { bech32m } from 'bech32';
 import BN from 'bn.js';
 
 export class TypescriptDecryptor implements IDecryptor {
+  public fieldByteSize = 32;
+
   public async isOwner(cipherText: string, viewKey: string): Promise<boolean> {
     throw new Error('not implemented');
   }
@@ -54,19 +56,51 @@ export class TypescriptDecryptor implements IDecryptor {
       const numFields = dataView.getUint16(byteOffset, true);
       console.log(numFields);
       byteOffset += 2;
-      const fieldByteSize = 32;
-      const privateFieldBytes = new Uint8Array(fieldByteSize);
-      for (let i = 0; i < fieldByteSize; i++) {
-        privateFieldBytes[i] = (dataView.getUint8(byteOffset));
-        byteOffset += 1;
-      }
-      const field = this.convertBytesToFieldElement(privateFieldBytes);
-      console.log(field);
+      const ownerFieldBytes = this.readFieldBytes(dataView, byteOffset);
+      byteOffset += this.fieldByteSize;
+      const ownerField = this.convertBytesToFieldElement(ownerFieldBytes);
+      
+      console.log(ownerField);
+      // nonce is at the end of the record
+      const nonceOffset = dataView.byteLength - this.fieldByteSize;
+      const nonceFieldBytes = this.readFieldBytes(dataView, nonceOffset);
+      const nonceField = this.convertBytesToFieldElement(nonceFieldBytes);
+      console.log(nonceField);
       throw new Error('not implemented');
     }
     else {
       throw new Error('Invalid owner: ' + owner);
     }
+  }
+
+  public getNonce(cipherText: string): string {
+    const RECORD_PREFIX = 'record';
+    const { prefix, words: data } = bech32m.decode(cipherText, Infinity);
+    if (prefix !== RECORD_PREFIX) {
+      throw new Error(`Failed to decode address: '${prefix}' is an invalid prefix`);
+    } else if (data.length === 0) {
+      throw new Error("Failed to decode address: data field is empty");
+    }
+
+    const u8Data = bech32m.fromWords(data);
+
+    const bytes = new Uint8Array(u8Data);
+
+    const dataView = new DataView(bytes.buffer);
+
+    const nonceOffset = dataView.byteLength - this.fieldByteSize;
+    const nonceFieldBytes = this.readFieldBytes(dataView, nonceOffset);
+    const nonceField = this.convertBytesToFieldElement(nonceFieldBytes);
+    return nonceField;
+  }
+
+  public readFieldBytes(dataView: DataView, byteOffset: number): Uint8Array {
+    const fieldBytes = new Uint8Array(this.fieldByteSize);
+    for (let i = 0; i < this.fieldByteSize; i++) {
+      fieldBytes[i] = (dataView.getUint8(byteOffset));
+      byteOffset += 1;
+    }
+    return fieldBytes
   }
 
   public convertBytesToFieldElement(bytes: Uint8Array): string {
