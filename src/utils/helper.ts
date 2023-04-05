@@ -24,6 +24,37 @@ export const cipherTextToNonce = async (cipherText: string): Promise<string> => 
   return aleoCipherText.get_nonce();
 }
 
+export const view_key_ciphertext_multiply = async(cipherText: string, viewKey: string): Promise<string> => {
+  const aleo = await loadWasmModule();
+  // const aleoCipherText = aleo.RecordCiphertext.fromString(cipherText);
+  const aleoViewKey = aleo.ViewKey.from_string(viewKey);
+  const result = aleoViewKey.view_key_ciphertext_multiply(cipherText);
+  return result.toString();
+}
+
+export const addressToAffine = async (address: string): Promise<string> => {
+  const aleo = await loadWasmModule();
+  const aleoAddress = aleo.Address.from_string(address);
+  return aleoAddress.to_affine();
+}
+
+export const addressToProjective = async (address: string): Promise<string> => {
+  const aleo = await loadWasmModule();
+  const aleoAddress = aleo.Address.from_string(address);
+  return aleoAddress.to_projective();
+}
+
+export const addressToGroup = async (address: string): Promise<string> => {
+  const aleo = await loadWasmModule();
+  const aleoAddress = aleo.Address.from_string(address);
+  return aleoAddress.to_group();
+}
+
+export const addressFromGroup = async(group: string): Promise<string> => {
+  const aleo = await loadWasmModule();
+  return aleo.Address.from_group(group).to_string();
+}
+
 // export const cipherTextRandomizer = async (cipherText: string): Promise<string> => {
 //   const aleo = await loadWasmModule();
 //   const aleoCipherText = aleo.RecordCiphertext.fromString(cipherText);

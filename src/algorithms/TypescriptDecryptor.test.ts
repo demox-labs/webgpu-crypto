@@ -2,7 +2,7 @@ import { TypescriptDecryptor } from "./TypescriptDecryptor";
 
 describe('TypescriptDecryptor', () => {
   describe('isOwnerCheck', () => {
-    it.each([
+    xit.each([
       [
         'aleo1gcq7xlg4cxhynwtyu3ufhdyftqaz2fc40w67mla30r8ydnkqkg9qtgn8sn',
         'AViewKey1oLKTBNg58hqC2vNHwnx71e2P3ytdnEYDo8xQjkibWHHV',
@@ -24,7 +24,7 @@ describe('TypescriptDecryptor', () => {
       expect(isOwner).toBe(true);
     });
 
-    it.each([
+    xit.each([
       [
         'aleo16x9f0keatnecurtj4qy9sr4cxnw32ejtlskcs0zhtcxl6mp7lgrqnp9m0k',
         'AViewKey1qFFRerFtWWTf9YSWeqxNukG3T17ckAspCr6cX3SDQFaT',

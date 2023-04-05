@@ -31,6 +31,23 @@ export class Address {
 /**
 * @returns {string}
 */
+  to_group(): string;
+/**
+* @param {string} group
+* @returns {Address}
+*/
+  static from_group(group: string): Address;
+/**
+* @returns {string}
+*/
+  to_projective(): string;
+/**
+* @returns {string}
+*/
+  to_affine(): string;
+/**
+* @returns {string}
+*/
   to_x_coordinate(): string;
 /**
 * @param {Uint8Array} message
@@ -258,6 +275,11 @@ export class ViewKey {
 * @returns {string}
 */
   decrypt(ciphertext: string): string;
+/**
+* @param {string} ciphertext
+* @returns {string}
+*/
+  view_key_ciphertext_multiply(ciphertext: string): string;
 /**
 * @param {Array<any>} ciphertexts
 * @returns {Array<any>}
