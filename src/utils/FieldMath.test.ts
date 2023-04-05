@@ -1,7 +1,6 @@
-import { multiply } from "./FieldMath";
+import { multiply, poseidonHash } from "./FieldMath";
 
 describe('FieldMath', () => {
-  
   describe('multiply', () => {
     it.each([
       [
@@ -53,6 +52,22 @@ describe('FieldMath', () => {
       const result = multiply(nonce.x, nonce.y, scalar);
       expect(result.x.toString()).toBe(expectedResult.x);
       expect(result.y.toString()).toBe(expectedResult.y)
+    });
+  });
+
+  describe('poseidonHash', () => {
+    it.each([
+      [
+        '2986721573891155341442495285005827844417873296802091118297720031301683135976',
+        '5966059358144342431291785288295571723109879840552163313882746143701675052508'
+      ],
+      [
+        '5239284883715128019159816928836791715908835245958998855294010995490721538189',
+        '4552794031083406848463528737990529111583711321036547167971721772722047337683'
+      ]
+    ])('should return expected value', (input: string, expected: string) => {
+      const result = poseidonHash(input, expected);
+      expect(result).toBe(expected);
     });
   });
 });
