@@ -1,42 +1,40 @@
 // import { BLS, G1 } from "@celo/bls12377js";
-import { CurveFn, twistedEdwards } from "@noble/curves/abstract/edwards";
+import { CurveFn, ExtPointType, twistedEdwards } from "@noble/curves/abstract/edwards";
 import { sha512 } from '@noble/hashes/sha512';
 import { poseidon, PoseidonOpts } from '@noble/curves/abstract/poseidon';
 import { Field } from "@noble/curves/abstract/modular";
 import { randomBytes } from "crypto";
 import { aleoMdStrings, aleoRoundConstantStrings } from "../params/AleoMds";
+import BN from "bn.js";
 
-// export const multiply = (nonce: string, scalar: string): string => {
-//   const twistedEdwards = new eddsa('ed25519');
-//   const fieldElement = new BN(nonce, 16, 'le');
-//   const scalarElement = new BN(scalar, 16,'le');
-//   const groupElementOdd = twistedEdwards.curve.pointFromX(fieldElement, true);
-//   const result = groupElementOdd.mul(scalarElement);
-//   return result.getX().toString();
-// }
+export const getPointFromX = (x_field: string): { x: BigInt, y: BigInt } => {
+    // Convert x to BigInt
+  const xBigInt = BigInt(x_field);
 
-// export const convertFieldBytesToGroup = (fieldBytes: Uint8Array): G1 => {
-//   const g1 = BLS.decompressG1(Buffer.from(fieldBytes));
-//   // const g2 = BLS.decompressG2(Buffer.from(fieldBytes));
-//   return g1;
-// };
+  // Compute y^2 = (1 - x^2) / (1 + d * x^2) mod F
 
-// export const convertXCoordinateToGroupElement = (xCoordinateField: string): curve.base.BasePoint  => {
-//   const twistedEdwards = new eddsa('ed25519');
-//   const xCoordinateBN = new BN(xCoordinateField, 16, 'le');
-//   const groupElementOdd = twistedEdwards.curve.pointFromX(xCoordinateBN, true);
-//   const groupElementEven = twistedEdwards.curve.pointFromX(xCoordinateBN, false);
+  const xSquared = Fp.sqr(xBigInt);
 
-//   const characteristic = twistedEdwards.curve.n;
-//   const multipliedOddPoint = groupElementOdd.mul(characteristic);
-//   // don't know how this works, don't care
-//   if (multipliedOddPoint.isInfinity()) {
-//     return groupElementOdd;
-//   } else {
-//     return groupElementEven;
-//   }
-// }
+  const numerator = Fp.sub(Fp.mul(aleoA, xSquared), BigInt(1));
+  const denominator = Fp.sub(Fp.mul(aleoD, xSquared), BigInt(1));
+  const ySquared = Fp.mul(numerator, Fp.inv(denominator));
+  const y = Fp.sqrt(ySquared);
 
+  const aleoEdwards = customEdwards();
+
+  // Create the point object
+  const topPoint = aleoEdwards.ExtendedPoint.fromAffine({ x: xBigInt, y: y });
+
+  const subgroupCharacteristic = BigInt('2111115437357092606062206234695386632838870926408408195193685246394721360383');
+  const multipliedTopPoint = topPoint.multiply(subgroupCharacteristic).toAffine();
+
+  if (multipliedTopPoint.x === BigInt(0) && multipliedTopPoint.y === BigInt(1)) {
+    return topPoint;
+  } else {
+    const negY = Fp.neg(y);
+    return aleoEdwards.ExtendedPoint.fromAffine({ x: xBigInt, y: negY });
+  }
+}
 
 export const multiply = (nonce_x: string, nonce_y: string, scalar: string): { x: BigInt, y: BigInt } => {
   // Convert the scalar and point to BigInt
@@ -68,7 +66,7 @@ const aleoMdsAsBigInts = aleoMdStrings.map(row => row.map(elm => Fp.create(BigIn
 const aleoRoundConstantsAsBigInts = aleoRoundConstantStrings.map(row => row.map(elm => Fp.create(BigInt(elm))));
 // const poseidonField = Field(poseidonDomain, undefined, true);
 
-export const poseidonHash = (recordViewKey: string, expectedResult: string): string => {
+export const poseidonHash = (recordViewKey: string): string => {
   const recordViewKeyBigInt = BigInt(recordViewKey);
   // const expectedResultBigInt = BigInt(expectedResult);
   const aleoPoseidonOpts: PoseidonOpts = {
@@ -84,6 +82,43 @@ export const poseidonHash = (recordViewKey: string, expectedResult: string): str
   const aleoPoseidon = poseidon(aleoPoseidonOpts);
   const firstHashInput = [BigInt(0), poseidonDomain, BigInt(2), BigInt(0), BigInt(0), BigInt(0), BigInt(0), BigInt(0), BigInt(0)];
   const firstHashOutput = aleoPoseidon(firstHashInput);
+  const secondElement = firstHashOutput[1];
+  const thirdElement = firstHashOutput[2];
+  const secondElementPlus = Fp.add(secondElement, encryptionDomain);
+  const thirdElementPlus = Fp.add(thirdElement, recordViewKeyBigInt);
+  firstHashOutput[1] = secondElementPlus;
+  firstHashOutput[2] = thirdElementPlus;
+  const secondHashOutput = aleoPoseidon(firstHashOutput);
+  return secondHashOutput[1].toString();
+}
+
+export const poseidonHashFast = (recordViewKey: string): string => {
+  const recordViewKeyBigInt = BigInt(recordViewKey);
+  // const expectedResultBigInt = BigInt(expectedResult);
+  const aleoPoseidonOpts: PoseidonOpts = {
+    Fp,
+    t: 9,
+    roundsFull: 8,
+    roundsPartial: 31,
+    sboxPower: 17,
+    mds: aleoMdsAsBigInts,
+    roundConstants: aleoRoundConstantsAsBigInts
+  };
+
+  const aleoPoseidon = poseidon(aleoPoseidonOpts);
+  // aleo always uses the same 9 inputs for the first hash, which always results in this first hash outpout.
+  // We can just skip hashing the first round since we know the answer already.
+  const firstHashOutput = [
+    BigInt('5208930778286312600808795659554938611301275182092940462658648520079602102930'),
+    BigInt('3994597320147350534724525457025712610108069861859758848892988202692173473766'),
+    BigInt('5811491394154482048905836349496814770116289231209081615432099055744309986637'),
+    BigInt('6453033494204920666140086001075222731779198093343026532418358638372117133089'),
+    BigInt('6334450315946100385645225266750568899390082647901919844072282716171356792199'),
+    BigInt('1534688567274028603821478027610936792462195219730276039032977528443314676504'),
+    BigInt('5442838979203238763201664294025743588659204582886990828529890949134890976331'),
+    BigInt('2786239965968296821488478838651772138841386999233021154548046837852479346774'),
+    BigInt('2011433203564613444434680673362049409281410437476018311083897000100578507327')
+  ]
   const secondElement = firstHashOutput[1];
   const thirdElement = firstHashOutput[2];
   const secondElementPlus = Fp.add(secondElement, encryptionDomain);
@@ -132,7 +167,7 @@ const customEdwards = (): CurveFn => {
     // Subgroup order: how many points ed25519 has
     // 2n ** 252n + 27742317777372353535851937790883648493n;
     // not taken from aleo, don't know what this is
-    n: BigInt('7237005577332262213973186563042994240857116359379907606001950938285454250989'),
+    n: aleoFieldOrder,
     // Cofactor
     h: aleoCofactor,
     // Base point (x, y) aka generator point
