@@ -1,6 +1,35 @@
+import { parseAddressToXCoordinate } from "../parsers/AddressParser";
 import { TypescriptDecryptor } from "./TypescriptDecryptor";
 
 describe('TypescriptDecryptor', () => {
+  describe('isOwner', () => {
+    it.each([
+      [
+        'record1qyqspxy4584rywwq3ax9332x45ehe2vvvwfmh78fgg9dfk240zrpdjg0qqlm43kh4gesyqqzq9s5xqqzqgqta7rqx7xkdkerr26zu0e4kf3q88ztt4s8et9hxzt7rg87a3hnxqkp7yhpanqp9yjda7wnjz9psnlg0zfqjlkmlgc3s2dm2n27ly46p5qkyscqqgpqqgv8cyhc5347cqu2pp3yfenxzngrwt2sxc305vwr4w72pxx9r0strq44zmwthvmdw2zss3nlhppn8ndtpyad8e7kkn7pqe7zy2sk5qq6djykgevaaghv6q9zcfuk53wzd65xjhlufskafw4uknhmxadxzpgn5hap0',
+        '1908587036217162972446459217467783184880273156235225594303167470995200969701',
+        'aleo1xr8udktvjhhackktfldsygjuf84fpm5k377gw4dcxhswtnyt8urq2q7xtv',
+        true
+      ],
+      [
+        'record1qyqspvmgnfdft23553uedstgkn92ujk9taj792c7aqlc3t6ppgcpmwc0qrem3v0fwfxqwqqzq9s5xqqzqgqfhjqn5tkjw3dk70dx3gsfrvevya7xcz9j78xqzeuk2mqarmefvruzx8uakqfzsnmvvap4nmt9sscz6wel2jlnh54wwuf5egazys4ap5qkyscqqgpqp7p04a9ed9np2prd5akrz4tp67erdv6plhmdlknpnnxxgu02atqfe4syqeju5j9eguzremh0t3rkac39t3qye9x8rnk45g0rqzft8sqhspeqzwf8eqg7sdplaw8wd4nvnrwszpa23pyygfue8svlmhyj5zgjlnhah',
+        '89674762694835401405354684705026152384484900051666265698758937237777245203',
+        'aleo1szk6r8y2nmhwnd5y3u8tlsm20u6n4cwqwzyexe4vvmfvcrfk0cqs3q0lgh',
+        true
+      ],
+      [
+        'record1qyqsp2cennua9d4a5uf2fma3s75xje7jtdexglvp2stdatz8rn4afasdqyqsqqqf5rfjq0tqql02gfjpedla89r8y6sw2put3r4k34wwt7mat9cxqgqkzscqqgpqpfgtzgv5f8asctmj85ycvf9fqc4crfs34yhxurw94p3m53kwj4cdr59rrnm7nqkvzc5ru2ef4gele86k5krpwndl3n62qw2hlk3heqgszcjrqqpqyqqpx6sdaq3c3r7n58659u0a4qpnwk0zy57fepmput0sgneuqmgczz3z908e7a92u4ldfme26plh72st02zu2judenvn3fj6fm478m3snaa3pfaxhck9rvavpnhemgze8kkk0f88qger5a6qa3jsl76z88swxs09xs',
+        '89674762694835401405354684705026152384484900051666265698758937237777245203',
+        'aleo1szk6r8y2nmhwnd5y3u8tlsm20u6n4cwqwzyexe4vvmfvcrfk0cqs3q0lgh',
+        true
+      ]
+    ])('verifies owner address for private owner', (recordCiphertext: string, viewKeyScalar: string, address: string, expectedIsOwner: boolean) => {
+      const decryptor = new TypescriptDecryptor();
+      const address_x = parseAddressToXCoordinate(address);
+      const isOwner = decryptor.isOwner(recordCiphertext, BigInt(viewKeyScalar), address, address_x);
+      expect(isOwner).toEqual(expectedIsOwner);
+    });
+  });
+
   describe('isOwnerCheck', () => {
     xit.each([
       [
@@ -19,28 +48,6 @@ describe('TypescriptDecryptor', () => {
         'record1qqqgmne369hx2k56qdrrf0keg6dxdnmvammgh8h7y8rccy939x5sxq8f9r3zdr20p5qqyqtpgvqqyqsqudweak0eq85a8qfg36fvs3pplau3cusqs05yhhndtur9vplu3uqyxmyr8e4qkkrheh753yaqphvy9w7ny8qhy62epy9uulqhjrhsxpqpvfpsqqszqzukwjh8dpfdp0vyj4pf262ce47yewm3cvc8afqfttttnvcv4zsqvxumx9cplj2ftspt9h7pnzfy04all90grf4mzh3qf4kuuznu60gzs2suhynrcgstzn54lgw78lcg2msk3fpuaj57g7884hza4u08fsqqzhkznk'
       ]
     ])('verifies owner address for public owner', async (address: string, viewKey: string, cipherText: string) => {
-      const decryptor = new TypescriptDecryptor();
-      const isOwner = await decryptor.isOwnerCheck(cipherText, viewKey, address);
-      expect(isOwner).toBe(true);
-    });
-
-    xit.each([
-      [
-        'aleo16x9f0keatnecurtj4qy9sr4cxnw32ejtlskcs0zhtcxl6mp7lgrqnp9m0k',
-        'AViewKey1qFFRerFtWWTf9YSWeqxNukG3T17ckAspCr6cX3SDQFaT',
-        'record1qyqsqyyuvyq4neqwlj7ur0wa3qa3e92q2rzk600l8vh22n8ejrmgjvcdqptj7rvtltds5qqzq9s5xqqzqgq2645lpnvd4duhf0knjmra4na4m4yewquxpxkcsxz6v80r4tkp7z6253px0dw8qx0xtp5su6znguwj4g9dg89zt09we55pdczk75adp5qkyscqqgpqq689qdgqjrqcazkfjkt9au78vw04956j9awvhcj4jgeczy6dpsc2h0973ehk7832c99x634etq7qwnlhh9f3z0e9df2vamc4aeu7lgx9gd8pskmh80aym05lm3grjnqkwrppd7fjta4cdsaktm9kdjhtgpgtx29p3'
-      ],
-      [
-        'aleo16x9f0keatnecurtj4qy9sr4cxnw32ejtlskcs0zhtcxl6mp7lgrqnp9m0k',
-        'AViewKey1qFFRerFtWWTf9YSWeqxNukG3T17ckAspCr6cX3SDQFaT',
-        'record1qyqsqhptghxsc80e44q77q9tcxfkcj0zhp4d5gv6x5xhlyrxdnzptcsvqyqsqqkvcpw37uv6ng6fs74vv3ecjgy6klzkxjz4ltcw5sdlyluhfgsfqgqkzscqqgpqq8h4hajssvjttvwfuxeqnzsd4j23ky0xnx2uhqkdx39wy4xqq2g2mksp0mt6wnzlw209en9y0rlww63mv0fc0e0yg3ytw5q3tlg8ss9qzcjrqqpqyqrh5dqx6z9m6f0s6hppzqy7j6n5ump5ehc79uycfkyy7ft28y5qpwwgsmvrspdnl78qnq2s3g09scyvk438g2m42ejskgp5gnty0g3suysnnmfr32fsr7d0nu6qm6mwjfrgrtr9xdx76gky34rsfqa9pqcde9t6yy'
-      ],
-      [
-        'aleo1e6604lgsdp965j5r59j883n6agejd0jc0jdlyuhgnz0dxsuzduyskmfqrt',
-        'AViewKey1soKFfARyjYZDZThqSAxhMpJQJEV8psHwuEGPXfiHMjuL',
-        'record1qyqsq2arg3fe3zl2n80ckpetqcgwp5w0tpj7papqq75d740jlje2t3stqqupwddl4lfqqqqzq9s5xqqzqgq9syjyfvgnr2n89cgpdhe4m0lqf9e2t4s5vyr0hchvs2dv58rjwzy8ndnk8q5s84sgyyzypjtpd7vwzwxpy4a5vtnsrpkrs679cms0qyqkyscqqgpqpmvuqjp9g7sgg0zkdat4pjqttq39mfzphenz7h6rl8x2q3kv9ksyscsg2epej8ffgwe22nz4qaz7j3s92avtktrl8hrkdeuhsdmpksq4s66u9hnppht4fn4359qd3m50kcslv4uhzeeeyxzkyymvse6d5zsnqptsa'
-      ]
-    ])('verifies owner address for private owner', async (address: string, viewKey: string, cipherText: string) => {
       const decryptor = new TypescriptDecryptor();
       const isOwner = await decryptor.isOwnerCheck(cipherText, viewKey, address);
       expect(isOwner).toBe(true);

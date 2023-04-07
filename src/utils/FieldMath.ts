@@ -4,16 +4,17 @@ import { sha512 } from '@noble/hashes/sha512';
 import { poseidon, PoseidonOpts } from '@noble/curves/abstract/poseidon';
 import { Field } from "@noble/curves/abstract/modular";
 import { randomBytes } from "crypto";
-import { aleoMdStrings, aleoRoundConstantStrings } from "../params/AleoMds";
-import BN from "bn.js";
+import { aleoMdStrings, aleoRoundConstantStrings } from "../params/PoseidonParams";
 
-export const getPointFromX = (x_field: string): { x: BigInt, y: BigInt } => {
+// base field modulus https://docs.rs/ark-ed-on-bls12-377/latest/ark_ed_on_bls12_377/
+export const aleoFieldOrder = BigInt('8444461749428370424248824938781546531375899335154063827935233455917409239041');
+export const Fp = Field(aleoFieldOrder, undefined, true);
+
+export const getPointFromX = (x_field: bigint): { x: bigint, y: bigint } => {
     // Convert x to BigInt
-  const xBigInt = BigInt(x_field);
-
   // Compute y^2 = (1 - x^2) / (1 + d * x^2) mod F
 
-  const xSquared = Fp.sqr(xBigInt);
+  const xSquared = Fp.sqr(x_field);
 
   const numerator = Fp.sub(Fp.mul(aleoA, xSquared), BigInt(1));
   const denominator = Fp.sub(Fp.mul(aleoD, xSquared), BigInt(1));
@@ -23,31 +24,32 @@ export const getPointFromX = (x_field: string): { x: BigInt, y: BigInt } => {
   const aleoEdwards = customEdwards();
 
   // Create the point object
-  const topPoint = aleoEdwards.ExtendedPoint.fromAffine({ x: xBigInt, y: y });
+  const topPoint = aleoEdwards.ExtendedPoint.fromAffine({ x: x_field, y: y });
 
+  // modulus of the bls12-377 subgroup Scalar Field
   const subgroupCharacteristic = BigInt('2111115437357092606062206234695386632838870926408408195193685246394721360383');
-  const multipliedTopPoint = topPoint.multiply(subgroupCharacteristic).toAffine();
+  const multipliedTopPoint = topPoint.multiplyUnsafe(subgroupCharacteristic).toAffine();
 
   if (multipliedTopPoint.x === BigInt(0) && multipliedTopPoint.y === BigInt(1)) {
     return topPoint;
   } else {
     const negY = Fp.neg(y);
-    return aleoEdwards.ExtendedPoint.fromAffine({ x: xBigInt, y: negY });
+    return aleoEdwards.ExtendedPoint.fromAffine({ x: x_field, y: negY });
   }
 }
 
-export const multiply = (nonce_x: string, nonce_y: string, scalar: string): { x: BigInt, y: BigInt } => {
-  // Convert the scalar and point to BigInt
-  const bigIntScalar = BigInt(scalar,);
-  const bigIntPointX = BigInt(nonce_x);
-  const bigIntPointY = BigInt(nonce_y);
+export const subtract = (x: bigint, y: bigint): bigint => {
+  return Fp.sub(x, y);
+};
+
+export const multiply = (nonce_x: bigint, nonce_y: bigint, scalar: bigint): { x: bigint, y: bigint } => {
   // Get the curve point in extended coordinates
   const aleoEdwards = customEdwards();
-  const point = aleoEdwards.ExtendedPoint.fromAffine({ x: bigIntPointX, y: bigIntPointY });
+  const point = aleoEdwards.ExtendedPoint.fromAffine({ x: nonce_x, y: nonce_y });
 
   // Perform scalar multiplication
   // const result = point.multiply(bigIntScalar);
-  const unsafeResult = point.multiplyUnsafe(bigIntScalar);
+  const unsafeResult = point.multiplyUnsafe(scalar);
 
   // Convert the result to affine coordinates
   // const resultAffine = result.toAffine();
@@ -56,9 +58,6 @@ export const multiply = (nonce_x: string, nonce_y: string, scalar: string): { x:
 
   return unsafeResultAffine;
 }
-// base field modulus https://docs.rs/ark-ed-on-bls12-377/latest/ark_ed_on_bls12_377/
-export const aleoFieldOrder = BigInt('8444461749428370424248824938781546531375899335154063827935233455917409239041');
-export const Fp = Field(aleoFieldOrder, undefined, true);
 
 const encryptionDomain = BigInt('1187534166381405136191308758137566032926460981470575291457');
 const poseidonDomain = BigInt('4470955116825994810352013241409');
@@ -66,8 +65,7 @@ const aleoMdsAsBigInts = aleoMdStrings.map(row => row.map(elm => Fp.create(BigIn
 const aleoRoundConstantsAsBigInts = aleoRoundConstantStrings.map(row => row.map(elm => Fp.create(BigInt(elm))));
 // const poseidonField = Field(poseidonDomain, undefined, true);
 
-export const poseidonHash = (recordViewKey: string): string => {
-  const recordViewKeyBigInt = BigInt(recordViewKey);
+export const poseidonHash = (recordViewKey: bigint): bigint => {
   // const expectedResultBigInt = BigInt(expectedResult);
   const aleoPoseidonOpts: PoseidonOpts = {
     Fp,
@@ -85,15 +83,14 @@ export const poseidonHash = (recordViewKey: string): string => {
   const secondElement = firstHashOutput[1];
   const thirdElement = firstHashOutput[2];
   const secondElementPlus = Fp.add(secondElement, encryptionDomain);
-  const thirdElementPlus = Fp.add(thirdElement, recordViewKeyBigInt);
+  const thirdElementPlus = Fp.add(thirdElement, recordViewKey);
   firstHashOutput[1] = secondElementPlus;
   firstHashOutput[2] = thirdElementPlus;
   const secondHashOutput = aleoPoseidon(firstHashOutput);
-  return secondHashOutput[1].toString();
+  return secondHashOutput[1];
 }
 
-export const poseidonHashFast = (recordViewKey: string): string => {
-  const recordViewKeyBigInt = BigInt(recordViewKey);
+export const poseidonHashFast = (recordViewKey: bigint): bigint => {
   // const expectedResultBigInt = BigInt(expectedResult);
   const aleoPoseidonOpts: PoseidonOpts = {
     Fp,
@@ -122,11 +119,11 @@ export const poseidonHashFast = (recordViewKey: string): string => {
   const secondElement = firstHashOutput[1];
   const thirdElement = firstHashOutput[2];
   const secondElementPlus = Fp.add(secondElement, encryptionDomain);
-  const thirdElementPlus = Fp.add(thirdElement, recordViewKeyBigInt);
+  const thirdElementPlus = Fp.add(thirdElement, recordViewKey);
   firstHashOutput[1] = secondElementPlus;
   firstHashOutput[2] = thirdElementPlus;
   const secondHashOutput = aleoPoseidon(firstHashOutput);
-  return secondHashOutput[1].toString();
+  return secondHashOutput[1];
 }
 
 function adjustScalarBytes(bytes: Uint8Array): Uint8Array {
