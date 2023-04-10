@@ -35,34 +35,35 @@ const benchmarkBulkIsOwner = async (
 
 const typescriptBenchmark = async (ciphertexts: string[], viewKey: string, address: string | null): Promise<string[]> => {
   const typescriptDecryptor = new TypescriptDecryptor();
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   return await typescriptDecryptor.bulkIsOwner(ciphertexts, BigInt(viewKeyScalar), address!);
 };
 
 const betterTypescriptBenchmark = async (ciphertexts: string[], viewKey: string, address: string | null): Promise<string[]> => {
   const typescriptDecryptor = new TypescriptDecryptor();
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   return await typescriptDecryptor.benchmarkPrivateBulkIsOwner(ciphertexts, BigInt(viewKeyScalar), address!);
 };
 
-describe('Benchmarking', () => {
-  it('should benchmark bulkIsOwner algorithms', async () => {
-    const numRuns = 1;
+export const runBenchmarks = async () => {
+  const numRuns = 1;
 
-    const aleoSDKDecryptorBulkIsOwnerSlow = new AleoSDKDecryptor().bulkIsOwnerSlow;
-    // const aleoSDKDecryptorBulkIsOwner = new AleoSDKDecryptor().bulkIsOwner;
-    const wasm_bulkIsOwnerSlow_benchmark_all_owned = await benchmarkBulkIsOwner(aleoSDKDecryptorBulkIsOwnerSlow, viewKey, numRuns, null);
-    // const wasm_bulkIsOwner_benchmark_all_owned = await benchmarkBulkIsOwner(aleoSDKDecryptorBulkIsOwner, viewKey, numRuns, null);
-    // console.log('wasm_bulkIsOwner_benchmark_all_owned');
-    const typescript_bulkIsOwner_benchmark = await benchmarkBulkIsOwner(typescriptBenchmark, viewKey, numRuns, address);
-    console.log('typescript_bulkIsOwner_benchmark');
-    const better_typescript = await benchmarkBulkIsOwner(betterTypescriptBenchmark, viewKey, numRuns, address);
-    console.log('better typescript');
-    const benchMarkResults = {
-      wasm_bulkIsOwner_slow_all_owned: { avg_time: wasm_bulkIsOwnerSlow_benchmark_all_owned },
-      // wasm_bulkIsOwner_all_owned: { avg_time: wasm_bulkIsOwner_benchmark_all_owned },
-      typescript_bulkIsOwner: { avg_time: typescript_bulkIsOwner_benchmark },
-      better_typescript: { avg_time: better_typescript },
-    };
-    
-    console.table(benchMarkResults);
-  });
-});
+  const aleoSDKDecryptorBulkIsOwnerSlow = new AleoSDKDecryptor().bulkIsOwnerSlow;
+  const aleoSDKDecryptorBulkIsOwner = new AleoSDKDecryptor().bulkIsOwner;
+  const wasm_bulkIsOwnerSlow_benchmark_all_owned = await benchmarkBulkIsOwner(aleoSDKDecryptorBulkIsOwnerSlow, viewKey, numRuns, null);
+  console.log('wasm_bulkIsOwnerSlow_benchmark_all_owned');
+  const wasm_bulkIsOwner_benchmark_all_owned = await benchmarkBulkIsOwner(aleoSDKDecryptorBulkIsOwner, viewKey, numRuns, null);
+  console.log('wasm_bulkIsOwner_benchmark_all_owned');
+  const typescript_bulkIsOwner_benchmark = await benchmarkBulkIsOwner(typescriptBenchmark, viewKey, numRuns, address);
+  console.log('typescript_bulkIsOwner_benchmark');
+  const better_typescript = await benchmarkBulkIsOwner(betterTypescriptBenchmark, viewKey, numRuns, address);
+  console.log('better typescript');
+  const benchMarkResults = {
+    wasm_bulkIsOwner_slow_all_owned: { avg_time: wasm_bulkIsOwnerSlow_benchmark_all_owned },
+    wasm_bulkIsOwner_all_owned: { avg_time: wasm_bulkIsOwner_benchmark_all_owned },
+    typescript_bulkIsOwner: { avg_time: typescript_bulkIsOwner_benchmark },
+    better_typescript: { avg_time: better_typescript },
+  };
+
+  console.table(benchMarkResults);
+};

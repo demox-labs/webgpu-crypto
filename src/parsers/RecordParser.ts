@@ -46,13 +46,13 @@ export const isOwnerPublic = (ciphertextData: DataView): boolean => {
 }
 
 export const getPublicOwnerBytes = (ciphertextData: DataView): Uint8Array => {
-  let byteOffset = 1; // the first byte is the owner type
+  const byteOffset = 1; // the first byte is the owner type
   const ownerFieldBytes = readFieldBytes(ciphertextData, byteOffset);
   return ownerFieldBytes;
 }
 
 export const getPrivateOwnerBytes = (ciphertextData: DataView): Uint8Array => {
-  let byteOffset = 3; // the first byte is the owner type, the second & third bytes are the number of fields
+  const byteOffset = 3; // the first byte is the owner type, the second & third bytes are the number of fields
   const ownerFieldBytes = readFieldBytes(ciphertextData, byteOffset);
   return ownerFieldBytes;
 }

@@ -1,4 +1,4 @@
-import { getPointFromX, multiply, poseidonHash, poseidonHashFast } from "./FieldMath";
+import { FieldMath } from "./FieldMath";
 
 describe('FieldMath', () => {
   describe('multiply', () => {
@@ -49,7 +49,7 @@ describe('FieldMath', () => {
       ]
     ])
     ('should multiply nonce by scalar', (nonce: { x: string, y: string }, scalar: string, expectedResult: { x: string, y: string }) => {
-      const result = multiply(BigInt(nonce.x), BigInt(nonce.y), BigInt(scalar));
+      const result = new FieldMath().multiply(BigInt(nonce.x), BigInt(nonce.y), BigInt(scalar));
       expect(result.x.toString()).toBe(expectedResult.x);
       expect(result.y.toString()).toBe(expectedResult.y)
     });
@@ -75,8 +75,8 @@ describe('FieldMath', () => {
       ]
     ])('should return expected value', (input: string, expected: string) => {
       const inputBigInt = BigInt(input);
-      const result = poseidonHash(inputBigInt);
-      const fastResult = poseidonHashFast(inputBigInt);
+      const result = new FieldMath().poseidonHash(inputBigInt);
+      const fastResult = new FieldMath().poseidonHashFast(inputBigInt);
       expect(result.toString()).toBe(expected);
       expect(fastResult.toString()).toBe(expected);
     });
@@ -109,7 +109,7 @@ describe('FieldMath', () => {
         '5650187918377417409124091323871667504886558718947019752893838402231728068795'
       ]
     ])('should return expected value', (x: string, expectedY: string) => {
-      const result = getPointFromX(BigInt(x));
+      const result = new FieldMath().getPointFromX(BigInt(x));
       expect(result.y.toString()).toBe(expectedY);
     });
   });

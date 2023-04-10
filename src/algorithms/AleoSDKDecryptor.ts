@@ -1,4 +1,3 @@
-// import * as Aleo from '@demox-labs/aleo-sdk';
 import { IDecryptResult, IDecryptor } from './IDecryptor';
 import { loadWasmModule } from '../wasm-loader/wasm-loader';
 
@@ -7,8 +6,6 @@ export class AleoSDKDecryptor implements IDecryptor {
     const aleo = await loadWasmModule();
     const aleoCipherText = aleo.RecordCiphertext.fromString(cipherText);
     const aleoViewKey = aleo.ViewKey.from_string(viewKey);
-    const aleoAddress = aleo.Address.from_view_key(aleoViewKey);
-    const aleoAddressString = aleoAddress.to_string();
     return aleoCipherText.isOwner(aleoViewKey);
   }
 

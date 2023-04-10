@@ -1,11 +1,22 @@
-// import { runBenchMarks } from './perf.test';
+import React, { useCallback } from 'react';
+import { runBenchmarks } from './perf';
 
-// const PerformanceButton: React.FC = () => {
-//   return (
-//     <button onClick={async () => await runBenchMarks()}>
-//       Click me to run performance tests
-//     </button>
-//   );
-// };
+const PerformanceButton: React.FC = () => {
+  const [isRunning, setIsRunning] = React.useState(false);
+  const onClickHandler = useCallback(async () => {
+    if (isRunning) {
+      return;
+    }
+    setIsRunning(true);
+    await runBenchmarks();
+    setIsRunning(false);
+  }, [isRunning]);
 
-// export default PerformanceButton;
+  return (
+    <button onClick={async () => { await onClickHandler(); }}>
+      Click me to run performance tests
+    </button>
+  );
+};
+
+export default PerformanceButton;
