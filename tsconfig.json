@@ -12,6 +12,7 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react",
+    "typeRoots": [ "./node_modules/@webgpu/types", "./node_modules/@types" ],
     "outDir": "dist"
   },
   "include": ["src"],

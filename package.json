@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@noble/curves": "^0.9.1",
+    "@webgpu/types": "^0.1.30",
     "bech32": "^2.0.0",
     "bn.js": "^5.2.1",
     "buffer": "^6.0.3",
