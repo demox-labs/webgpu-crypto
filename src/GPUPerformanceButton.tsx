@@ -1,5 +1,4 @@
 import React, { useCallback } from 'react';
-import { GPUDecryptor } from './algorithms/GPUDecryptor';
 import { actualUint256Addition } from './gpu/uint256Addition';
 import { matrixMultiplication } from './gpu/matrixMultiplication';
 
@@ -10,7 +9,6 @@ const GPUPerformanceButton: React.FC = () => {
       return;
     }
     setIsRunning(true);
-    await new GPUDecryptor().sample();
     await actualUint256Addition();
     await matrixMultiplication();
     setIsRunning(false);

@@ -13,7 +13,7 @@ export const actualUint256Addition = async () => {
   }
   const device = await adapter.requestDevice();
 
-  const numUintsToPassIn = 1;
+  const numUintsToPassIn = 1000;
 
   // Compute shader
   const shader = `
@@ -31,6 +31,30 @@ export const actualUint256Addition = async () => {
     var<storage, read> input2: UInt256s;
     @group(0) @binding(2)
     var<storage, read_write> output: UInt256s;
+
+    fn addComponents(a: u32, b: u32, carry_in: u32) -> vec2<u32> {
+      var sum: vec2<u32>;
+      let total = a + b + carry_in;
+      // potential bitwise speed ups here
+      sum[0] = total & 4294967295u;
+      sum[1] = total / 4294967295u;
+      return sum;
+  }
+  
+    fn addUInt256(a: UInt256, b: UInt256) -> UInt256 {
+        var sum: UInt256;
+        sum.components = array<u32, 8>(0, 0, 0, 0, 0, 0, 0, 0);
+        var carry: u32 = 0u;
+    
+        for (var i = 0u; i < 8u; i = i + 1u) {
+            let componentResult = addComponents(a.components[i], b.components[i], carry);
+            sum.components[i] = componentResult[0];
+            carry = componentResult[1];
+        }
+    
+        return sum;
+    }
+
     @compute @workgroup_size(64)
     fn main(
       @builtin(global_invocation_id)
@@ -40,16 +64,22 @@ export const actualUint256Addition = async () => {
       if (global_id.x >= ${numUintsToPassIn}) {
         return;
       }
-      output.uint256s[global_id.x].components = input1.uint256s[global_id.x].components;
+      for (var i = 0u; i < ${numUintsToPassIn}; i = i + 1u) {
+        var sum = addUInt256(input1.uint256s[global_id.x], input2.uint256s[global_id.x]);
+        // output.uint256s[global_id.x].components = input1.uint256s[global_id.x].components;
+        // output.uint256s[global_id.x].components = input2.uint256s[global_id.x].components;
+        output.uint256s[global_id.x].components = sum.components;
+      }
     }
     `;
   const module = device.createShaderModule({
     code: shader
   });
 
+  // IMPORTANT: MUST BE BIG ENDIAN!
   const uint256Data = new Uint32Array(numUintsToPassIn * 8);
   for (let i = 0; i < numUintsToPassIn * 8; i++) {
-    uint256Data[i] = i % 32;
+    uint256Data[i] = i % 4294967295;
   }
 
   const gpuBufferUint256Inputs = device.createBuffer({
@@ -65,7 +95,7 @@ export const actualUint256Addition = async () => {
 
   const uint256Data2 = new Uint32Array(numUintsToPassIn * 8);
   for (let i = 0; i < numUintsToPassIn * 8; i++) {
-    uint256Data[i] = i % 32;
+    uint256Data2[i] = i % 4294967295;
   }
 
   const gpuBufferUint256Inputs2 = device.createBuffer({
