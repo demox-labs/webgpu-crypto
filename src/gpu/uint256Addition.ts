@@ -1,4 +1,10 @@
-export const actualUint256Addition = async () => {
+export async function test() {
+  console.log('hello');
+}
+// export async function testString = test.toString();
+
+export async function actualUint256Addition() {
+  console.log('here in the method');
   if (!("gpu" in navigator)) {
     console.log(
       "WebGPU is not supported. Enable chrome://flags/#enable-unsafe-webgpu flag."
@@ -24,6 +30,10 @@ export const actualUint256Addition = async () => {
     struct UInt256s {
       uint256s: array<UInt256>
     }
+
+    const aleoFieldOrderComponents = array<u32, 8>(1, 1, 0, 0, 0, 0, 0, 0);
+    // var aleoFieldOrder: UInt256;
+    // aleoFieldOrder.components = aleoFieldOrderComponents;
 
     @group(0) @binding(0)
     var<storage, read> input1: UInt256s;
@@ -116,32 +126,37 @@ export const actualUint256Addition = async () => {
   });
 
   // Bind group layout and bind group
+  const entry1 = {
+    binding: 0,
+    visibility: GPUShaderStage.COMPUTE,
+    buffer: {
+      type: "read-only-storage"
+    }
+  };
 
-  const bindGroupLayout = device.createBindGroupLayout({
-    entries: [
-      {
-        binding: 0,
-        visibility: GPUShaderStage.COMPUTE,
-        buffer: {
-          type: "read-only-storage"
-        }
-      } as GPUBindGroupLayoutEntry,
-      {
-        binding: 1,
-        visibility: GPUShaderStage.COMPUTE,
-        buffer: {
-          type: "read-only-storage"
-        }
-      } as GPUBindGroupLayoutEntry,
-      {
-        binding: 2,
-        visibility: GPUShaderStage.COMPUTE,
-        buffer: {
-          type: "storage"
-        }
-      } as GPUBindGroupLayoutEntry
-    ]
-  });
+  const entry2 = {
+    binding: 1,
+    visibility: GPUShaderStage.COMPUTE,
+    buffer: {
+      type: "read-only-storage"
+    }
+  };
+
+  const entry3 = {
+    binding: 2,
+    visibility: GPUShaderStage.COMPUTE,
+    buffer: {
+      type: "storage"
+    }
+  };
+
+  const layout = {
+    entries: [entry1, entry2, entry3]
+  };
+
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  const bindGroupLayout = device.createBindGroupLayout(layout);
 
   const bindGroup = device.createBindGroup({
     layout: bindGroupLayout,
@@ -212,7 +227,7 @@ export const actualUint256Addition = async () => {
   // Read buffer.
   await gpuReadBuffer.mapAsync(GPUMapMode.READ);
   const arrayBuffer = gpuReadBuffer.getMappedRange();
-  console.log(new Uint32Array(arrayBuffer));
+  return Array.from(new Uint32Array(arrayBuffer));
 }
 
 export const uint256Addition = async () => {
