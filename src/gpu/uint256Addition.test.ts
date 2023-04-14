@@ -2,8 +2,6 @@ import puppeteer from 'puppeteer';
 import path from 'path';
 import fs from 'fs/promises';
 
-import { actualUint256Addition } from './uint256Addition';
-
 describe('uint256Addition', () => {
   jest.setTimeout(60_000);
   it('should add uint256 numbers', async () => {
@@ -20,8 +18,10 @@ describe('uint256Addition', () => {
     // Extract the function string
     const functionStringMatch = fileContent.match(/async function actualUint256Addition[^{]*\{[\s\S]*?(?<=^|\n)\}/m);
     const functionString = functionStringMatch && functionStringMatch[0];
-    
-    const result = await ((await browser.pages())[0]).evaluate(`(${functionString})()`) as Uint32Array;
+    // need to pass an untyped array here
+    const u32Array = [28, 0, 0, 0, 0, 0, 0, 5];
+    const result = await ((await browser.pages())[0]).evaluate(`(${functionString})([${u32Array}], [${u32Array}])`) as Uint32Array;
+    await new Promise(r => setTimeout(r, 45_000));
     await browser.close();
 
     expect(result.length).toBeGreaterThan(0);

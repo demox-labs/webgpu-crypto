@@ -1,10 +1,12 @@
-export async function test() {
-  console.log('hello');
-}
-// export async function testString = test.toString();
-
-export async function actualUint256Addition() {
-  console.log('here in the method');
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+export async function actualUint256Addition(uint32Array1, uint32Array2) {
+  console.log(uint32Array1);
+  console.log(uint32Array2);
+  const uint32s1 = new Uint32Array(uint32Array1);
+  const uint32s2 = new Uint32Array(uint32Array2);
+  console.log(uint32s1);
+  console.log(uint32s2);
   if (!("gpu" in navigator)) {
     console.log(
       "WebGPU is not supported. Enable chrome://flags/#enable-unsafe-webgpu flag."
@@ -19,7 +21,7 @@ export async function actualUint256Addition() {
   }
   const device = await adapter.requestDevice();
 
-  const numUintsToPassIn = 1000;
+  const numUintsToPassIn = uint32s1.length / 8;
 
   // Compute shader
   const shader = `
@@ -49,7 +51,7 @@ export async function actualUint256Addition() {
       sum[0] = total & 4294967295u;
       sum[1] = total / 4294967295u;
       return sum;
-  }
+    }
   
     fn addUInt256(a: UInt256, b: UInt256) -> UInt256 {
         var sum: UInt256;
@@ -86,35 +88,22 @@ export async function actualUint256Addition() {
     code: shader
   });
 
-  // IMPORTANT: MUST BE BIG ENDIAN!
-  const uint256Data = new Uint32Array(numUintsToPassIn * 8);
-  for (let i = 0; i < numUintsToPassIn * 8; i++) {
-    uint256Data[i] = i % 4294967295;
-  }
-
   const gpuBufferUint256Inputs = device.createBuffer({
     mappedAtCreation: true,
-    size: uint256Data.byteLength,
+    size: uint32s1.byteLength,
     usage: GPUBufferUsage.STORAGE
   });
   const arrayBufferInput = gpuBufferUint256Inputs.getMappedRange();
-  new Uint32Array(arrayBufferInput).set(uint256Data);
+  new Uint32Array(arrayBufferInput).set(uint32s1);
   gpuBufferUint256Inputs.unmap();
-
-  // Second Matrix
-
-  const uint256Data2 = new Uint32Array(numUintsToPassIn * 8);
-  for (let i = 0; i < numUintsToPassIn * 8; i++) {
-    uint256Data2[i] = i % 4294967295;
-  }
 
   const gpuBufferUint256Inputs2 = device.createBuffer({
     mappedAtCreation: true,
-    size: uint256Data2.byteLength,
+    size: uint32s2.byteLength,
     usage: GPUBufferUsage.STORAGE
   });
   const arrayBufferInput2 = gpuBufferUint256Inputs2.getMappedRange();
-  new Uint32Array(arrayBufferInput2).set(uint256Data2);
+  new Uint32Array(arrayBufferInput2).set(uint32s2);
   gpuBufferUint256Inputs2.unmap();
 
   // Result Matrix
