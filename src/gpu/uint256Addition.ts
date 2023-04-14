@@ -33,6 +33,7 @@ export async function actualUint256Addition(uint32Array1, uint32Array2) {
       uint256s: array<UInt256>
     }
 
+    // need to make this the actual representation of the aleo field order
     const aleoFieldOrderComponents = array<u32, 8>(1, 1, 0, 0, 0, 0, 0, 0);
     // var aleoFieldOrder: UInt256;
     // aleoFieldOrder.components = aleoFieldOrderComponents;
