@@ -1,12 +1,8 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 export async function actualUint256Addition(uint32Array1, uint32Array2) {
-  console.log(uint32Array1);
-  console.log(uint32Array2);
   const uint32s1 = new Uint32Array(uint32Array1);
   const uint32s2 = new Uint32Array(uint32Array2);
-  console.log(uint32s1);
-  console.log(uint32s2);
   if (!("gpu" in navigator)) {
     console.log(
       "WebGPU is not supported. Enable chrome://flags/#enable-unsafe-webgpu flag."
@@ -34,7 +30,9 @@ export async function actualUint256Addition(uint32Array1, uint32Array2) {
     }
 
     // need to make this the actual representation of the aleo field order
-    const aleoFieldOrderComponents = array<u32, 8>(1, 1, 0, 0, 0, 0, 0, 0);
+    // 115792089237316195423570985008687907853269984665640564039457584007913129639935
+    // 8444461749428370424248824938781546531375899335154063827935233455917409239041
+    const aleoFieldOrderComponents = array<u32, 8>(313222494, 2586617174, 1622428958, 1547153409, 1504343806, 3489660929, 168919040, 1);
     // var aleoFieldOrder: UInt256;
     // aleoFieldOrder.components = aleoFieldOrderComponents;
 
@@ -49,9 +47,23 @@ export async function actualUint256Addition(uint32Array1, uint32Array2) {
       var sum: vec2<u32>;
       let total = a + b + carry_in;
       // potential bitwise speed ups here
-      sum[0] = total & 4294967295u;
-      sum[1] = total / 4294967295u;
+      sum[0] = total;
+      sum[1] = 0u;
+      if (total < a || total < b) {
+        sum[1] = 1u;
+      }
       return sum;
+    }
+
+    fn subtractComponents(a: u32, b: u32, carry_in: u32) -> vec2<u32> {
+      var sub: vec2<u32>;
+      let total = a - b - carry_in;
+      sub[0] = total;
+      sub[1] = 0u;
+      if (total > a || total > b) {
+        sub[1] = 1u;
+      }
+      return sub;
     }
   
     fn addUInt256(a: UInt256, b: UInt256) -> UInt256 {
@@ -59,28 +71,50 @@ export async function actualUint256Addition(uint32Array1, uint32Array2) {
         sum.components = array<u32, 8>(0, 0, 0, 0, 0, 0, 0, 0);
         var carry: u32 = 0u;
     
-        for (var i = 0u; i < 8u; i = i + 1u) {
+        for (var i = 7i; i >= 0i; i--) {
             let componentResult = addComponents(a.components[i], b.components[i], carry);
             sum.components[i] = componentResult[0];
             carry = componentResult[1];
         }
+
+        let resultGreaterThanAleoFieldOrder = false;
+
+        for (var i = 0u; i < 8u; i++) {
+          if (sum.components[i] > aleoFieldOrderComponents[i]) {
+            resultGreaterThanAleoFieldOrder = true;
+            break;
+          }
+
+          resultGreaterThanAleoFieldOrder = true;
+        }
     
         return sum;
     }
+
+    fn fuckthis(a: UInt256, b: UInt256) -> UInt256 {
+      var sum: UInt256;
+      sum.components = array<u32, 8>(0, 0, 0, 0, 0, 0, 0, 0);
+      var carry: u32 = 0u;
+  
+      let componentResult = addComponents(a.components[7], b.components[7], carry);
+      sum.components[7] = componentResult[0];
+      sum.components[6] = componentResult[1];
+  
+      return sum;
+  }
 
     @compute @workgroup_size(64)
     fn main(
       @builtin(global_invocation_id)
       global_id : vec3<u32>
     ) {
-      // // Avoid accessing the buffer out of bounds
+      // Avoid accessing the buffer out of bounds
       if (global_id.x >= ${numUintsToPassIn}) {
         return;
       }
       for (var i = 0u; i < ${numUintsToPassIn}; i = i + 1u) {
         var sum = addUInt256(input1.uint256s[global_id.x], input2.uint256s[global_id.x]);
-        // output.uint256s[global_id.x].components = input1.uint256s[global_id.x].components;
-        // output.uint256s[global_id.x].components = input2.uint256s[global_id.x].components;
+        // var sum = fuckthis(input1.uint256s[global_id.x], input2.uint256s[global_id.x]);
         output.uint256s[global_id.x].components = sum.components;
       }
     }
