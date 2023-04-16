@@ -5,6 +5,7 @@ export function __wbg_address_free(a: number): void;
 export function address_from_private_key(a: number): number;
 export function address_from_view_key(a: number): number;
 export function address_from_string(a: number, b: number): number;
+export function address_add_fields(a: number, b: number, c: number, d: number, e: number): void;
 export function address_to_string(a: number, b: number): void;
 export function address_from_bytes(a: number, b: number): number;
 export function address_to_group(a: number, b: number): void;

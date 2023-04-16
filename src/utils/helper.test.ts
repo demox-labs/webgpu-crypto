@@ -1,4 +1,4 @@
-import { addressToAffine, addressToXCoordinate, bytesToAddress, cipherTextToNonce, viewKeyToScalar } from "./helper";
+import { addFields, addressToAffine, addressToXCoordinate, bytesToAddress, cipherTextToNonce, viewKeyToScalar } from "./helper";
 
 describe('helper', () => {
   describe('addressToXCoordinate', () => {
@@ -74,6 +74,18 @@ describe('helper', () => {
       const affine = await addressToAffine(address);
 
       expect(affine).toEqual(expectedAffine);
+    });
+  });
+
+  describe('addFields', () => {
+    it.each([
+      ['1field', '2field', '3field'],
+      ['8444461749428370424248824938781546531375899335154063827935233455917409239040field', '2field', '1field'],
+      ['1684996666696914987166688442938726917102321526408785780068975640575field', '1684996666696914987166688442938726917102321526408785780068975640575field', '3369993333393829974333376885877453834204643052817571560137951281150field']
+    ])('adds two fields', async (input1: string, input2: string, expected: string) => {
+      const result = await addFields(input1, input2);
+
+      expect(result).toBe(expected);
     });
   });
 });

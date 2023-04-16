@@ -20,6 +20,12 @@ export class Address {
 */
   static from_string(address: string): Address;
 /**
+* @param {string} field1
+* @param {string} field2
+* @returns {string}
+*/
+  static add_fields(field1: string, field2: string): string;
+/**
 * @returns {string}
 */
   to_string(): string;

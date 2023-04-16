@@ -1,3 +1,5 @@
+// use bigint_256 in aleo for good examples on implementing carry adds/carry multiplies
+
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 export async function actualUint256Addition(uint32Array1, uint32Array2) {
@@ -29,8 +31,6 @@ export async function actualUint256Addition(uint32Array1, uint32Array2) {
       uint256s: array<UInt256>
     }
 
-    // need to make this the actual representation of the aleo field order
-    // 115792089237316195423570985008687907853269984665640564039457584007913129639935
     // 8444461749428370424248824938781546531375899335154063827935233455917409239041
     const aleoFieldOrderComponents = array<u32, 8>(313222494, 2586617174, 1622428958, 1547153409, 1504343806, 3489660929, 168919040, 1);
     // var aleoFieldOrder: UInt256;
@@ -49,7 +49,10 @@ export async function actualUint256Addition(uint32Array1, uint32Array2) {
       // potential bitwise speed ups here
       sum[0] = total;
       sum[1] = 0u;
-      if (total < a || total < b) {
+      // if the total is less than a, then we know there was a carry
+      // need to subtract the carry_in for the edge case though, where the two largest
+      // u32s are added together.
+      if ((total - carry_in) < a) {
         sum[1] = 1u;
       }
       return sum;
@@ -60,7 +63,7 @@ export async function actualUint256Addition(uint32Array1, uint32Array2) {
       let total = a - b - carry_in;
       sub[0] = total;
       sub[1] = 0u;
-      if (total > a || total > b) {
+      if ((total + carry_in) > a) {
         sub[1] = 1u;
       }
       return sub;
@@ -77,7 +80,7 @@ export async function actualUint256Addition(uint32Array1, uint32Array2) {
             carry = componentResult[1];
         }
 
-        let resultGreaterThanAleoFieldOrder = false;
+        var resultGreaterThanAleoFieldOrder = false;
 
         for (var i = 0u; i < 8u; i++) {
           if (sum.components[i] > aleoFieldOrderComponents[i]) {
@@ -85,7 +88,22 @@ export async function actualUint256Addition(uint32Array1, uint32Array2) {
             break;
           }
 
-          resultGreaterThanAleoFieldOrder = true;
+          if (sum.components[i] < aleoFieldOrderComponents[i]) {
+            break;
+          }
+
+          if (i == 7u && sum.components[i] == aleoFieldOrderComponents[i]) {
+            resultGreaterThanAleoFieldOrder = true;
+          }
+        }
+
+        if (resultGreaterThanAleoFieldOrder) {
+          carry = 0u;
+          for (var i = 7i; i >= 0i; i--) {
+            let componentResult = subtractComponents(sum.components[i], aleoFieldOrderComponents[i], carry);
+            sum.components[i] = componentResult[0];
+            carry = componentResult[1];
+          }
         }
     
         return sum;
@@ -96,7 +114,7 @@ export async function actualUint256Addition(uint32Array1, uint32Array2) {
       sum.components = array<u32, 8>(0, 0, 0, 0, 0, 0, 0, 0);
       var carry: u32 = 0u;
   
-      let componentResult = addComponents(a.components[7], b.components[7], carry);
+      let componentResult = subtractComponents(a.components[7], b.components[7], carry);
       sum.components[7] = componentResult[0];
       sum.components[6] = componentResult[1];
   
@@ -251,7 +269,7 @@ export async function actualUint256Addition(uint32Array1, uint32Array2) {
   // Read buffer.
   await gpuReadBuffer.mapAsync(GPUMapMode.READ);
   const arrayBuffer = gpuReadBuffer.getMappedRange();
-  return Array.from(new Uint32Array(arrayBuffer));
+  return new Uint32Array(arrayBuffer);
 }
 
 export const uint256Addition = async () => {
