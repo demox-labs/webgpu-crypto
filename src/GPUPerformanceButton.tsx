@@ -22,11 +22,12 @@ const GPUPerformanceButton: React.FC = () => {
     const bigIntsArray = bigIntsToU32Array(bigInts);
     const gpuStart = performance.now();
     const result = await actualUint256Addition(bigIntsArray, bigIntsArray);
-    // note, this conversion will result in a slow down for the GPU
-    // const bigIntResult = u32ArrayToBigInts(result || new Uint32Array(0));
     const gpuEnd = performance.now();
     console.log('gpu time', gpuEnd - gpuStart);
-    // console.log(bigIntResult);
+    const bigIntResult = u32ArrayToBigInts(result || new Uint32Array(0));
+    console.log('u32 to bigints conversion time', performance.now() - gpuEnd);
+    console.log('total gpu with conversion', performance.now() - gpuStart);
+    console.log(bigIntResult);
   }
 
   const benchmarkWasm = async (bigIntStrings: string[]) => {

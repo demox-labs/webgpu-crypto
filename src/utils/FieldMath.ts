@@ -131,9 +131,10 @@ export class FieldMath {
       BigInt('5442838979203238763201664294025743588659204582886990828529890949134890976331'),
       BigInt('2786239965968296821488478838651772138841386999233021154548046837852479346774'),
       BigInt('2011433203564613444434680673362049409281410437476018311083897000100578507327')
-    ]
+    ];
     const secondElement = firstHashOutput[1];
     const thirdElement = firstHashOutput[2];
+    // just calculate this ahead of time, because the encryption domain is constant
     const secondElementPlus = this.Fp.add(secondElement, this.encryptionDomain);
     const thirdElementPlus = this.Fp.add(thirdElement, recordViewKey);
     firstHashOutput[1] = secondElementPlus;
