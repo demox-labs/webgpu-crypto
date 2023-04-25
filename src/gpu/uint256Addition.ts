@@ -269,7 +269,8 @@ export async function actualUint256Addition(uint32Array1, uint32Array2) {
   // Read buffer.
   await gpuReadBuffer.mapAsync(GPUMapMode.READ);
   const arrayBuffer = gpuReadBuffer.getMappedRange();
-  return new Uint32Array(arrayBuffer);
+  const result = new Uint32Array(arrayBuffer);
+  return result;
 }
 
 export const uint256Addition = async () => {

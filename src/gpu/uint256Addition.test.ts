@@ -45,10 +45,11 @@ describe('uint256Addition', () => {
     // need to pass an untyped array here
     const u32Input1 = Array.from(bigIntToU32Array(input1));
     const u32Input2 = Array.from(bigIntToU32Array(input2));
-    const result = await ((await browser.pages())[0]).evaluate(`(${functionString})([${u32Input1}], [${u32Input2}])`) as Uint32Array;
-    const bigIntResult = u32ArrayToBigInts(result)[0];
-    // await new Promise(r => setTimeout(r, 45_000));
-    // await browser.close();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await ((await browser.pages())[0]).evaluate(`(${functionString})([${u32Input1}], [${u32Input2}])`);
+    const arr = Object.values(result as object);
+    const uint32ArrayResult = new Uint32Array(arr);
+    const bigIntResult = u32ArrayToBigInts(uint32ArrayResult)[0];
 
     expect(bigIntResult.toString()).toEqual(expected.toString());
   });
