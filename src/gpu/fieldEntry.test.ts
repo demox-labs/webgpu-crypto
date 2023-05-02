@@ -1,10 +1,8 @@
 import puppeteer from 'puppeteer';
 import { Browser } from 'puppeteer';
-import path from 'path';
-import fs from 'fs/promises';
 import { bigIntToU32Array, u32ArrayToBigInts } from './utils';
 
-describe('uint256Addition', () => {
+describe('fieldEntry', () => {
   let browser: Browser;
   beforeAll(async () => {
     jest.setTimeout(60_000);
@@ -15,6 +13,9 @@ describe('uint256Addition', () => {
       headless: false,
       args: ['#enable-webgpu-developer-features']
     });
+
+    const page = (await browser.pages())[0];
+    await page.goto("http://localhost:4000");
   });
 
   afterAll(async () => {
@@ -35,18 +36,10 @@ describe('uint256Addition', () => {
     [BigInt('14000000000000000000000000000000000000'), BigInt('14000000000000000000000000000000000000'), BigInt('28000000000000000000000000000000000000')],
     [BigInt('1684996666696914987166688442938726917102321526408785780068975640575'), BigInt('1684996666696914987166688442938726917102321526408785780068975640575'), BigInt('3369993333393829974333376885877453834204643052817571560137951281150')]
   ])('should add uint256 numbers', async (input1: bigint, input2: bigint, expected: bigint) => {
-    // const u32Max = BigInt(429467296);
-    const externalFunctionFilePath = path.resolve('./src/gpu/uint256Addition.ts');
-    const fileContent = await fs.readFile(externalFunctionFilePath, 'utf-8');
-
-    // Extract the function string
-    const functionStringMatch = fileContent.match(/async function actualUint256Addition[^{]*\{[\s\S]*?(?<=^|\n)\}/m);
-    const functionString = functionStringMatch && functionStringMatch[0];
     // need to pass an untyped array here
     const u32Input1 = Array.from(bigIntToU32Array(input1));
     const u32Input2 = Array.from(bigIntToU32Array(input2));
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = await ((await browser.pages())[0]).evaluate(`(${functionString})([${u32Input1}], [${u32Input2}])`);
+    const result = await ((await browser.pages())[0]).evaluate(`(field_add)([${u32Input1}], [${u32Input2}])`);
     const arr = Object.values(result as object);
     const uint32ArrayResult = new Uint32Array(arr);
     const bigIntResult = u32ArrayToBigInts(uint32ArrayResult)[0];

@@ -38,7 +38,8 @@ const config = {
     fallback: {
       "crypto": require.resolve("crypto-browserify"),
       "stream": require.resolve("stream-browserify"),
-      "buffer": require.resolve("buffer/")
+      "buffer": require.resolve("buffer/"),
+      "path": require.resolve("path-browserify")
     }
   },
   plugins: [
