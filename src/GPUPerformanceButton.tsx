@@ -1,7 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useCallback } from 'react';
 import { bigIntsToU32Array, u32ArrayToBigInts } from './gpu/utils';
 import { addFields } from './utils/helper';
 import { field_add } from './gpu/fieldEntry';
+import { u256_add } from './gpu/fieldModulusU256AddEntry';
 
 const GPUPerformanceButton: React.FC = () => {
   const [isRunning, setIsRunning] = React.useState(false);
