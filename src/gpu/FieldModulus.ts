@@ -19,6 +19,14 @@ const ALEO_FIELD_ORDER: Field = Field(
     array<u32, 8>(313222494, 2586617174, 1622428958, 1547153409, 1504343806, 3489660929, 168919040, 1)
 );
 
+const U256_MAX: u256 = u256(
+  array<u32, 8>(4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295)
+);
+
+const U256_ONE: u256 = u256(
+  array<u32, 8>(0, 0, 0, 0, 0, 0, 0, 1)
+);
+
 // 8444461749428370424248824938781546531375899335154063827935233455917409239042
 const ALEO_FIELD_ORDER_PLUS_ONE: Field = Field(
     array<u32, 8>(313222494, 2586617174, 1622428958, 1547153409, 1504343806, 3489660929, 168919040, 2)
@@ -76,6 +84,20 @@ fn u256_sub(a: u256, b: u256) -> u256 {
     let componentResult = sub_components(a.components[i], b.components[i], carry);
     sub.components[i] = componentResult[0];
     carry = componentResult[1];
+  }
+
+  return sub;
+}
+
+// underflow allowed u256 subtraction
+fn u256_subw(a: u256, b: u256) -> u256 {
+  var sub: u256;
+  if (gte(a, b)) {
+    sub = u256_sub(a, b);
+  } else {
+    var b_minus_a: u256 = u256_sub(b, a);
+    var b_minus_a_minus_one: u256 = u256_sub(b_minus_a, U256_ONE);
+    sub = u256_sub(U256_MAX, b_minus_a_minus_one);
   }
 
   return sub;
