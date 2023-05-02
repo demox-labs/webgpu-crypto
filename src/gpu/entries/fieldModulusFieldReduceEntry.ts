@@ -1,15 +1,13 @@
 import { FieldModulusWGSL } from "../FieldModulus";
 import { entry } from "./entryCreator"
 
-export const u256_add = async (input1: Array<number>, input2: Array<number>) => {
+export const field_reduce = async (input1: Array<number>) => {
   const numUintsToPassIn = input1.length / 8;
   const shaderEntry = `
     @group(0) @binding(0)
     var<storage, read> input1: u256s;
     @group(0) @binding(1)
-    var<storage, read> input2: u256s;
-    @group(0) @binding(2)
-    var<storage, read_write> output: u256s;
+    var<storage, read_write> output: Fields;
 
     @compute @workgroup_size(64)
     fn main(
@@ -21,16 +19,16 @@ export const u256_add = async (input1: Array<number>, input2: Array<number>) => 
         return;
       }
       for (var i = 0u; i < ${numUintsToPassIn}; i = i + 1u) {
-        var sum = u256_add(input1.u256s[global_id.x], input2.u256s[global_id.x]);
-        output.u256s[global_id.x].components = sum.components;
+        var result = field_reduce(input1.u256s[global_id.x]);
+        output.fields[global_id.x] = result;
       }
     }
     `;
 
   const shaderModules = [FieldModulusWGSL, shaderEntry];
 
-  return await entry([input1, input2], shaderModules);
+  return await entry([input1], shaderModules);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-(window as any).u256_add = u256_add;
+(window as any).field_reduce = field_reduce;

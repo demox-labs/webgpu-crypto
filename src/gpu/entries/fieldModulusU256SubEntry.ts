@@ -1,7 +1,7 @@
 import { FieldModulusWGSL } from "../FieldModulus";
 import { entry } from "./entryCreator"
 
-export const u256_sub = async (input1: Uint32Array, input2: Uint32Array) => {
+export const u256_sub = async (input1: Array<number>, input2: Array<number>) => {
   const numUintsToPassIn = input1.length / 8;
   const shaderEntry = `
     @group(0) @binding(0)
@@ -29,7 +29,7 @@ export const u256_sub = async (input1: Uint32Array, input2: Uint32Array) => {
 
   const shaderModules = [FieldModulusWGSL, shaderEntry];
 
-  return await entry(input1, input2, shaderModules);
+  return await entry([input1, input2], shaderModules);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -1,21 +1,11 @@
-export const entry = async(input1: Uint32Array, input2: Uint32Array, shaderModules: string[]) => {
-  const uint32s1 = new Uint32Array(input1);
-  const uint32s2 = new Uint32Array(input2);
-  if (!("gpu" in navigator)) {
-    console.log(
-      "WebGPU is not supported. Enable chrome://flags/#enable-unsafe-webgpu flag."
-    );
-    return;
-  }
-
-  const adapter = await navigator.gpu.requestAdapter();
-  if (!adapter) {
-    console.log("Failed to get GPU adapter.");
-    return;
-  }
-  const device = await adapter.requestDevice();
-
-  const numU256sToPassIn = uint32s1.length / 8;
+export const entry = async(inputsAsArrays: Array<number>[], shaderModules: string[]) => {
+  const inputs = inputsAsArrays.map((input) => new Uint32Array(input));
+  const firstSetOfInputs = inputs[0];
+  
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const device = (await getDevice())!;
+  
+  const numU256sToPassIn = firstSetOfInputs.length / 8;
 
   let shaderCode = '';
   for (const shaderModule of shaderModules) {
@@ -26,26 +16,9 @@ export const entry = async(input1: Uint32Array, input2: Uint32Array, shaderModul
     code: shaderCode
   });
 
-  const gpuBufferUint256Inputs = device.createBuffer({
-    mappedAtCreation: true,
-    size: uint32s1.byteLength,
-    usage: GPUBufferUsage.STORAGE
-  });
-  const arrayBufferInput = gpuBufferUint256Inputs.getMappedRange();
-  new Uint32Array(arrayBufferInput).set(uint32s1);
-  gpuBufferUint256Inputs.unmap();
-
-  const gpuBufferUint256Inputs2 = device.createBuffer({
-    mappedAtCreation: true,
-    size: uint32s2.byteLength,
-    usage: GPUBufferUsage.STORAGE
-  });
-  const arrayBufferInput2 = gpuBufferUint256Inputs2.getMappedRange();
-  new Uint32Array(arrayBufferInput2).set(uint32s2);
-  gpuBufferUint256Inputs2.unmap();
+  const gpuBufferInputs = inputs.map((input) => createUint256InputBuffer(device, input));
 
   // Result Matrix
-
   const resultBufferSize = Uint32Array.BYTES_PER_ELEMENT * numU256sToPassIn * 8;
   const resultBuffer = device.createBuffer({
     size: resultBufferSize,
@@ -53,61 +26,8 @@ export const entry = async(input1: Uint32Array, input2: Uint32Array, shaderModul
   });
 
   // Bind group layout and bind group
-  const entry1 = {
-    binding: 0,
-    visibility: GPUShaderStage.COMPUTE,
-    buffer: {
-      type: "read-only-storage"
-    }
-  };
-
-  const entry2 = {
-    binding: 1,
-    visibility: GPUShaderStage.COMPUTE,
-    buffer: {
-      type: "read-only-storage"
-    }
-  };
-
-  const entry3 = {
-    binding: 2,
-    visibility: GPUShaderStage.COMPUTE,
-    buffer: {
-      type: "storage"
-    }
-  };
-
-  const layout = {
-    entries: [entry1, entry2, entry3]
-  };
-
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
-  const bindGroupLayout = device.createBindGroupLayout(layout);
-
-  const bindGroup = device.createBindGroup({
-    layout: bindGroupLayout,
-    entries: [
-      {
-        binding: 0,
-        resource: {
-          buffer: gpuBufferUint256Inputs
-        }
-      },
-      {
-        binding: 1,
-        resource: {
-          buffer: gpuBufferUint256Inputs2
-        }
-      },
-      {
-        binding: 2,
-        resource: {
-          buffer: resultBuffer
-        }
-      }
-    ]
-  });
+  const bindGroupLayout = createBindGroupLayout(device, gpuBufferInputs);
+  const bindGroup = createBindGroup(device, bindGroupLayout, gpuBufferInputs, resultBuffer);
 
   // Pipeline setup
 
@@ -122,7 +42,6 @@ export const entry = async(input1: Uint32Array, input2: Uint32Array, shaderModul
   });
 
   // Commands submission
-
   const commandEncoder = device.createCommandEncoder();
 
   const passEncoder = commandEncoder.beginComputePass();
@@ -157,3 +76,84 @@ export const entry = async(input1: Uint32Array, input2: Uint32Array, shaderModul
   const result = new Uint32Array(arrayBuffer);
   return result;
 }
+
+const getDevice = async () => {
+  if (!("gpu" in navigator)) {
+    console.log(
+      "WebGPU is not supported. Enable chrome://flags/#enable-unsafe-webgpu flag."
+    );
+    return;
+  }
+
+  const adapter = await navigator.gpu.requestAdapter();
+  if (!adapter) {
+    console.log("Failed to get GPU adapter.");
+    return;
+  }
+  return await adapter.requestDevice();
+};
+
+const createUint256InputBuffer = (device: GPUDevice, uint32s: Uint32Array) => {
+  const gpuBufferUint256Inputs = device.createBuffer({
+    mappedAtCreation: true,
+    size: uint32s.byteLength,
+    usage: GPUBufferUsage.STORAGE
+  });
+  const arrayBufferInput = gpuBufferUint256Inputs.getMappedRange();
+  new Uint32Array(arrayBufferInput).set(uint32s);
+  gpuBufferUint256Inputs.unmap();
+  return gpuBufferUint256Inputs;
+};
+
+const createBindGroupLayout = (device: GPUDevice, gpuInputBuffers: GPUBuffer[]) => {
+  // Bind group layout and bind group
+  const layoutEntries: GPUBindGroupLayoutEntry[] = [];
+  for (let i = 0; i < gpuInputBuffers.length; i++) {
+    layoutEntries.push({
+      binding: i,
+      visibility: GPUShaderStage.COMPUTE,
+      buffer: {
+        type: "read-only-storage"
+      }
+    });
+  }
+
+  const resultLayoutEntry: GPUBindGroupLayoutEntry = {
+    binding: gpuInputBuffers.length,
+    visibility: GPUShaderStage.COMPUTE,
+    buffer: {
+      type: "storage"
+    }
+  };
+
+  layoutEntries.push(resultLayoutEntry);
+
+  const layout = { entries: layoutEntries };
+
+  return device.createBindGroupLayout(layout);
+};
+
+const createBindGroup = (device: GPUDevice, bindGroupLayout: GPUBindGroupLayout, gpuInputBuffers: GPUBuffer[], gpuOutputBuffer: GPUBuffer) => {
+  const entriesToBind = gpuInputBuffers.map((gpuInputBuffer, i) => {
+    return {
+      binding: i,
+      resource: {
+        buffer: gpuInputBuffer
+      }
+    };
+  });
+
+  entriesToBind.push({
+    binding: gpuInputBuffers.length,
+    resource: {
+      buffer: gpuOutputBuffer
+    }
+  });
+
+  const bindGroup = device.createBindGroup({
+    layout: bindGroupLayout,
+    entries: entriesToBind
+  });
+
+  return bindGroup;
+};
