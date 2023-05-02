@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React from "react";
 import { field_add } from "./gpu/fieldEntry";
-import { u256_add } from "./gpu/fieldModulusU256AddEntry";
-import { u256_sub } from "./gpu/fieldModulusU256SubEntry";
-import { u256_gt } from "./gpu/fieldModulusU256GTEntry";
+import { u256_add } from "./gpu/entries/fieldModulusU256AddEntry";
+import { u256_sub } from "./gpu/entries/fieldModulusU256SubEntry";
+import { u256_gt } from "./gpu/entries/fieldModulusU256GTEntry";
 
 const GPUFunctionLoader: React.FC = () => {
   const input = new Uint32Array([1, 2, 3, 4, 5, 6, 7, 8]);

@@ -1,7 +1,7 @@
-import { FieldModulusWGSL } from "./FieldModulus";
+import { FieldModulusWGSL } from "../FieldModulus";
 import { entry } from "./entryCreator"
 
-export const u256_sub = async (input1: Uint32Array, input2: Uint32Array) => {
+export const u256_add = async (input1: Uint32Array, input2: Uint32Array) => {
   const numUintsToPassIn = input1.length / 8;
   const shaderEntry = `
     @group(0) @binding(0)
@@ -21,8 +21,8 @@ export const u256_sub = async (input1: Uint32Array, input2: Uint32Array) => {
         return;
       }
       for (var i = 0u; i < ${numUintsToPassIn}; i = i + 1u) {
-        var sub = u256_sub(input1.u256s[global_id.x], input2.u256s[global_id.x]);
-        output.u256s[global_id.x].components = sub.components;
+        var sum = u256_add(input1.u256s[global_id.x], input2.u256s[global_id.x]);
+        output.u256s[global_id.x].components = sum.components;
       }
     }
     `;
@@ -33,4 +33,4 @@ export const u256_sub = async (input1: Uint32Array, input2: Uint32Array) => {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-(window as any).u256_sub = u256_sub;
+(window as any).u256_add = u256_add;

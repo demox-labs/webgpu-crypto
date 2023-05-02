@@ -1,6 +1,6 @@
 import puppeteer from 'puppeteer';
 import { Browser } from 'puppeteer';
-import { bigIntToU32Array, u32ArrayToBigInts } from './utils';
+import { bigIntToU32Array, u32ArrayToBigInts } from '../utils';
 
 describe('fieldModulusU256Add', () => {
   let browser: Browser;
