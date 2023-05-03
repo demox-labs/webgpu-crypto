@@ -2,11 +2,9 @@ import puppeteer from 'puppeteer';
 import { Browser } from 'puppeteer';
 import { bigIntToU32Array, u32ArrayToBigInts } from '../utils';
 
-describe('fieldEntry', () => {
+describe('fieldModulusU256Add', () => {
   let browser: Browser;
   beforeAll(async () => {
-    jest.setTimeout(60_000);
-
     browser = await puppeteer.launch({
       executablePath: '/Applications/Google\ Chrome\ Beta.app/Contents/MacOS/Google\ Chrome\ Beta',
       devtools: true,
@@ -35,7 +33,7 @@ describe('fieldEntry', () => {
     [BigInt(3458380512), BigInt(3458380512), BigInt(6916761024)],
     [BigInt('14000000000000000000000000000000000000'), BigInt('14000000000000000000000000000000000000'), BigInt('28000000000000000000000000000000000000')],
     [BigInt('1684996666696914987166688442938726917102321526408785780068975640575'), BigInt('1684996666696914987166688442938726917102321526408785780068975640575'), BigInt('3369993333393829974333376885877453834204643052817571560137951281150')]
-  ])('should add uint256 numbers', async (input1: bigint, input2: bigint, expected: bigint) => {
+  ])('should add field numbers and reduce them if necessary', async (input1: bigint, input2: bigint, expected: bigint) => {
     // need to pass an untyped array here
     const u32Input1 = Array.from(bigIntToU32Array(input1));
     const u32Input2 = Array.from(bigIntToU32Array(input2));

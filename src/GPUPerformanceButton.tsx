@@ -2,7 +2,7 @@
 import React, { useCallback } from 'react';
 import { bigIntsToU32Array, u32ArrayToBigInts } from './gpu/utils';
 import { addFields } from './utils/helper';
-import { field_add } from './gpu/samples/fieldEntry';
+import { field_add } from './gpu/entries/fieldAddEntry';
 
 const GPUPerformanceButton: React.FC = () => {
   const [isRunning, setIsRunning] = React.useState(false);
@@ -21,8 +21,9 @@ const GPUPerformanceButton: React.FC = () => {
   const benchmarkGPU = async (bigIntStrings: string[]) => {
     const bigInts = bigIntStrings.map(b => BigInt(b));
     const bigIntsArray = bigIntsToU32Array(bigInts);
+    const asNumbers = Array.from(bigIntsArray);
     const gpuStart = performance.now();
-    const result = await field_add(bigIntsArray, bigIntsArray);
+    const result = await field_add(asNumbers, asNumbers);
     const gpuEnd = performance.now();
     console.log('gpu time', gpuEnd - gpuStart);
     const bigIntResult = u32ArrayToBigInts(result || new Uint32Array(0));
