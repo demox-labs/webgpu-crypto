@@ -2,7 +2,7 @@
 import React, { useCallback } from 'react';
 import { bigIntsToU32Array, u32ArrayToBigInts } from './gpu/utils';
 import { addFields } from './utils/helper';
-import { field_add } from './gpu/fieldEntry';
+import { field_add } from './gpu/samples/fieldEntry';
 
 const GPUPerformanceButton: React.FC = () => {
   const [isRunning, setIsRunning] = React.useState(false);
