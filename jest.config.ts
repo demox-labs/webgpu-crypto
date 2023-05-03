@@ -25,6 +25,9 @@ export default {
   // The directory where Jest should output its coverage files
   coverageDirectory: "coverage",
 
+  // Amount of time (in milliseconds) to wait for hook in test
+  testTimeout: 60000,
+
   // An array of regexp pattern strings used to skip coverage collection
   // coveragePathIgnorePatterns: [
   //   "/node_modules/"

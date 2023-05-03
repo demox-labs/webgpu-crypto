@@ -158,4 +158,31 @@ fn field_reduce(a: u256) -> Field {
 
   return reduction;
 }
+
+fn component_double(a: u32, carry: u32) -> vec2<u32> {
+  var double: vec2<u32>;
+  let total = a << 1u;
+
+  double[0] = total + carry;
+  double[1] = 0u;
+
+  if (total < a) {
+    double[1] = 1u;
+  }
+  return double;
+}
+
+fn u256_double(a: u256) -> u256 {
+  var double: u256;
+  double.components = array<u32, 8>(0, 0, 0, 0, 0, 0, 0, 0);
+  var carry: u32 = 0u;
+
+  for (var i = 7i; i >= 0i; i--) {
+    let componentResult = component_double(a.components[i], carry);
+    double.components[i] = componentResult[0];
+    carry = componentResult[1];
+  }
+
+  return double;
+}
 `
