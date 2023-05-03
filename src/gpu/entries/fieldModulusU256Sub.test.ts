@@ -29,6 +29,7 @@ describe('fieldModulusU256Sub', () => {
     [BigInt(4294967299), BigInt(4294967297), BigInt(2)],
     [BigInt(3458380512), BigInt(3458380512), BigInt(0)],
     [BigInt('28000000000000000000000000000000000000'), BigInt('14000000000000000000000000000000000000'), BigInt('14000000000000000000000000000000000000')],
+    [BigInt('18446744073709551616'), BigInt(1), BigInt('18446744073709551615')]
   ])('should subtract uint256 numbers', async (input1: bigint, input2: bigint, expected: bigint) => {
     // need to pass an untyped array here
     const u32Input1 = Array.from(bigIntToU32Array(input1));

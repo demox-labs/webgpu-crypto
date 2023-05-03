@@ -9,7 +9,11 @@ import { field_add } from "./gpu/entries/fieldAddEntry";
 import { field_sub } from "./gpu/entries/fieldSubEntry";
 
 const GPUFunctionLoader: React.FC = () => {
-  const input: Array<number> = [1, 2, 3, 4, 5, 6, 7, 8];
+  let input: Array<number> = [];
+  for (let i = 0; i < 127; i++) {
+    input = input.concat([1, 2, 3, 4, 5, 6, 7, 8]);
+  }
+  // const input: Array<number> = [1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, ];
   const double_input_functions = [u256_add, u256_sub, u256_gt, u256_subw, field_add, field_sub];
   const single_input_functions = [field_reduce];
   return (

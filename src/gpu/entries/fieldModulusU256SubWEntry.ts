@@ -2,7 +2,6 @@ import { FieldModulusWGSL } from "../FieldModulus";
 import { entry } from "./entryCreator"
 
 export const u256_subw = async (input1: Array<number>, input2: Array<number>) => {
-  const numUintsToPassIn = input1.length / 8;
   const shaderEntry = `
     @group(0) @binding(0)
     var<storage, read> input1: u256s;
@@ -16,14 +15,8 @@ export const u256_subw = async (input1: Array<number>, input2: Array<number>) =>
       @builtin(global_invocation_id)
       global_id : vec3<u32>
     ) {
-      // Avoid accessing the buffer out of bounds
-      if (global_id.x >= ${numUintsToPassIn}) {
-        return;
-      }
-      for (var i = 0u; i < ${numUintsToPassIn}; i = i + 1u) {
-        var sub = u256_subw(input1.u256s[global_id.x], input2.u256s[global_id.x]);
-        output.u256s[global_id.x].components = sub.components;
-      }
+      var sub = u256_subw(input1.u256s[global_id.x], input2.u256s[global_id.x]);
+      output.u256s[global_id.x].components = sub.components;
     }
     `;
 

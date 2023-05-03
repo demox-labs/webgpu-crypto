@@ -1,5 +1,6 @@
 export const FieldModulusWGSL = 
 `
+// big endian
 struct u256 {
   components: array<u32, 8>
 }
@@ -19,6 +20,7 @@ const ALEO_FIELD_ORDER: Field = Field(
     array<u32, 8>(313222494, 2586617174, 1622428958, 1547153409, 1504343806, 3489660929, 168919040, 1)
 );
 
+// 115792089237316195423570985008687907853269984665640564039457584007913129639935
 const U256_MAX: u256 = u256(
   array<u32, 8>(4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295)
 );
@@ -40,9 +42,8 @@ fn add_components(a: u32, b: u32, carry_in: u32) -> vec2<u32> {
   sum[0] = total;
   sum[1] = 0u;
   // if the total is less than a, then we know there was a carry
-  // need to subtract the carry_in for the edge case though, where the two largest
-  // u32s are added together.
-  if ((total - carry_in) < a) {
+  // need to subtract the carry_in for the edge case though, where a or b is 2^32 - 1 and carry_in is 1
+  if (total < a || (total - carry_in) < a) {
     sum[1] = 1u;
   }
   return sum;
@@ -54,7 +55,9 @@ fn sub_components(a: u32, b: u32, carry_in: u32) -> vec2<u32> {
   let total = a - b - carry_in;
   sub[0] = total;
   sub[1] = 0u;
-  if ((total + carry_in) > a) {
+  // if the total is greater than a, then we know there was a carry from a less significant component.
+  // need to add the carry_in for the edge case though, where a carry_in of 1 causes a component of a to underflow
+  if (total > a || (total + carry_in) > a) {
     sub[1] = 1u;
   }
   return sub;
@@ -148,22 +151,11 @@ fn field_reduce(a: u256) -> Field {
   var reduction: Field = a;
   var a_gte_ALEO = gte(a, ALEO_FIELD_ORDER);
 
-  if (a_gte_ALEO) {
-    reduction = u256_sub(a, ALEO_FIELD_ORDER);
+  while (a_gte_ALEO) {
+    reduction = u256_sub(reduction, ALEO_FIELD_ORDER);
+    a_gte_ALEO = gte(reduction, ALEO_FIELD_ORDER);
   }
 
   return reduction;
-}
-
-// promotes once (assumes that 2^256 > a >= 2^256 - ALEO_FIELD_ORDER)
-fn field_promote(a: u256) -> Field {
-  var promotion: Field = a;
-  // this is the only component we need to check given that this number meets the above assumption
-  if (a.components[0] > ALEO_FIELD_ORDER.components[0]) {
-    // add one to the aleo field order because this wraps back around u256
-    promotion = u256_add(a, ALEO_FIELD_ORDER_PLUS_ONE);
-  }
-
-  return promotion;
 }
 `
