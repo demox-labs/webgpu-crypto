@@ -50,20 +50,7 @@ export const addressToGroup = async (address: string): Promise<string> => {
   return aleoAddress.to_group();
 }
 
-export const addressFromGroup = async(group: string): Promise<string> => {
-  const aleo = await loadWasmModule();
-  return aleo.Address.from_group(group).to_string();
-}
-
 export const addFields = async (field1: string, field2: string): Promise<string> => {
   const aleo = await loadWasmModule();
   return aleo.Address.add_fields(field1, field2);
 }
-
-// export const cipherTextRandomizer = async (cipherText: string): Promise<string> => {
-//   const aleo = await loadWasmModule();
-//   const aleoCipherText = aleo.RecordCiphertext.fromString(cipherText);
-//   return aleoCipherText.randomizer();
-// }
-
-// export const 

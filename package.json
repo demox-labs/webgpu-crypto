@@ -8,7 +8,7 @@
     "lint": "eslint --ext .js,.ts .",
     "build": "webpack --config webpack.dev.config.cjs",
     "test": "node --experimental-vm-modules $(yarn bin jest) --testPathIgnorePatterns='perf.test.ts'",
-    "test-gpu": "node --experimental-vm-modules $(yarn bin jest) --config=jest.browser.config.cjs",
+    "test-no-gpu": "node --experimental-vm-modules $(yarn bin jest) --testPathIgnorePatterns='/perf.test.ts/|/gpu/'",
     "perf-test": "node --experimental-vm-modules $(yarn bin jest) --runInBand --testPathPattern perf"
   },
   "dependencies": {

@@ -11,21 +11,6 @@ export class AleoSDKDecryptor implements IDecryptor {
 
   public async bulkIsOwner(cipherTexts: string[], viewKey: string): Promise<string[]> {
     const aleo = await loadWasmModule();
-    const aleoViewKey = aleo.ViewKey.from_string(viewKey);
-    return aleoViewKey.filter_owned(cipherTexts);
-  }
-
-  public async bulkIsOwnerVecBool(cipherTexts: string[], viewKey: string): Promise<boolean[]> {
-    const aleo = await loadWasmModule();
-    const aleoViewKey = aleo.ViewKey.from_string(viewKey);
-    return aleoViewKey.filter_owned_fast(cipherTexts);
-  }
-
-  public async bulkIsOwnerSlow(cipherTexts: string[], viewKey: string): Promise<string[]> {
-    const aleo = await loadWasmModule();
-
-    // const timeout = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-    // await timeout(100);
 
     const aleoViewKey = aleo.ViewKey.from_string(viewKey);
 

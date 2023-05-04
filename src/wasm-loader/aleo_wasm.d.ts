@@ -20,15 +20,19 @@ export class Address {
 */
   static from_string(address: string): Address;
 /**
-* @param {string} field1
-* @param {string} field2
-* @returns {string}
-*/
-  static add_fields(field1: string, field2: string): string;
-/**
 * @returns {string}
 */
   to_string(): string;
+/**
+* @param {Uint8Array} message
+* @param {Signature} signature
+* @returns {boolean}
+*/
+  verify(message: Uint8Array, signature: Signature): boolean;
+/**
+* @returns {string}
+*/
+  to_x_coordinate(): string;
 /**
 * @param {Uint8Array} bytes
 * @returns {Address}
@@ -37,12 +41,7 @@ export class Address {
 /**
 * @returns {string}
 */
-  to_group(): string;
-/**
-* @param {string} group
-* @returns {Address}
-*/
-  static from_group(group: string): Address;
+  to_affine(): string;
 /**
 * @returns {string}
 */
@@ -50,17 +49,43 @@ export class Address {
 /**
 * @returns {string}
 */
-  to_affine(): string;
+  to_group(): string;
 /**
+* @param {string} field1
+* @param {string} field2
 * @returns {string}
 */
-  to_x_coordinate(): string;
+  static add_fields(field1: string, field2: string): string;
+}
 /**
-* @param {Uint8Array} message
-* @param {Signature} signature
-* @returns {boolean}
+* Webassembly Representation of an Aleo function execution response
+*
+* This object is returned by the execution of an Aleo function off-chain. It provides methods for
+* retrieving the outputs of the function execution.
 */
-  verify(message: Uint8Array, signature: Signature): boolean;
+export class ExecutionResponse {
+  free(): void;
+/**
+* Get the outputs of the executed function
+* @returns {Array<any>}
+*/
+  getOutputs(): Array<any>;
+}
+/**
+* Webassembly Representation of an Aleo function fee execution response
+*
+* This object is returned by the execution of the `fee` function in credits.aleo. If a fee is
+* specified when attempting to create an on-chain program execution transaction, this will be
+* required as part of the transaction. However, it can be executed in parallel to execution of
+* main program in separate web workers prior to creation of the transaction.
+*/
+export class FeeExecution {
+  free(): void;
+/**
+* Get the amount of the fee
+* @returns {bigint}
+*/
+  fee(): bigint;
 }
 /**
 */
@@ -166,6 +191,51 @@ export class PrivateKeyCiphertext {
   static fromString(ciphertext: string): PrivateKeyCiphertext;
 }
 /**
+* Webassembly Representation of an Aleo program
+*
+* This object is required to create an Execution or Deployment transaction. It includes several
+* convenience methods for enumerating available functions and each functions' inputs in a
+* javascript object for usage in creation of web forms for input capture.
+*/
+export class Program {
+  free(): void;
+/**
+* Create a program from a program string
+* @param {string} program
+* @returns {Program}
+*/
+  static fromString(program: string): Program;
+/**
+* Get a string representation of the program
+* @returns {string}
+*/
+  toString(): string;
+/**
+* Get javascript array of functions names in the program
+* @returns {Array<any>}
+*/
+  getFunctions(): Array<any>;
+/**
+* Get a javascript object representation of the function inputs and types. This can be used
+* to generate a webform to capture user inputs for an execution of a function.
+* @param {string} function_name
+* @returns {Array<any>}
+*/
+  getFunctionInputs(function_name: string): Array<any>;
+/**
+* Get a javascript object representation of a program record and its types
+* @param {string} record_name
+* @returns {object}
+*/
+  getRecordMembers(record_name: string): object;
+/**
+* Get a javascript object representation of a program struct and its types
+* @param {string} struct_name
+* @returns {Array<any>}
+*/
+  getStructMembers(struct_name: string): Array<any>;
+}
+/**
 * Encrypted Aleo record
 */
 export class RecordCiphertext {
@@ -188,15 +258,15 @@ export class RecordCiphertext {
 */
   decrypt(view_key: ViewKey): RecordPlaintext;
 /**
-* @returns {string}
-*/
-  get_nonce(): string;
-/**
 * Returns `true` if the view key can decrypt the record ciphertext.
 * @param {ViewKey} view_key
 * @returns {boolean}
 */
   isOwner(view_key: ViewKey): boolean;
+/**
+* @returns {string}
+*/
+  get_nonce(): string;
 }
 /**
 * Aleo record plaintext
@@ -215,10 +285,10 @@ export class RecordPlaintext {
 */
   toString(): string;
 /**
-* Returns the amount of gates in the record
+* Returns the amount of microcredits in the record
 * @returns {bigint}
 */
-  gates(): bigint;
+  microcredits(): bigint;
 /**
 * Attempt to get the serial number of a record to determine whether or not is has been spent
 * @param {PrivateKey} private_key
@@ -255,6 +325,41 @@ export class Signature {
   to_string(): string;
 }
 /**
+* Webassembly Representation of an Aleo transaction
+*
+* This object is created when generating an on-chain function deployment or execution and is the
+* object that should be submitted to the Aleo Network in order to deploy or execute a function.
+*/
+export class Transaction {
+  free(): void;
+/**
+* Create a transaction from a string
+* @param {string} transaction
+* @returns {Transaction}
+*/
+  static fromString(transaction: string): Transaction;
+/**
+* Get the transaction as a string. If you want to submit this transaction to the Aleo Network
+* this function will create the string that should be submitted in the `POST` data.
+* @returns {string}
+*/
+  toString(): string;
+/**
+* Get the id of the transaction. This is the merkle root of the transaction's inclusion proof.
+*
+* This value can be used to query the status of the transaction on the Aleo Network to see
+* if it was successful. If successful, the transaction will be included in a block and this
+* value can be used to lookup the transaction data on-chain.
+* @returns {string}
+*/
+  transactionId(): string;
+/**
+* Get the type of the transaction (will return "deploy" or "execute")
+* @returns {string}
+*/
+  transactionType(): string;
+}
+/**
 */
 export class ViewKey {
   free(): void;
@@ -282,22 +387,12 @@ export class ViewKey {
 */
   decrypt(ciphertext: string): string;
 /**
-* @param {string} ciphertext
-* @returns {string}
-*/
-  view_key_ciphertext_multiply(ciphertext: string): string;
-/**
-* @param {Array<any>} ciphertexts
-* @returns {Array<any>}
-*/
-  filter_owned(ciphertexts: Array<any>): Array<any>;
-/**
-* @param {Array<any>} ciphertexts
-* @returns {Array<any>}
-*/
-  filter_owned_fast(ciphertexts: Array<any>): Array<any>;
-/**
 * @returns {string}
 */
   to_scalar(): string;
+/**
+* @param {string} cipher_text
+* @returns {string}
+*/
+  view_key_ciphertext_multiply(cipher_text: string): string;
 }

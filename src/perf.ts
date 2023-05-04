@@ -48,10 +48,7 @@ const betterTypescriptBenchmark = async (ciphertexts: string[], viewKey: string,
 export const runBenchmarks = async () => {
   const numRuns = 1;
 
-  const aleoSDKDecryptorBulkIsOwnerSlow = new AleoSDKDecryptor().bulkIsOwnerSlow;
   const aleoSDKDecryptorBulkIsOwner = new AleoSDKDecryptor().bulkIsOwner;
-  const wasm_bulkIsOwnerSlow_benchmark_all_owned = await benchmarkBulkIsOwner(aleoSDKDecryptorBulkIsOwnerSlow, viewKey, numRuns, null);
-  console.log('wasm_bulkIsOwnerSlow_benchmark_all_owned');
   const wasm_bulkIsOwner_benchmark_all_owned = await benchmarkBulkIsOwner(aleoSDKDecryptorBulkIsOwner, viewKey, numRuns, null);
   console.log('wasm_bulkIsOwner_benchmark_all_owned');
   const typescript_bulkIsOwner_benchmark = await benchmarkBulkIsOwner(typescriptBenchmark, viewKey, numRuns, address);
@@ -59,7 +56,6 @@ export const runBenchmarks = async () => {
   const better_typescript = await benchmarkBulkIsOwner(betterTypescriptBenchmark, viewKey, numRuns, address);
   console.log('better typescript');
   const benchMarkResults = {
-    wasm_bulkIsOwner_slow_all_owned: { avg_time: wasm_bulkIsOwnerSlow_benchmark_all_owned },
     wasm_bulkIsOwner_all_owned: { avg_time: wasm_bulkIsOwner_benchmark_all_owned },
     typescript_bulkIsOwner: { avg_time: typescript_bulkIsOwner_benchmark },
     better_typescript: { avg_time: better_typescript },

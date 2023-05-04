@@ -4,8 +4,8 @@ describe('AleoSDKDecryptor', () => {
   describe('isOwner', () => {
     it('returns true when the view key is the owner of the cipher text', async () => {
       const decryptor = new AleoSDKDecryptor();
-      const cipherText = 'record1qyqsp64yyuptc3rzy67wx0pyqz3lkv4jpnl02jlp7vyhvl8nxdl6p7syqyqsqu30vwqa484agjlk42dft9xqlrvzxplhtct3muvcega2zryer0cgqzql8cjdugmcwchypqr3862f8nvddg8hcr3dgzrxcxlrhxrhcvvsgahapl6';
-      const viewKey = 'AViewKey1ojV2FEoeJpRHusKeU4E6HvGAhQDhFueaQvF6oBJTrCYB';
+      const cipherText = 'record1qyqsqpe2szk2wwwq56akkwx586hkndl3r8vzdwve32lm7elvphh37rsyqyxx66trwfhkxun9v35hguerqqpqzqrtjzeu6vah9x2me2exkgege824sd8x2379scspmrmtvczs0d93qttl7y92ga0k0rsexu409hu3vlehe3yxjhmey3frh2z5pxm5cmxsv4un97q';
+      const viewKey = 'AViewKey1ccEt8A2Ryva5rxnKcAbn7wgTaTsb79tzkKHFpeKsm9NX';
 
       const result = await decryptor.isOwner(cipherText, viewKey);
   
@@ -14,7 +14,7 @@ describe('AleoSDKDecryptor', () => {
 
     it('returns false when the view key is not the owner of the cipher text', async () => {
       const decryptor = new AleoSDKDecryptor();
-      const cipherText = 'record1qyqsqzqt5q5dhxs9g4v49wfgkfkacfgfysp0c6ud5w8vupzhzg8f9cqqqyqspa3jatj4f3xr9fh0xvjxp7kmn0n5pvzqnj7keu4gsal25sccywqqqzn9epqa6m6fm342zm05ekzz6k5t02z7vxe7hzehu9cpt49qk4vsjjq0yy0';
+      const cipherText = 'record1qyqsqpe2szk2wwwq56akkwx586hkndl3r8vzdwve32lm7elvphh37rsyqyxx66trwfhkxun9v35hguerqqpqzqrtjzeu6vah9x2me2exkgege824sd8x2379scspmrmtvczs0d93qttl7y92ga0k0rsexu409hu3vlehe3yxjhmey3frh2z5pxm5cmxsv4un97q';
       const viewKey = 'AViewKey1ojV2FEoeJpRHusKeU4E6HvGAhQDhFueaQvF6oBJTrCYB';
 
       const result = await decryptor.isOwner(cipherText, viewKey);
@@ -25,26 +25,12 @@ describe('AleoSDKDecryptor', () => {
   
   describe('bulkIsOwner', () => {
     it('returns the owned ciphertexts of the view key', async () => {
-      const ownedCiphertext = 'record1qyqsqqpvp730luh2dy8d9axpxravzuj8hdj9yxrs5r6jckqen4zxveg0qplra7rendesgqqzq9s5xqqzqgqgh3m299574xrquu05jztsalaymcwefzqhl6p6ep824362vpn9jpf8znfcyq5nhg6caxmz48lu8zc8dqfw5kyvqfw22ja3d0wp570hpqqkyscqqgpqp3wa6xmnl42hua0swue4rw0q5lhj6z3xxk4pfqgccawtmhjna3s0h8vnnrvhhxu8yfkpy37tw9wcyefttfm8m0p74f2xtc2ft45qy585uana3mgkk37nvp2zccqr3rjz7046g3rqspgdkn2njfx0z3tyzrgutvmap';
-      const notOwnedCiphertext = 'record1qyqsp6pdsdz4ddy7pgyg4nnng7qkeqthm4727vtanpa8xlx5l6vef5cfqp78mx62dw9q7qqzq9s5xqqzqgqgg7xzj28mmpff3kkuuv94cv5733t09rrpqk9ga36lrnsq9ack5yn5ca5zkpvcjy8er2gjtd097nd40gedn3qgxqwk4xjvds00ytxwq5qkyscqqgpqp6d9qxer3fv2ehrzjhzr5w7zlp5a0jrkhw9gfasq6hpthrjpsls36ju80mc2lwmww398rhxn0x49k3vpukv4g56k60rjn49lsrhuggqtrmy74qwpz05wgl5jfug9ppl2728t76svey3x34wmmv2v7sg8jqsdeegr6';
+      const ownedCiphertext = 'record1qz3zzf7zg7qm760cxjhrac4kays0850unycdme7m3xx8893ejs5qcqspv9psqqszqp746mnf8qpf6d7ngeezra8qtnnde30sxfu4sz89prqvjtc0gz7qe4ew05e7yszm2qmcpvjytxnfqvr6hqcusf076qnrrp6uz37a3mcgq93yxqqzqgqp42wp8essxfgr6xv4d3xj79zdnkzh8sugavkfe95cyv5q8d62wp2r9gaey97vylzwqvs9pu664eu9kprlgenenk9x0rl78eq2pl3mpxhc299qq28akm4mue0ag2al3net0tzs4zwfsygjj8qf3vhdpuyszc66u6k';
+      const notOwnedCiphertext = 'record1qyqsptk87pd4dt5gp8a82egnwc6g0a5kxww5nutnajw37zz3g34pgzssqgqkzscqqgpqqqar0jrxwkgpa6j4aj6pz9msfag2px0fl8m7725el2jh2znz0fcdc0qgedxkz2dv22qk249apg87l4vhf5kve8lyrtcqmcagjwx985fqzcjrqqpqyq9ngee3eu30f2g7p8rfp2uujn70xfurjdv2jatsdla5hparedc9q8xzfjgsx80rpw05gple5aarnzj3lpe00a2hd9j30x6d6ggesg3prqhd24wyeeyz67lkr6gfn79g0vvwypwtwqem2ystschy9qxv5esj3q96dv';
       const ciphertexts = [ownedCiphertext, notOwnedCiphertext];
-      const viewKey = 'AViewKey1dgDh2cndbZR2BVBmeiQ4ccS3Zt1fRd1qbvUFs4rjZ1Xu';
+      const viewKey = 'AViewKey1d5k93DGiSHBXnZzEYTCSSnSzA9NkrXSTZEhT54ALqFcD';
       const decryptor = new AleoSDKDecryptor();
       const result = await decryptor.bulkIsOwner(ciphertexts, viewKey);
-  
-      expect(result.length).toBe(1);
-      expect(result[0]).toBe(ownedCiphertext);
-    });
-  });
-
-  describe('bulkIsOwnerSlow', () => {
-    it('returns the owned ciphertexts of the view key', async () => {
-      const ownedCiphertext = 'record1qyqsqqpvp730luh2dy8d9axpxravzuj8hdj9yxrs5r6jckqen4zxveg0qplra7rendesgqqzq9s5xqqzqgqgh3m299574xrquu05jztsalaymcwefzqhl6p6ep824362vpn9jpf8znfcyq5nhg6caxmz48lu8zc8dqfw5kyvqfw22ja3d0wp570hpqqkyscqqgpqp3wa6xmnl42hua0swue4rw0q5lhj6z3xxk4pfqgccawtmhjna3s0h8vnnrvhhxu8yfkpy37tw9wcyefttfm8m0p74f2xtc2ft45qy585uana3mgkk37nvp2zccqr3rjz7046g3rqspgdkn2njfx0z3tyzrgutvmap';
-      const notOwnedCiphertext = 'record1qyqsp6pdsdz4ddy7pgyg4nnng7qkeqthm4727vtanpa8xlx5l6vef5cfqp78mx62dw9q7qqzq9s5xqqzqgqgg7xzj28mmpff3kkuuv94cv5733t09rrpqk9ga36lrnsq9ack5yn5ca5zkpvcjy8er2gjtd097nd40gedn3qgxqwk4xjvds00ytxwq5qkyscqqgpqp6d9qxer3fv2ehrzjhzr5w7zlp5a0jrkhw9gfasq6hpthrjpsls36ju80mc2lwmww398rhxn0x49k3vpukv4g56k60rjn49lsrhuggqtrmy74qwpz05wgl5jfug9ppl2728t76svey3x34wmmv2v7sg8jqsdeegr6';
-      const ciphertexts = [ownedCiphertext, notOwnedCiphertext];
-      const viewKey = 'AViewKey1dgDh2cndbZR2BVBmeiQ4ccS3Zt1fRd1qbvUFs4rjZ1Xu';
-      const decryptor = new AleoSDKDecryptor();
-      const result = await decryptor.bulkIsOwnerSlow(ciphertexts, viewKey);
   
       expect(result.length).toBe(1);
       expect(result[0]).toBe(ownedCiphertext);
@@ -54,15 +40,17 @@ describe('AleoSDKDecryptor', () => {
   describe('decrypt', () => {
     it('decrypts a single cipher text', async () => {
       const decryptor = new AleoSDKDecryptor();
-      const cipherText = 'record1qyqsp64yyuptc3rzy67wx0pyqz3lkv4jpnl02jlp7vyhvl8nxdl6p7syqyqsqu30vwqa484agjlk42dft9xqlrvzxplhtct3muvcega2zryer0cgqzql8cjdugmcwchypqr3862f8nvddg8hcr3dgzrxcxlrhxrhcvvsgahapl6';
-      const viewKey = 'AViewKey1ojV2FEoeJpRHusKeU4E6HvGAhQDhFueaQvF6oBJTrCYB';
+      const cipherText = 'record1qyqsqpe2szk2wwwq56akkwx586hkndl3r8vzdwve32lm7elvphh37rsyqyxx66trwfhkxun9v35hguerqqpqzqrtjzeu6vah9x2me2exkgege824sd8x2379scspmrmtvczs0d93qttl7y92ga0k0rsexu409hu3vlehe3yxjhmey3frh2z5pxm5cmxsv4un97q';
+      const viewKey = 'AViewKey1ccEt8A2Ryva5rxnKcAbn7wgTaTsb79tzkKHFpeKsm9NX';
       const plainText = await decryptor.decrypt(cipherText, viewKey);
       // eslint-disable-next-line no-multi-str
-      const expectedPlainText = '{\
-        owner: aleo1dc5t7s238dt4t34nxdfc2a63xay09677eh8g9pdwdsygcw8vhq8szsn3ts.private,\
-        gates: 9000000u64.private,\
-        _nonce: 1854771635755848770649667346515770638820892794797847448446864043681977136001group.public\
-      }';
+      const expectedPlainText = `
+      {
+        owner: aleo1j7qxyunfldj2lp8hsvy7mw5k8zaqgjfyr72x2gh3x4ewgae8v5gscf5jh3.private,
+        microcredits: 1500000000000000u64.private,
+        _nonce: 3077450429259593211617823051143573281856129402760267155982965992208217472983group.public
+      }
+      `;
   
       expect(stripAllWhitespace(plainText)).toBe(stripAllWhitespace(expectedPlainText));
     });
