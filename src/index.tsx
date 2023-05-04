@@ -1,14 +1,14 @@
 import React from "react";
 import ReactDOM from "react-dom";
-import PerformanceButton from "./performanceButton";
-import GPUPerformanceButton from "./GPUPerformanceButton";
 import GPUFunctionLoader from "./GPUFunctionLoader";
+import { BenchmarkFieldAdd } from "./ui/BenchmarkFieldAdd";
+import { field_add } from "./gpu/entries/fieldAddEntry";
+import { addFields } from "./utils/wasmFunctions";
 
 const App = () => (
   <>
     <h1>GPU Record Scanning {new Date().toLocaleDateString()}</h1>
-    <PerformanceButton />
-    <GPUPerformanceButton />
+    <BenchmarkFieldAdd />
     <GPUFunctionLoader />
   </>
 );

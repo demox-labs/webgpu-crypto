@@ -1,3 +1,5 @@
+import { aleoFieldOrder } from "../utils/FieldMath";
+
 // assume bigints are big endian 256-bit integers
 export const bigIntsToU32Array = (beBigInts: bigint[]): Uint32Array => {
   const intsAs32s = beBigInts.map(bigInt => bigIntToU32Array(bigInt));
@@ -40,4 +42,29 @@ export const u32ArrayToBigInts = (u32Array: Uint32Array): bigint[] => {
     bigInts.push(bigInt);
   }
   return bigInts;
+}
+
+export const generateRandomFields = (numFields: number): bigint[] => {
+  const randomBigInts = [];
+  for (let i = 0; i < numFields; i++) {
+    randomBigInts.push(createRandomAleoFieldInt());
+  }
+
+  return randomBigInts;
+};
+
+export const convertBigIntsToWasmFields = (bigInts: bigint[]): string[] => {
+  return bigInts.map(bigInt => bigInt.toString() + 'field');
+};
+
+export const stripFieldSuffix = (field: string): string => {
+  return field.slice(0, field.length - 5);
+};
+
+const createRandomAleoFieldInt = () => {
+  let bigIntString = '';
+  for (let i = 0; i < 8; i++) {
+    bigIntString += Math.floor(Math.random() * (2**32 - 1));
+  }
+  return BigInt(bigIntString) % aleoFieldOrder;
 }
