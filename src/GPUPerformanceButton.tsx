@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useCallback } from 'react';
 import { bigIntsToU32Array, u32ArrayToBigInts } from './gpu/utils';
-import { addFields } from './utils/helper';
+import { addFields } from './utils/wasmFunctions';
 import { field_add } from './gpu/entries/fieldAddEntry';
 
 const GPUPerformanceButton: React.FC = () => {

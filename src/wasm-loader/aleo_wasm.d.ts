@@ -56,6 +56,16 @@ export class Address {
 * @returns {string}
 */
   static add_fields(field1: string, field2: string): string;
+/**
+* @param {string} field
+* @returns {string}
+*/
+  static double_field(field: string): string;
+/**
+* @param {string} field
+* @returns {string}
+*/
+  static poseidon_hash(field: string): string;
 }
 /**
 * Webassembly Representation of an Aleo function execution response
@@ -267,6 +277,11 @@ export class RecordCiphertext {
 * @returns {string}
 */
   get_nonce(): string;
+/**
+* @param {string} scalar
+* @returns {string}
+*/
+  point_scalar_mul(scalar: string): string;
 }
 /**
 * Aleo record plaintext
