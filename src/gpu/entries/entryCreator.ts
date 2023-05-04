@@ -73,7 +73,9 @@ export const entry = async(inputsAsArrays: Array<number>[], shaderModules: strin
   // Read buffer.
   await gpuReadBuffer.mapAsync(GPUMapMode.READ);
   const arrayBuffer = gpuReadBuffer.getMappedRange();
-  const result = new Uint32Array(arrayBuffer);
+  const result = new Uint32Array(arrayBuffer.slice(0));
+  gpuReadBuffer.unmap();
+  
   return result;
 }
 
