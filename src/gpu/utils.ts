@@ -44,9 +44,9 @@ export const u32ArrayToBigInts = (u32Array: Uint32Array): bigint[] => {
   return bigInts;
 }
 
-export const generateRandomFields = (numFields: number): bigint[] => {
+export const generateRandomFields = (inputSize: number): bigint[] => {
   const randomBigInts = [];
-  for (let i = 0; i < numFields; i++) {
+  for (let i = 0; i < inputSize; i++) {
     randomBigInts.push(createRandomAleoFieldInt());
   }
 
@@ -57,10 +57,6 @@ export const convertBigIntsToWasmFields = (bigInts: bigint[]): string[] => {
   return bigInts.map(bigInt => bigInt.toString() + 'field');
 };
 
-export const stripFieldSuffix = (field: string): string => {
-  return field.slice(0, field.length - 5);
-};
-
 const createRandomAleoFieldInt = () => {
   let bigIntString = '';
   for (let i = 0; i < 8; i++) {
@@ -68,3 +64,7 @@ const createRandomAleoFieldInt = () => {
   }
   return BigInt(bigIntString) % aleoFieldOrder;
 }
+
+export const stripFieldSuffix = (field: string): string => {
+  return field.slice(0, field.length - 5);
+};

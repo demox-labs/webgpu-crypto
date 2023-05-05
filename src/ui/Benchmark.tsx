@@ -1,13 +1,22 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from 'react';
-import { bigIntsToU32Array, convertBigIntsToWasmFields, generateRandomFields, stripFieldSuffix, u32ArrayToBigInts } from '../gpu/utils';
+import { u32ArrayToBigInts } from '../gpu/utils';
+import CSVExportButton from './CSVExportButton';
 
-interface DoubleInputBufferBenchmarkProps {
+interface BenchmarkProps {
   name: string;
-  gpuFunc: (a: number[], b: number[]) => Promise<Uint32Array | undefined>;
-  wasmFunc: (a: string, b: string) => Promise<string>;
+  inputsGenerator: (inputSize: number) => any[][];
+  gpuFunc: (inputs: any[][]) => Promise<Uint32Array>;
+  gpuInputConverter: (inputs: any[][]) => number[][];
+  wasmFunc: (inputs: any[][]) => Promise<string[]>;
+  wasmInputConverter: (inputs: any[][]) => string[][];
+  wasmResultConverter: (results: string[]) => string[];
 }
 
-export const DoubleInputBufferBenchmark: React.FC<DoubleInputBufferBenchmarkProps> = ({name, gpuFunc, wasmFunc}) => {
+export const Benchmark: React.FC<BenchmarkProps> = (
+  {name, inputsGenerator, gpuFunc, gpuInputConverter, wasmFunc, wasmInputConverter, wasmResultConverter}
+  ) => {
   const initialDefaultInputSize = 1000;
   const [inputSize, setInputSize] = useState(initialDefaultInputSize);
   const [gpuTime, setGpuTime] = useState(0);
@@ -17,22 +26,18 @@ export const DoubleInputBufferBenchmark: React.FC<DoubleInputBufferBenchmarkProp
   const initialResults: string[] = [];
   const [gpuResults, setGpuResults] = useState(initialResults);
   const [wasmResults, setWasmResults] = useState(initialResults);
-  const [inputs1, setInputs1] = useState<bigint[]>([]);
-  const [inputs2, setInputs2] = useState<bigint[]>([]);
+  const [inputs, setInputs] = useState<any[][]>([]);
   const [comparison, setComparison] = useState('Run both GPU and WASM to compare results');
+  const [benchmarkResults, setBenchmarkResults] = useState<any[][]>([["InputSize", "GPUorWASM", "Time"]]);
 
   useEffect(() => {
-    const firstInputs1 = generateRandomFields(initialDefaultInputSize);
-    const firstInputs2 = generateRandomFields(initialDefaultInputSize);
-    setInputs1(firstInputs1);
-    setInputs2(firstInputs2);
+    const generatedInputs = inputsGenerator(inputSize);
+    setInputs(generatedInputs);
   }, []);
 
   useEffect(() => {
-    const newInputs1 = generateRandomFields(inputSize);
-    setInputs1(newInputs1);
-    const newInputs2 = generateRandomFields(inputSize);
-    setInputs2(newInputs2);
+    const newInputs = inputsGenerator(inputSize);
+    setInputs(newInputs);
   }, [inputSize]);
 
   useEffect(() => {
@@ -61,34 +66,35 @@ export const DoubleInputBufferBenchmark: React.FC<DoubleInputBufferBenchmarkProp
   }, [gpuResults, wasmResults]);
 
   const runWasm = async () => {
+    const wasmInputs = wasmInputConverter(inputs);
     setWasmRunning(true);
-    const wasmInputs1 = convertBigIntsToWasmFields(inputs1);
-    const wasmInputs2 = convertBigIntsToWasmFields(inputs2);
-    const results: string[] = [];
     const wasmStart = performance.now();
-    for (let i = 0; i < inputs1.length; i++) {
-      results.push(await wasmFunc(wasmInputs1[i], wasmInputs2[i]));
-    }
+    const results: string[] = await wasmFunc(wasmInputs);
     const wasmEnd = performance.now();
-    setWasmTime(wasmEnd - wasmStart);
-    const resultStrings = results.map(r => stripFieldSuffix(r));
-    console.log(resultStrings);
-    setWasmResults(resultStrings);
+    const wasmPerformance = wasmEnd - wasmStart;
+    setWasmTime(wasmPerformance);
+    const comparableWasmResults = wasmResultConverter(results);
+    console.log(comparableWasmResults);
+    setWasmResults(comparableWasmResults);
+    const benchMarkResult = [inputSize, "WASM", wasmPerformance];
+    setBenchmarkResults([...benchmarkResults, benchMarkResult]);
     setWasmRunning(false);
   };
 
   const runGpu = async () => {
+    const gpuInputs = gpuInputConverter(inputs);
     setGpuRunning(true);
-    const gpuInputs1 = Array.from(bigIntsToU32Array(inputs1));
-    const gpuInputs2 = Array.from(bigIntsToU32Array(inputs2));
     const gpuStart = performance.now();
-    const result = await gpuFunc(gpuInputs1, gpuInputs2);
+    const result = await gpuFunc(gpuInputs);
     const gpuEnd = performance.now();
-    setGpuTime(gpuEnd - gpuStart);
+    const gpuPerformance = gpuEnd - gpuStart;
+    setGpuTime(gpuPerformance);
     const bigIntResult = u32ArrayToBigInts(result || new Uint32Array(0));
     const results = bigIntResult.map(r => r.toString());
     console.log(results);
     setGpuResults(results);
+    const benchMarkResult = [inputSize, "GPU", gpuPerformance];
+    setBenchmarkResults([...benchmarkResults, benchMarkResult]);
     setGpuRunning(false);
   };
 
@@ -113,6 +119,7 @@ export const DoubleInputBufferBenchmark: React.FC<DoubleInputBufferBenchmarkProp
       </button>
       <div className="text-gray-800 w-36 truncate">{wasmTime > 0 ? wasmTime : 'WASM Time: 0ms'}</div>
       <div className="text-gray-800 w-48">{comparison}</div>
+      <CSVExportButton data={benchmarkResults} filename={name + '-benchmark'} />
     </div>
   );
 };
