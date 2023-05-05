@@ -57,6 +57,12 @@ export class Address {
 */
   static add_fields(field1: string, field2: string): string;
 /**
+* @param {string} field1
+* @param {string} field2
+* @returns {string}
+*/
+  static sub_fields(field1: string, field2: string): string;
+/**
 * @param {string} field
 * @returns {string}
 */

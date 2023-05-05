@@ -53,7 +53,12 @@ export const addressToGroup = async (address: string): Promise<string> => {
 export const addFields = async (field1: string, field2: string): Promise<string> => {
   const aleo = await loadWasmModule();
   return aleo.Address.add_fields(field1, field2);
-}
+};
+
+export const subFields = async (field1: string, field2: string): Promise<string> => {
+  const aleo = await loadWasmModule();
+  return aleo.Address.sub_fields(field1, field2);
+};
 
 export const doubleField = async (field: string): Promise<string> => {
   const aleo = await loadWasmModule();

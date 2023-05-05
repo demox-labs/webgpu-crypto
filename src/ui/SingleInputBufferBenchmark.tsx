@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { field_add } from '../gpu/entries/fieldAddEntry';
-import { addFields } from '../utils/wasmFunctions';
 import { bigIntsToU32Array, convertBigIntsToWasmFields, generateRandomFields, stripFieldSuffix, u32ArrayToBigInts } from '../gpu/utils';
 
-export const BenchmarkFieldAdd: React.FC = () => {
+interface SingleInputBufferBenchmarkProps {
+  name: string;
+  gpuFunc: (a: number[]) => Promise<Uint32Array | undefined>;
+  wasmFunc: (a: string) => Promise<string>;
+}
+
+export const SingleInputBufferBenchmark: React.FC<SingleInputBufferBenchmarkProps> = ({name, gpuFunc, wasmFunc}) => {
   const initialDefaultInputSize = 1000;
   const [inputSize, setInputSize] = useState(initialDefaultInputSize);
   const [gpuTime, setGpuTime] = useState(0);
@@ -34,23 +38,27 @@ export const BenchmarkFieldAdd: React.FC = () => {
     } else if (gpuResults.length !== wasmResults.length) {
       setComparison('GPU and WASM results are different lengths');
     } else {
+      let gpuResultsDiffIndex = -1;
       for (let i = 0; i < gpuResults.length; i++) {
         if (gpuResults[i] !== wasmResults[i]) {
-          setComparison(`GPU and WASM results differ at index ${i}`);
+          gpuResultsDiffIndex = i;
           break;
         }
       }
-
-      setComparison('GPU and WASM results are the same');
+      if (gpuResultsDiffIndex !== -1) {
+        setComparison(`GPU and WASM results differ at index ${gpuResultsDiffIndex}`);
+      } else {
+        setComparison('GPU and WASM results are the same');
+      }
     }
   }, [gpuResults, wasmResults]);
 
-  const wasmAddFields = async (inputs: bigint[]) => {
+  const runWasm = async (inputs: bigint[]) => {
     const wasmInputs = convertBigIntsToWasmFields(inputs);
     const results: string[] = [];
     const wasmStart = performance.now();
     for (let i = 0; i < inputs.length; i++) {
-      results.push(await addFields(wasmInputs[i], wasmInputs[i]));
+      results.push(await wasmFunc(wasmInputs[i]));
     }
     const wasmEnd = performance.now();
     setWasmTime(wasmEnd - wasmStart);
@@ -59,10 +67,10 @@ export const BenchmarkFieldAdd: React.FC = () => {
     setWasmResults(resultStrings);
   };
 
-  const gpuAddFields = async (inputs: bigint[]) => {
+  const runGpu = async (inputs: bigint[]) => {
     const gpuInputs = Array.from(bigIntsToU32Array(inputs));
     const gpuStart = performance.now();
-    const result = await field_add(gpuInputs, gpuInputs);
+    const result = await gpuFunc(gpuInputs);
     const gpuEnd = performance.now();
     setGpuTime(gpuEnd - gpuStart);
     const bigIntResult = u32ArrayToBigInts(result || new Uint32Array(0));
@@ -72,13 +80,24 @@ export const BenchmarkFieldAdd: React.FC = () => {
   };
 
   return (
-    <div className="py-2">
-      <input type="number" value={inputSize} onChange={(e) => setInputSize(parseInt(e.target.value))} />
-      <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full" onClick={async () => { await gpuAddFields(inputs)}}>GPU Field Add</button>
-      <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full" onClick={async () => { await wasmAddFields(inputs)}}>WASM Field Add</button>
-      <div>{gpuTime > 0 ? gpuTime : 'Not run'}</div>
-      <div>{wasmTime > 0 ? wasmTime : 'Not run'}</div>
-      <div>{comparison}</div>
+    <div className="flex items-center space-x-4 px-5">
+      <div className="text-gray-800 font-bold w-40 px-2">{name}</div> 
+      <div className="text-gray-800">Input Size:</div>
+      <input
+        type="text"
+        className="w-24 border border-gray-300 rounded-md px-2 py-1"
+        value={inputSize}
+        onChange={(e) => setInputSize(parseInt(e.target.value))}
+      />
+      <button className="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded-md"  onClick={async () => { await runGpu(inputs)}}>
+        GPU
+      </button>
+      <div className="text-gray-800 w-36 truncate">{gpuTime > 0 ? gpuTime : 'GPU Time: 0ms'}</div>
+      <button className="bg-green-500 hover:bg-green-700 text-white px-4 py-2 rounded-md" onClick={async () => { await runWasm(inputs)}}>
+        WASM
+      </button>
+      <div className="text-gray-800 w-36 truncate">{wasmTime > 0 ? wasmTime : 'WASM Time: 0ms'}</div>
+      <div className="text-gray-800 w-48">{comparison}</div>
     </div>
   );
 };

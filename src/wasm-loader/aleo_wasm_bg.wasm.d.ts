@@ -68,6 +68,7 @@ export function address_from_bytes(a: number, b: number): number;
 export function address_to_affine(a: number, b: number): void;
 export function address_to_group(a: number, b: number): void;
 export function address_add_fields(a: number, b: number, c: number, d: number, e: number): void;
+export function address_sub_fields(a: number, b: number, c: number, d: number, e: number): void;
 export function address_double_field(a: number, b: number, c: number): void;
 export function address_poseidon_hash(a: number, b: number, c: number): void;
 export function address_to_string(a: number, b: number): void;

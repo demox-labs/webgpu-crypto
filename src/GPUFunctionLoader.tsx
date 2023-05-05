@@ -20,12 +20,12 @@ const GPUFunctionLoader: React.FC = () => {
   return (
     <div>
       {double_input_functions.map((fn, index) => (
-        <button key={index} onClick={async () => console.log(await fn(input, input))}>
+        <button className="border-2" key={index} onClick={async () => console.log(await fn(input, input))}>
           {fn.name}
         </button>
       ))}
       {single_input_functions.map((fn, index) => (
-        <button key={index} onClick={async () => console.log(await fn(input))}>
+        <button className="border-2" key={index} onClick={async () => console.log(await fn(input))}>
           {fn.name}
         </button>
       ))}
