@@ -72,10 +72,10 @@ export const BenchmarkFieldAdd: React.FC = () => {
   };
 
   return (
-    <div>
+    <div className="py-2">
       <input type="number" value={inputSize} onChange={(e) => setInputSize(parseInt(e.target.value))} />
-      <button onClick={async () => { await gpuAddFields(inputs)}}>GPU Field Add</button>
-      <button onClick={async () => { await wasmAddFields(inputs)}}>WASM Field Add</button>
+      <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full" onClick={async () => { await gpuAddFields(inputs)}}>GPU Field Add</button>
+      <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full" onClick={async () => { await wasmAddFields(inputs)}}>WASM Field Add</button>
       <div>{gpuTime > 0 ? gpuTime : 'Not run'}</div>
       <div>{wasmTime > 0 ? wasmTime : 'Not run'}</div>
       <div>{comparison}</div>
