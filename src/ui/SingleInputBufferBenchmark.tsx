@@ -12,6 +12,8 @@ export const SingleInputBufferBenchmark: React.FC<SingleInputBufferBenchmarkProp
   const [inputSize, setInputSize] = useState(initialDefaultInputSize);
   const [gpuTime, setGpuTime] = useState(0);
   const [wasmTime, setWasmTime] = useState(0);
+  const [gpuRunning, setGpuRunning] = useState(false);
+  const [wasmRunning, setWasmRunning] = useState(false);
   const initialResults: string[] = [];
   const [gpuResults, setGpuResults] = useState(initialResults);
   const [wasmResults, setWasmResults] = useState(initialResults);
@@ -54,6 +56,7 @@ export const SingleInputBufferBenchmark: React.FC<SingleInputBufferBenchmarkProp
   }, [gpuResults, wasmResults]);
 
   const runWasm = async (inputs: bigint[]) => {
+    setWasmRunning(true);
     const wasmInputs = convertBigIntsToWasmFields(inputs);
     const results: string[] = [];
     const wasmStart = performance.now();
@@ -65,9 +68,11 @@ export const SingleInputBufferBenchmark: React.FC<SingleInputBufferBenchmarkProp
     const resultStrings = results.map(r => stripFieldSuffix(r));
     console.log(resultStrings);
     setWasmResults(resultStrings);
+    setWasmRunning(false);
   };
 
   const runGpu = async (inputs: bigint[]) => {
+    setGpuRunning(true);
     const gpuInputs = Array.from(bigIntsToU32Array(inputs));
     const gpuStart = performance.now();
     const result = await gpuFunc(gpuInputs);
@@ -77,7 +82,10 @@ export const SingleInputBufferBenchmark: React.FC<SingleInputBufferBenchmarkProp
     const results = bigIntResult.map(r => r.toString());
     console.log(results);
     setGpuResults(results);
+    setGpuRunning(false);
   };
+
+  const spin = () => <div className="w-4 h-4 border-t-2 border-white rounded-full animate-spin"></div>;
 
   return (
     <div className="flex items-center space-x-4 px-5">
@@ -90,11 +98,11 @@ export const SingleInputBufferBenchmark: React.FC<SingleInputBufferBenchmarkProp
         onChange={(e) => setInputSize(parseInt(e.target.value))}
       />
       <button className="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded-md"  onClick={async () => { await runGpu(inputs)}}>
-        GPU
+        {gpuRunning ? spin() : 'GPU'}
       </button>
       <div className="text-gray-800 w-36 truncate">{gpuTime > 0 ? gpuTime : 'GPU Time: 0ms'}</div>
       <button className="bg-green-500 hover:bg-green-700 text-white px-4 py-2 rounded-md" onClick={async () => { await runWasm(inputs)}}>
-        WASM
+        {wasmRunning ? spin() : 'WASM'}
       </button>
       <div className="text-gray-800 w-36 truncate">{wasmTime > 0 ? wasmTime : 'WASM Time: 0ms'}</div>
       <div className="text-gray-800 w-48">{comparison}</div>
