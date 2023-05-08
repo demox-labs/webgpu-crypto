@@ -1,10 +1,11 @@
 import React from 'react';
 import { field_double } from '../gpu/entries/fieldDoubleEntry';
-import { bulkAddFields, bulkDoubleFields, bulkSubFields } from '../utils/wasmFunctions';
+import { bulkAddFields, bulkDoubleFields, bulkInvertFields, bulkSubFields } from '../utils/wasmFunctions';
 import { Benchmark } from './Benchmark';
 import { bigIntsToU32Array, generateRandomFields, stripFieldSuffix } from '../gpu/utils';
 import { field_add } from '../gpu/entries/fieldAddEntry';
 import { field_sub } from '../gpu/entries/fieldSubEntry';
+import { field_inverse } from '../gpu/entries/fieldInverseEntry';
 
 const singleInputGenerator = (inputSize: number): bigint[][] => {
   return [generateRandomFields(inputSize)];
@@ -55,6 +56,15 @@ export const AllBenchmarks: React.FC = () => {
         gpuFunc={(inputs: number[][]) => field_double(inputs[0])}
         gpuInputConverter={gpuBigIntInputConverter}
         wasmFunc={(inputs: string[][]) => bulkDoubleFields(inputs[0])}
+        wasmInputConverter={wasmBigIntToFieldConverter}
+        wasmResultConverter={wasmFieldResultConverter}
+      />
+      <Benchmark
+        name={'Invert Fields'}
+        inputsGenerator={singleInputGenerator}
+        gpuFunc={(inputs: number[][]) => field_inverse(inputs[0])}
+        gpuInputConverter={gpuBigIntInputConverter}
+        wasmFunc={(inputs: string[][]) => bulkInvertFields(inputs[0])}
         wasmInputConverter={wasmBigIntToFieldConverter}
         wasmResultConverter={wasmFieldResultConverter}
       />

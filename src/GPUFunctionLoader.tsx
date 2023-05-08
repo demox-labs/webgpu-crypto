@@ -8,6 +8,8 @@ import { u256_double } from './gpu/entries/fieldModulusU256DoubleEntry';
 import { field_reduce } from "./gpu/entries/fieldModulusFieldReduceEntry";
 import { field_add } from "./gpu/entries/fieldAddEntry";
 import { field_sub } from "./gpu/entries/fieldSubEntry";
+import { field_inverse } from "./gpu/entries/fieldInverseEntry";
+import { u256_rs1 } from "./gpu/entries/fieldModulusU256RightShiftOneEntry";
 
 const GPUFunctionLoader: React.FC = () => {
   let input: Array<number> = [];
@@ -16,7 +18,7 @@ const GPUFunctionLoader: React.FC = () => {
   }
   // const input: Array<number> = [1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, ];
   const double_input_functions = [u256_add, u256_sub, u256_gt, u256_subw, field_add, field_sub];
-  const single_input_functions = [field_reduce, u256_double];
+  const single_input_functions = [field_reduce, u256_double, field_inverse, u256_rs1];
   return (
     <div>
       {double_input_functions.map((fn, index) => (

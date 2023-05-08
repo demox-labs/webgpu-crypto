@@ -66,12 +66,28 @@ export class Address {
 * @param {string} field
 * @returns {string}
 */
+  static invert_field(field: string): string;
+/**
+* @param {string} field
+* @returns {string}
+*/
   static double_field(field: string): string;
+/**
+* @param {string} field1
+* @param {string} field2
+* @returns {string}
+*/
+  static mul_fields(field1: string, field2: string): string;
 /**
 * @param {string} field
 * @returns {string}
 */
   static poseidon_hash(field: string): string;
+/**
+* @param {string} group
+* @returns {string}
+*/
+  static affine_to_projective(group: string): string;
 }
 /**
 * Webassembly Representation of an Aleo function execution response

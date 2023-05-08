@@ -91,3 +91,22 @@ export const bulkDoubleFields = async (inputs: string[]): Promise<string[]> => {
   }
   return results;
 };
+
+export const affineToProjective = async (group: string): Promise<string> => {
+  const aleo = await loadWasmModule();
+  return aleo.Address.affine_to_projective(group);
+};
+
+export const invertField = async (field: string): Promise<string> => {
+  const aleo = await loadWasmModule();
+  return aleo.Address.invert_field(field);
+};
+
+export const bulkInvertFields = async (inputs: string[]): Promise<string[]> => {
+  const aleo = await loadWasmModule();
+  const results: string[] = [];
+  for (let i = 0; i < inputs.length; i++) {
+    results.push(await aleo.Address.invert_field(inputs[i]));
+  }
+  return results;
+};

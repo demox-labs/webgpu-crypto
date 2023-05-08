@@ -29,6 +29,10 @@ const U256_ONE: u256 = u256(
   array<u32, 8>(0, 0, 0, 0, 0, 0, 0, 1)
 );
 
+const U256_ZERO: u256 = u256(
+  array<u32, 8>(0, 0, 0, 0, 0, 0, 0, 0)
+);
+
 // 8444461749428370424248824938781546531375899335154063827935233455917409239042
 const ALEO_FIELD_ORDER_PLUS_ONE: Field = Field(
     array<u32, 8>(313222494, 2586617174, 1622428958, 1547153409, 1504343806, 3489660929, 168919040, 2)
@@ -76,6 +80,29 @@ fn u256_add(a: u256, b: u256) -> u256 {
   }
 
   return sum;
+}
+
+fn u256_rs1(a: u256) -> u256 {
+  var right_shifted: u256 = u256 (
+    array<u32, 8>(0, 0, 0, 0, 0, 0, 0, 0)
+  );
+  var carry: u32 = 0u;
+  for (var i = 0u; i < 8u; i++) {
+    var componentResult = a.components[i] >> 1u;
+    componentResult = componentResult | carry;
+    right_shifted.components[i] = componentResult;
+    carry = a.components[i] << 31u;
+  }
+
+  return right_shifted;
+}
+
+fn is_even(a: u256) -> bool {
+  return (a.components[7u] & 1u) == 0u;
+}
+
+fn is_odd(a: u256) -> bool {
+  return (a.components[7u] & 1u) == 1u;
 }
 
 // no underflow checking for u256
@@ -146,7 +173,6 @@ fn gte(a: u256, b: u256) -> bool {
   return true;
 }
 
-// reduces once (assumes that 0 <= a < 2 * ALEO_FIELD_ORDER)
 fn field_reduce(a: u256) -> Field {
   var reduction: Field = a;
   var a_gte_ALEO = gte(a, ALEO_FIELD_ORDER);

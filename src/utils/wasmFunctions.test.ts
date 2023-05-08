@@ -1,4 +1,4 @@
-import { addFields, addressToAffine, addressToXCoordinate, bytesToAddress, cipherTextToNonce, doubleField, viewKeyToScalar } from "./wasmFunctions";
+import { addFields, addressToAffine, addressToXCoordinate, affineToProjective, bytesToAddress, cipherTextToNonce, doubleField, viewKeyToScalar } from "./wasmFunctions";
 
 describe('helper', () => {
   describe('addressToXCoordinate', () => {

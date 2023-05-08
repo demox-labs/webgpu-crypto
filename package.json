@@ -9,7 +9,8 @@
     "build": "webpack --config webpack.dev.config.cjs",
     "test": "node --experimental-vm-modules $(yarn bin jest) --testPathIgnorePatterns='perf.test.ts'",
     "test-no-gpu": "node --experimental-vm-modules $(yarn bin jest) --testPathIgnorePatterns='/perf.test.ts/|/gpu/'",
-    "perf-test": "node --experimental-vm-modules $(yarn bin jest) --runInBand --testPathPattern perf"
+    "perf-test": "node --experimental-vm-modules $(yarn bin jest) --runInBand --testPathPattern perf",
+    "whosinmyswamp": "sudo lsof -i :4000"
   },
   "dependencies": {
     "@noble/curves": "^0.9.1",
