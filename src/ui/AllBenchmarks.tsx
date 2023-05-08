@@ -1,11 +1,12 @@
 import React from 'react';
 import { field_double } from '../gpu/entries/fieldDoubleEntry';
-import { bulkAddFields, bulkDoubleFields, bulkInvertFields, bulkSubFields } from '../utils/wasmFunctions';
+import { bulkAddFields, bulkDoubleFields, bulkInvertFields, bulkMulFields, bulkSubFields } from '../utils/wasmFunctions';
 import { Benchmark } from './Benchmark';
 import { bigIntsToU32Array, generateRandomFields, stripFieldSuffix } from '../gpu/utils';
 import { field_add } from '../gpu/entries/fieldAddEntry';
 import { field_sub } from '../gpu/entries/fieldSubEntry';
 import { field_inverse } from '../gpu/entries/fieldInverseEntry';
+import { field_multiply } from '../gpu/entries/fieldModulusFieldMultiplyEntry';
 
 const singleInputGenerator = (inputSize: number): bigint[][] => {
   return [generateRandomFields(inputSize)];
@@ -47,6 +48,15 @@ export const AllBenchmarks: React.FC = () => {
         gpuFunc={(inputs: number[][]) => field_sub(inputs[0], inputs[1])}
         gpuInputConverter={gpuBigIntInputConverter}
         wasmFunc={(inputs: string[][]) => bulkSubFields(inputs[0], inputs[1])}
+        wasmInputConverter={wasmBigIntToFieldConverter}
+        wasmResultConverter={wasmFieldResultConverter}
+      />
+      <Benchmark
+        name={'Multiply Fields'}
+        inputsGenerator={doubleInputGenerator}
+        gpuFunc={(inputs: number[][]) => field_multiply(inputs[0], inputs[1])}
+        gpuInputConverter={gpuBigIntInputConverter}
+        wasmFunc={(inputs: string[][]) => bulkMulFields(inputs[0], inputs[1])}
         wasmInputConverter={wasmBigIntToFieldConverter}
         wasmResultConverter={wasmFieldResultConverter}
       />

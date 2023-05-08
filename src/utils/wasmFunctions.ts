@@ -64,6 +64,20 @@ export const bulkAddFields = async (inputs1: string[], inputs2: string[]): Promi
   return results;
 };
 
+export const mulFields = async (field1: string, field2: string): Promise<string> => {
+  const aleo = await loadWasmModule();
+  return aleo.Address.mul_fields(field1, field2);
+};
+
+export const bulkMulFields = async (inputs1: string[], inputs2: string[]): Promise<string[]> => {
+  const aleo = await loadWasmModule();
+  const results: string[] = [];
+  for (let i = 0; i < inputs1.length; i++) {
+    results.push(await aleo.Address.mul_fields(inputs1[i], inputs2[i]));
+  }
+  return results;
+};
+
 export const subFields = async (field1: string, field2: string): Promise<string> => {
   const aleo = await loadWasmModule();
   return aleo.Address.sub_fields(field1, field2);
