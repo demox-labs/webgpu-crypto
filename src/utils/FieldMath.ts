@@ -27,7 +27,7 @@ export class FieldMath {
     this.aleoD = BigInt('3021');
     this.encryptionDomain = BigInt('1187534166381405136191308758137566032926460981470575291457');
     this.poseidonDomain = BigInt('4470955116825994810352013241409');
-    this.aleoFieldOrder = BigInt('8444461749428370424248824938781546531375899335154063827935233455917409239041');
+    this.aleoFieldOrder = BigInt('8444461749428370424248824938781546531375899335154063827935233455917409239041'); // mod this number is the field
     this.Fp = Field(aleoFieldOrder, undefined, true);
     this.aleoMdsAsBigInts = aleoMdStrings.map(row => row.map(elm => this.Fp.create(BigInt(elm))));
     this.aleoRoundConstantsAsBigInts = aleoRoundConstantStrings.map(row => row.map(elm => this.Fp.create(BigInt(elm))));
@@ -36,7 +36,7 @@ export class FieldMath {
   }
 
   getPointFromX = (x_field: bigint): { x: bigint, y: bigint } => {
-    // Compute y^2 = (1 - x^2) / (1 + d * x^2) mod F
+    // Compute y^2 = (a - x^2) / (1 + d * x^2) mod F (a = -1 for aleo (or 1 less than the field size))
 
     const xSquared = this.Fp.sqr(x_field);
 

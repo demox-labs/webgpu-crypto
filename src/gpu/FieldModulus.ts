@@ -211,4 +211,64 @@ fn u256_double(a: u256) -> u256 {
 
   return double;
 }
+
+fn component_right_shift(a: u32, shift: u32, carry: u32) -> vec2<u32> { 
+  var shifted: vec2<u32>;
+  shifted[0] = (a >> shift) + carry;
+  shifted[1] = a << (32u - shift);
+
+  return shifted;
+}
+
+fn u256_right_shift(a: u256, shift: u32) -> u256 {
+  var components_to_drop = shift / 32u;
+  if (components_to_drop >= 8u) {
+    return U256_ZERO;
+  }
+
+  var big_shift: u256 = u256(
+    array<u32, 8>(0, 0, 0, 0, 0, 0, 0, 0)
+  );
+
+  // Shift out the components that need dropping
+  for (var i = components_to_drop; i < 8u; i++) {
+    big_shift.components[i] = a.components[i-components_to_drop];
+  }
+
+  var shift_within_component = shift % 32u;
+
+  if (shift_within_component == 0u) {
+    return big_shift;
+  }
+
+  var carry: u32 = 0u;
+  for (var i = components_to_drop; i < 8u; i++) {
+    let componentResult = component_right_shift(big_shift.components[i], shift_within_component, carry);
+    big_shift.components[i] = componentResult[0];
+    carry = componentResult[1];
+  }
+
+  return big_shift;
+}
+
+fn field_multiply(a: Field, b: Field) -> Field {
+  var accumulator: Field = Field(
+    array<u32, 8>(0, 0, 0, 0, 0, 0, 0, 0)
+  );
+  var newA: Field = a;
+  var newB: Field = b;
+  while (gt(newB, U256_ZERO)) {
+    if ((newB.components[7] & 1u) == 1u) {
+      accumulator = u256_add(accumulator, newA);
+      if (gte(accumulator, ALEO_FIELD_ORDER)) {
+        accumulator = u256_subw(accumulator, ALEO_FIELD_ORDER);
+      }
+    }
+    newA = u256_double(newA);
+    newA = field_reduce(newA);
+    newB = u256_right_shift(newB, 1u);
+  }
+
+  return accumulator;
+}
 `
