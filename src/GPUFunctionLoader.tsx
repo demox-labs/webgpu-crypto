@@ -13,7 +13,6 @@ import { field_sub } from "./gpu/entries/fieldSubEntry";
 import { field_inverse } from "./gpu/entries/fieldInverseEntry";
 import { u256_rs1 } from "./gpu/entries/fieldModulusU256RightShiftOneEntry";
 import { point_add } from "./gpu/entries/curveAddPointsEntry";
-import { field_pow } from "./gpu/entries/fieldPowEntry";
 import { field_exponentiation } from "./gpu/entries/fieldModulusExponentiationEntry";
 
 const GPUFunctionLoader: React.FC = () => {
@@ -22,7 +21,7 @@ const GPUFunctionLoader: React.FC = () => {
     input = input.concat([1, 2, 3, 4, 5, 6, 7, 8]);
   }
   // const input: Array<number> = [1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, ];
-  const double_input_functions = [u256_add, u256_sub, u256_gt, u256_subw, field_add, field_sub, field_multiply, point_add, field_pow, field_exponentiation];
+  const double_input_functions = [u256_add, u256_sub, u256_gt, u256_subw, field_add, field_sub, field_multiply, point_add, field_exponentiation];
   const single_input_functions = [field_reduce, u256_double, field_inverse, u256_rs1];
   const single_u256s_input_with_constant = [u256_right_shift]
   return (

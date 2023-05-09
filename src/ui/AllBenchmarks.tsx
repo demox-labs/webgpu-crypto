@@ -1,6 +1,6 @@
 import React from 'react';
 import { field_double } from '../gpu/entries/fieldDoubleEntry';
-import { bulkAddFields, bulkDoubleFields, bulkInvertFields, bulkMulFields, bulkSubFields } from '../utils/wasmFunctions';
+import { bulkAddFields, bulkDoubleFields, bulkInvertFields, bulkMulFields, bulkSubFields, bulkPowFields } from '../utils/wasmFunctions';
 import { Benchmark } from './Benchmark';
 import { bigIntsToU32Array, generateRandomFields, stripFieldSuffix } from '../gpu/utils';
 import { field_add } from '../gpu/entries/fieldAddEntry';
@@ -9,7 +9,6 @@ import { field_inverse } from '../gpu/entries/fieldInverseEntry';
 import { field_exponentiation } from '../gpu/entries/fieldModulusExponentiationEntry';
 import { field_multiply } from '../gpu/entries/fieldModulusFieldMultiplyEntry';
 import { bulkKochanski } from '../algorithms/Kochanski';
-import { field_pow } from '../gpu/entries/fieldPowEntry';
 
 const singleInputGenerator = (inputSize: number): bigint[][] => {
   return [generateRandomFields(inputSize)];
@@ -20,6 +19,13 @@ const doubleInputGenerator = (inputSize: number): bigint[][] => {
   const secondInput = generateRandomFields(inputSize);
   return [firstInput, secondInput];
 };
+
+const seventeenGenerator = (inputSize: number): bigint[][] => { 
+  const arr = new Array(inputSize);
+  const firstInput = generateRandomFields(inputSize);
+  arr.fill(BigInt(17));
+  return [firstInput, arr];
+}
 
 const gpuBigIntInputConverter = (inputs: bigint[][]): number[][] => {
   return inputs.map((input) => Array.from(bigIntsToU32Array(input)));
@@ -73,15 +79,6 @@ export const AllBenchmarks: React.FC = () => {
         wasmResultConverter={wasmFieldResultConverter}
       />
       <Benchmark
-        name={'Field Exp'}
-        inputsGenerator={doubleInputGenerator}
-        gpuFunc={(inputs: number[][]) => field_pow(inputs[0], inputs[1])}
-        gpuInputConverter={gpuBigIntInputConverter}
-        wasmFunc={(inputs: string[][]) => bulkMulFields(inputs[0], inputs[1])}
-        wasmInputConverter={wasmBigIntToFieldConverter}
-        wasmResultConverter={wasmFieldResultConverter}
-      />
-      <Benchmark
         name={'Double Fields'}
         inputsGenerator={singleInputGenerator}
         gpuFunc={(inputs: number[][]) => field_double(inputs[0])}
@@ -100,11 +97,20 @@ export const AllBenchmarks: React.FC = () => {
         wasmResultConverter={wasmFieldResultConverter}
       />
       <Benchmark
-        name={'Pow Fields'}
+        name={'Pow Fields with 17'}
+        inputsGenerator={seventeenGenerator}
+        gpuFunc={(inputs: number[][]) => field_exponentiation(inputs[0], inputs[1])}
+        gpuInputConverter={gpuBigIntInputConverter}
+        wasmFunc={(inputs: string[][]) => bulkPowFields(inputs[0], inputs[1])}
+        wasmInputConverter={wasmBigIntToFieldConverter}
+        wasmResultConverter={wasmFieldResultConverter}
+      />
+      <Benchmark
+        name={'Pow Fields with random'}
         inputsGenerator={doubleInputGenerator}
         gpuFunc={(inputs: number[][]) => field_exponentiation(inputs[0], inputs[1])}
         gpuInputConverter={gpuBigIntInputConverter}
-        wasmFunc={(inputs: string[][]) => bulkMulFields(inputs[0], inputs[1])}
+        wasmFunc={(inputs: string[][]) => bulkPowFields(inputs[0], inputs[1])}
         wasmInputConverter={wasmBigIntToFieldConverter}
         wasmResultConverter={wasmFieldResultConverter}
       />

@@ -22,8 +22,11 @@ describe('fieldModulusU256Multiply', () => {
   });
 
   it.each([
-    [BigInt(2), BigInt(4), BigInt(16)]
-  ])('should multiply uint256 field numbers', async (input1: bigint, input2: bigint, expected: bigint) => {
+    [BigInt(2), BigInt(4), BigInt(16)],
+    [BigInt(1), BigInt(0), BigInt(1)],
+    [BigInt(9), BigInt(8), BigInt('43046721')],
+    [BigInt(15000), BigInt(2), BigInt('225000000')],
+  ])('should do field exponentiation', async (input1: bigint, input2: bigint, expected: bigint) => {
     const u32Input1 = Array.from(bigIntToU32Array(input1));
     const u32Input2 = Array.from(bigIntToU32Array(input2));
     const result = await ((await browser.pages())[0]).evaluate(`(field_exponentiation)([${u32Input1}], [${u32Input2}])`);
