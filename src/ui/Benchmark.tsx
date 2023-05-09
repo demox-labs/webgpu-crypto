@@ -8,7 +8,7 @@ interface BenchmarkProps {
   name: string;
   inputsGenerator: (inputSize: number) => any[][];
   gpuFunc: (inputs: any[][]) => Promise<Uint32Array>;
-  gpuInputConverter: (inputs: any[][]) => number[][];
+  gpuInputConverter: (inputs: any[][]) => number[][] | bigint[][];
   wasmFunc: (inputs: any[][]) => Promise<string[]>;
   wasmInputConverter: (inputs: any[][]) => string[][];
   wasmResultConverter: (results: string[]) => string[];

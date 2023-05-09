@@ -7,6 +7,7 @@ import { field_add } from '../gpu/entries/fieldAddEntry';
 import { field_sub } from '../gpu/entries/fieldSubEntry';
 import { field_inverse } from '../gpu/entries/fieldInverseEntry';
 import { field_multiply } from '../gpu/entries/fieldModulusFieldMultiplyEntry';
+import { bulkKochanski } from '../algorithms/Kochanski';
 
 const singleInputGenerator = (inputSize: number): bigint[][] => {
   return [generateRandomFields(inputSize)];
@@ -56,6 +57,15 @@ export const AllBenchmarks: React.FC = () => {
         inputsGenerator={doubleInputGenerator}
         gpuFunc={(inputs: number[][]) => field_multiply(inputs[0], inputs[1])}
         gpuInputConverter={gpuBigIntInputConverter}
+        wasmFunc={(inputs: string[][]) => bulkMulFields(inputs[0], inputs[1])}
+        wasmInputConverter={wasmBigIntToFieldConverter}
+        wasmResultConverter={wasmFieldResultConverter}
+      />
+      <Benchmark
+        name={'Multiply Fields Kochanski ts impl'}
+        inputsGenerator={doubleInputGenerator}
+        gpuFunc={(inputs: number[][]) => bulkKochanski(inputs[0], inputs[1])}
+        gpuInputConverter={(result: bigint[][]) => result}
         wasmFunc={(inputs: string[][]) => bulkMulFields(inputs[0], inputs[1])}
         wasmInputConverter={wasmBigIntToFieldConverter}
         wasmResultConverter={wasmFieldResultConverter}
