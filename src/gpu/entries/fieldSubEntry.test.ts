@@ -1,7 +1,7 @@
 import puppeteer from 'puppeteer';
 import { Browser } from 'puppeteer';
 import { bigIntToU32Array, u32ArrayToBigInts } from '../utils';
-import { aleoFieldOrder } from '../../utils/FieldMath';
+import { ALEO_FIELD_MODULUS } from '../../params/AleoConstants';
 
 describe('fieldSubEntry', () => {
   let browser: Browser;
@@ -25,8 +25,8 @@ describe('fieldSubEntry', () => {
     // should wrap back around
     [BigInt(2), BigInt(4), BigInt('8444461749428370424248824938781546531375899335154063827935233455917409239039')],
     // anything minus aleo field order should result in itself
-    [BigInt(0), aleoFieldOrder, BigInt(0)],
-    [BigInt(1), aleoFieldOrder, BigInt(1)],
+    [BigInt(0), ALEO_FIELD_MODULUS, BigInt(0)],
+    [BigInt(1), ALEO_FIELD_MODULUS, BigInt(1)],
     [BigInt('8444461749428370424248824938781546531375899335154063827935233455917409239040'), BigInt('8444461749428370424248824938781546531375899335154063827935233455917409239040'), BigInt(0)],
     [BigInt(0), BigInt(0), BigInt(0)],
     [BigInt(9), BigInt(8), BigInt(1)],

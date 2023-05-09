@@ -1,4 +1,4 @@
-import { aleoFieldOrder } from "../utils/FieldMath";
+import { ALEO_FIELD_MODULUS } from "../params/AleoConstants";
 
 // assume bigints are big endian 256-bit integers
 export const bigIntsToU32Array = (beBigInts: bigint[]): Uint32Array => {
@@ -62,7 +62,7 @@ const createRandomAleoFieldInt = () => {
   for (let i = 0; i < 8; i++) {
     bigIntString += Math.floor(Math.random() * (2**32 - 1));
   }
-  return BigInt(bigIntString) % aleoFieldOrder;
+  return BigInt(bigIntString) % ALEO_FIELD_MODULUS;
 }
 
 export const stripFieldSuffix = (field: string): string => {

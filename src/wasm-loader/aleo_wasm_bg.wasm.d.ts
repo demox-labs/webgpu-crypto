@@ -72,6 +72,7 @@ export function address_sub_fields(a: number, b: number, c: number, d: number, e
 export function address_invert_field(a: number, b: number, c: number): void;
 export function address_double_field(a: number, b: number, c: number): void;
 export function address_mul_fields(a: number, b: number, c: number, d: number, e: number): void;
+export function address_pow_field(a: number, b: number, c: number, d: number, e: number): void;
 export function address_poseidon_hash(a: number, b: number, c: number): void;
 export function address_affine_to_projective(a: number, b: number, c: number): void;
 export function address_to_string(a: number, b: number): void;

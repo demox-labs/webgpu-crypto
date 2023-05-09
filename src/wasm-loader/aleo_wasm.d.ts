@@ -79,6 +79,12 @@ export class Address {
 */
   static mul_fields(field1: string, field2: string): string;
 /**
+* @param {string} field1
+* @param {string} field2
+* @returns {string}
+*/
+  static pow_field(field1: string, field2: string): string;
+/**
 * @param {string} field
 * @returns {string}
 */

@@ -124,3 +124,17 @@ export const bulkInvertFields = async (inputs: string[]): Promise<string[]> => {
   }
   return results;
 };
+
+export const powField = async (field: string, exponent: string): Promise<string> => {
+  const aleo = await loadWasmModule();
+  return aleo.Address.pow_field(field, exponent);
+};
+
+export const bulkPowFields = async (inputs1: string[], inputs2: string[]): Promise<string[]> => {
+  const aleo = await loadWasmModule();
+  const results: string[] = [];
+  for (let i = 0; i < inputs1.length; i++) {
+    results.push(await aleo.Address.pow_field(inputs1[i], inputs2[i]));
+  }
+  return results;
+}
