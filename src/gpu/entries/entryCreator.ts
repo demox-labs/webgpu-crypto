@@ -1,11 +1,18 @@
-export const entry = async(inputsAsArrays: Array<number>[], shaderModules: string[]) => {
+export const entry = async(
+  inputsAsArrays: Array<number>[],
+  shaderModules: string[],
+  byteSizePerInput?: number,
+  byteSizePerOutput?: number
+  ) => {
   const inputs = inputsAsArrays.map((input) => new Uint32Array(input));
+  const bytesPerInput = byteSizePerInput ?? 8;
+  const bytesPerOutput = byteSizePerOutput ?? 8;
   const firstSetOfInputs = inputs[0];
   
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const device = (await getDevice())!;
   
-  const numU256sToPassIn = firstSetOfInputs.length / 8;
+  const numInputs = firstSetOfInputs.length / bytesPerInput;
 
   let shaderCode = '';
   for (const shaderModule of shaderModules) {
@@ -16,10 +23,10 @@ export const entry = async(inputsAsArrays: Array<number>[], shaderModules: strin
     code: shaderCode
   });
 
-  const gpuBufferInputs = inputs.map((input) => createUint256InputBuffer(device, input));
+  const gpuBufferInputs = inputs.map((input) => createU32ArrayInputBuffer(device, input));
 
   // Result Matrix
-  const resultBufferSize = Uint32Array.BYTES_PER_ELEMENT * numU256sToPassIn * 8;
+  const resultBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * bytesPerOutput;
   const resultBuffer = device.createBuffer({
     size: resultBufferSize,
     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
@@ -47,7 +54,7 @@ export const entry = async(inputsAsArrays: Array<number>[], shaderModules: strin
   const passEncoder = commandEncoder.beginComputePass();
   passEncoder.setPipeline(computePipeline);
   passEncoder.setBindGroup(0, bindGroup);
-  const workgroupCount = Math.ceil(numU256sToPassIn / 64);
+  const workgroupCount = Math.ceil(numInputs / 64);
   passEncoder.dispatchWorkgroups(workgroupCount);
   passEncoder.end();
 
@@ -95,16 +102,16 @@ const getDevice = async () => {
   return await adapter.requestDevice();
 };
 
-const createUint256InputBuffer = (device: GPUDevice, uint32s: Uint32Array) => {
-  const gpuBufferUint256Inputs = device.createBuffer({
+const createU32ArrayInputBuffer = (device: GPUDevice, uint32s: Uint32Array) => {
+  const gpuBufferU32Inputs = device.createBuffer({
     mappedAtCreation: true,
     size: uint32s.byteLength,
     usage: GPUBufferUsage.STORAGE
   });
-  const arrayBufferInput = gpuBufferUint256Inputs.getMappedRange();
+  const arrayBufferInput = gpuBufferU32Inputs.getMappedRange();
   new Uint32Array(arrayBufferInput).set(uint32s);
-  gpuBufferUint256Inputs.unmap();
-  return gpuBufferUint256Inputs;
+  gpuBufferU32Inputs.unmap();
+  return gpuBufferU32Inputs;
 };
 
 const createBindGroupLayout = (device: GPUDevice, gpuInputBuffers: GPUBuffer[]) => {

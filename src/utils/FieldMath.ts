@@ -4,9 +4,7 @@ import { poseidon, PoseidonOpts } from '@noble/curves/abstract/poseidon';
 import { Field, IField } from "@noble/curves/abstract/modular";
 import { randomBytes } from "crypto";
 import { aleoMdStrings, aleoRoundConstantStrings } from "../params/PoseidonParams";
-
-// base field modulus https://docs.rs/ark-ed-on-bls12-377/latest/ark_ed_on_bls12_377/
-export const aleoFieldOrder = BigInt('8444461749428370424248824938781546531375899335154063827935233455917409239041');
+import { ALEO_FIELD_MODULUS, EDWARDS_A, EDWARDS_D, SUBGROUP_CHARACTERISTIC } from "../params/AleoConstants";
 
 export class FieldMath {
   customEdwards: CurveFn;
@@ -22,17 +20,17 @@ export class FieldMath {
 
   constructor() {
     // printed out the Edwards_a coefficient
-    this.aleoA = BigInt('8444461749428370424248824938781546531375899335154063827935233455917409239040');
+    this.aleoA = EDWARDS_A;
     // printed out the edwards_d coefficient
-    this.aleoD = BigInt('3021');
+    this.aleoD = EDWARDS_D;
     this.encryptionDomain = BigInt('1187534166381405136191308758137566032926460981470575291457');
     this.poseidonDomain = BigInt('4470955116825994810352013241409');
-    this.aleoFieldOrder = BigInt('8444461749428370424248824938781546531375899335154063827935233455917409239041'); // mod this number is the field
-    this.Fp = Field(aleoFieldOrder, undefined, true);
+    this.aleoFieldOrder = ALEO_FIELD_MODULUS;
+    this.Fp = Field(ALEO_FIELD_MODULUS, undefined, true);
     this.aleoMdsAsBigInts = aleoMdStrings.map(row => row.map(elm => this.Fp.create(BigInt(elm))));
     this.aleoRoundConstantsAsBigInts = aleoRoundConstantStrings.map(row => row.map(elm => this.Fp.create(BigInt(elm))));
     this.customEdwards = this.instantiateCustomEdwards();
-    this.subgroupCharacteristic = BigInt('2111115437357092606062206234695386632838870926408408195193685246394721360383');
+    this.subgroupCharacteristic = SUBGROUP_CHARACTERISTIC;
   }
 
   getPointFromX = (x_field: bigint): { x: bigint, y: bigint } => {
@@ -177,7 +175,7 @@ export class FieldMath {
       // Subgroup order: how many points ed25519 has
       // 2n ** 252n + 27742317777372353535851937790883648493n;
       // not taken from aleo, don't know what this is
-      n: aleoFieldOrder,
+      n: ALEO_FIELD_MODULUS,
       // Cofactor
       h: aleoCofactor,
       // Base point (x, y) aka generator point
