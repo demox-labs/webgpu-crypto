@@ -6,6 +6,7 @@ import { bigIntsToU32Array, generateRandomFields, stripFieldSuffix } from '../gp
 import { field_add } from '../gpu/entries/fieldAddEntry';
 import { field_sub } from '../gpu/entries/fieldSubEntry';
 import { field_inverse } from '../gpu/entries/fieldInverseEntry';
+import { field_exponentiation } from '../gpu/entries/fieldModulusExponentiationEntry';
 import { field_multiply } from '../gpu/entries/fieldModulusFieldMultiplyEntry';
 import { bulkKochanski } from '../algorithms/Kochanski';
 import { field_pow } from '../gpu/entries/fieldPowEntry';
@@ -95,6 +96,15 @@ export const AllBenchmarks: React.FC = () => {
         gpuFunc={(inputs: number[][]) => field_inverse(inputs[0])}
         gpuInputConverter={gpuBigIntInputConverter}
         wasmFunc={(inputs: string[][]) => bulkInvertFields(inputs[0])}
+        wasmInputConverter={wasmBigIntToFieldConverter}
+        wasmResultConverter={wasmFieldResultConverter}
+      />
+      <Benchmark
+        name={'Pow Fields'}
+        inputsGenerator={doubleInputGenerator}
+        gpuFunc={(inputs: number[][]) => field_exponentiation(inputs[0], inputs[1])}
+        gpuInputConverter={gpuBigIntInputConverter}
+        wasmFunc={(inputs: string[][]) => bulkMulFields(inputs[0], inputs[1])}
         wasmInputConverter={wasmBigIntToFieldConverter}
         wasmResultConverter={wasmFieldResultConverter}
       />

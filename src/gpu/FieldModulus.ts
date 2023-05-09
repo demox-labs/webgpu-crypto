@@ -271,4 +271,32 @@ fn field_multiply(a: Field, b: Field) -> Field {
 
   return accumulator;
 }
+
+fn field_exponentiation(base: Field, exponent: Field) -> Field { 
+  if (equal(exponent, U256_ZERO)) { 
+    return U256_ONE;
+  }
+
+  if (equal(exponent, U256_ONE)) { 
+    return base;
+  }
+
+  var exp = exponent;
+  var bse = base;
+  var result: u256 = u256(
+    array<u32, 8>(0, 0, 0, 0, 0, 0, 0, 1)
+  );
+  while (gt(exp, U256_ZERO)) { 
+    if ((exp.components[7] & 1u) == 1u) { 
+      result = field_multiply(result, bse);
+      result = field_reduce(result);
+    }
+
+    exp = u256_rs1(exp);
+    bse = field_multiply(bse, bse);
+    bse = field_reduce(bse);
+  }
+
+  return result;
+}
 `
