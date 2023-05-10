@@ -297,4 +297,8 @@ fn field_exponentiation(base: Field, exponent: Field) -> Field {
 
   return result;
 }
+
+fn poseidon(recordViewKey: Field) -> Field { 
+  
+}
 `
