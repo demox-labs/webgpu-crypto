@@ -25,6 +25,10 @@ const U256_MAX: u256 = u256(
   array<u32, 8>(4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295)
 );
 
+const U256_SEVENTEEN: u256 = u256(
+  array<u32, 8>(0, 0, 0, 0, 0, 0, 0, 17)
+);
+
 const U256_ONE: u256 = u256(
   array<u32, 8>(0, 0, 0, 0, 0, 0, 0, 1)
 );
@@ -296,9 +300,5 @@ fn field_exponentiation(base: Field, exponent: Field) -> Field {
   }
 
   return result;
-}
-
-fn poseidon(recordViewKey: Field) -> Field { 
-  
 }
 `

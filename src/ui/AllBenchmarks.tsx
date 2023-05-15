@@ -1,6 +1,6 @@
 import React from 'react';
 import { field_double } from '../gpu/entries/fieldDoubleEntry';
-import { bulkAddFields, bulkDoubleFields, bulkInvertFields, bulkMulFields, bulkSubFields, bulkPowFields } from '../utils/wasmFunctions';
+import { bulkAddFields, bulkDoubleFields, bulkInvertFields, bulkMulFields, bulkSubFields, bulkPowFields, bulkPoseidon } from '../utils/wasmFunctions';
 import { Benchmark } from './Benchmark';
 import { bigIntsToU32Array, generateRandomFields, stripFieldSuffix } from '../gpu/utils';
 import { field_add } from '../gpu/entries/fieldAddEntry';
@@ -9,6 +9,7 @@ import { field_inverse } from '../gpu/entries/fieldInverseEntry';
 import { field_exponentiation } from '../gpu/entries/fieldModulusExponentiationEntry';
 import { field_multiply } from '../gpu/entries/fieldModulusFieldMultiplyEntry';
 import { bulkKochanski } from '../algorithms/Kochanski';
+import { field_poseidon } from '../gpu/entries/fieldPoseidonEntry';
 
 const singleInputGenerator = (inputSize: number): bigint[][] => {
   return [generateRandomFields(inputSize)];
@@ -111,6 +112,15 @@ export const AllBenchmarks: React.FC = () => {
         gpuFunc={(inputs: number[][]) => field_exponentiation(inputs[0], inputs[1])}
         gpuInputConverter={gpuBigIntInputConverter}
         wasmFunc={(inputs: string[][]) => bulkPowFields(inputs[0], inputs[1])}
+        wasmInputConverter={wasmBigIntToFieldConverter}
+        wasmResultConverter={wasmFieldResultConverter}
+      />
+      <Benchmark
+        name={'Field Poseidon Hash'}
+        inputsGenerator={singleInputGenerator}
+        gpuFunc={(inputs: number[][]) => field_poseidon(inputs[0])}
+        gpuInputConverter={gpuBigIntInputConverter}
+        wasmFunc={(inputs: string[][]) => bulkPoseidon(inputs[0])}
         wasmInputConverter={wasmBigIntToFieldConverter}
         wasmResultConverter={wasmFieldResultConverter}
       />
