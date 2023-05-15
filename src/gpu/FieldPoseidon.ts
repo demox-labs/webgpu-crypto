@@ -30,7 +30,7 @@ export const FieldPoseidonWGSL = `
     return result;
   };
 
-  fn poseidon_round(inputs: array<Field, 9>, isFull: bool, roundNum: u32) -> array<Field, 9> {
+  fn poseidon_round_half(inputs: array<Field, 9>, roundNum: u32) -> array<Field, 9> {
     // Update inputs. NewInputs will be mutated.
     var newInputs: array<Field, 9> = inputs;
 
@@ -42,15 +42,8 @@ export const FieldPoseidonWGSL = `
       newInputs[i] = sum;
     }
 
-    // If a full round, raise each input to the 17th power (aleo's sbox fn)
-    if (isFull) { 
-      for (var i = 0u; i < 9u; i++) {
-        newInputs[i] = field_exponentiation(newInputs[i], u256(array<u32, 8>(0, 0, 0, 0, 0, 0, 0, 17)));
-      }
-    } else {
-      var pow = field_exponentiation(newInputs[0], U256_SEVENTEEN);
-      newInputs[0] = pow;
-    }
+    var pow = field_exponentiation(newInputs[0], U256_SEVENTEEN);
+    newInputs[0] = pow;
 
     // Matrix multiplication, but single threaded lol
     var result: array<Field, 9> = newInputs;
@@ -71,12 +64,12 @@ export const FieldPoseidonWGSL = `
     var values = inputs;
     var roundNum = 0u;
     for (var i = 0u; i < 4u; i++) { 
-      values = poseidon_round(values, true, roundNum);
+      values = poseidon_round_full(values, roundNum);
       roundNum += 1u;
     }
 
     for (var i = 0u; i < 31u; i++) { 
-      values = poseidon_round(values, false, roundNum);
+      values = poseidon_round_half(values, roundNum);
       roundNum += 1u;
     }
 
