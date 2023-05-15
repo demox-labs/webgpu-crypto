@@ -29,6 +29,7 @@ describe('fieldModulusU256Multiply', () => {
     [ALEO_FIELD_MODULUS, BigInt(2), BigInt(0)],
     [ALEO_FIELD_MODULUS, ALEO_FIELD_MODULUS, BigInt(0)],
     [ALEO_FIELD_MODULUS + BigInt(2), BigInt(2), BigInt(4)],
+    [BigInt('542101086242752217003726400434970855712890625'), BigInt('542101086242752217003726400434970855712890625'), BigInt('4049876799198613235662808409310909745689267379541545003864313481035049862036')]
   ])('should multiply uint256 field numbers', async (input1: bigint, input2: bigint, expected: bigint) => {
     const u32Input1 = Array.from(bigIntToU32Array(input1));
     const u32Input2 = Array.from(bigIntToU32Array(input2));

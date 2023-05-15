@@ -9,13 +9,14 @@ interface BenchmarkProps {
   inputsGenerator: (inputSize: number) => any[][];
   gpuFunc: (inputs: any[][]) => Promise<Uint32Array>;
   gpuInputConverter: (inputs: any[][]) => number[][] | bigint[][];
+  gpuResultConverter?: (results: bigint[]) => string[];
   wasmFunc: (inputs: any[][]) => Promise<string[]>;
   wasmInputConverter: (inputs: any[][]) => string[][];
   wasmResultConverter: (results: string[]) => string[];
 }
 
 export const Benchmark: React.FC<BenchmarkProps> = (
-  {name, inputsGenerator, gpuFunc, gpuInputConverter, wasmFunc, wasmInputConverter, wasmResultConverter}
+  {name, inputsGenerator, gpuFunc, gpuInputConverter, gpuResultConverter, wasmFunc, wasmInputConverter, wasmResultConverter}
   ) => {
   const initialDefaultInputSize = 1000;
   const [inputSize, setInputSize] = useState(initialDefaultInputSize);
@@ -90,7 +91,7 @@ export const Benchmark: React.FC<BenchmarkProps> = (
     const gpuPerformance = gpuEnd - gpuStart;
     setGpuTime(gpuPerformance);
     const bigIntResult = u32ArrayToBigInts(result || new Uint32Array(0));
-    const results = bigIntResult.map(r => r.toString());
+    const results = gpuResultConverter ? gpuResultConverter(bigIntResult) : bigIntResult.map(r => r.toString());
     console.log(results);
     setGpuResults(results);
     const benchMarkResult = [inputSize, "GPU", gpuPerformance];

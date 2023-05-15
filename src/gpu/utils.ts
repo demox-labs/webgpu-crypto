@@ -68,3 +68,7 @@ const createRandomAleoFieldInt = () => {
 export const stripFieldSuffix = (field: string): string => {
   return field.slice(0, field.length - 5);
 };
+
+export const stripGroupSuffix = (group: string): string => {
+  return group.slice(0, group.length - 5);
+};

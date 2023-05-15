@@ -4,6 +4,10 @@ const EDWARDS_D: Field = Field (
   array<u32, 8>(0, 0, 0, 0, 0, 0, 0, 3021)
 );
 
+const EDWARDS_D_PLUS_ONE: Field = Field(
+  array<u32, 8>(0, 0, 0, 0, 0, 0, 0, 3022)
+);
+
 struct AffinePoint {
   x: Field,
   y: Field
@@ -29,8 +33,10 @@ fn add_points(p1: Point, p2: Point) -> Point {
   var a = field_multiply(p1.x, p2.x);
   var b = field_multiply(p1.y, p2.y);
   var c = field_multiply(EDWARDS_D, field_multiply(p1.t, p2.t));
-  var d = p1.z;
-  var e = field_multiply(field_multiply(p1.x, p2.y), field_multiply(p2.x, p1.y));
+  var d = field_multiply(p1.z, p2.z);
+  var p1_added = field_add(p1.x, p1.y);
+  var p2_added = field_add(p2.x, p2.y);
+  var e = field_multiply(field_add(p1.x, p1.y), field_add(p2.x, p2.y));
   e = field_sub(e, a);
   e = field_sub(e, b);
   var f = field_sub(d, c);
@@ -64,12 +70,13 @@ fn double_point(p: Point) -> Point {
 }
 
 fn mul_point(p: Point, scalar: Field) -> Point {
-  var result = ZERO_POINT;
+  var result: Point = Point (U256_ZERO, U256_ONE, U256_ZERO, U256_ONE);
   var temp = p;
   var scalar_iter = scalar;
   while (!equal(scalar_iter, U256_ZERO)) {
     if (is_odd(scalar_iter)) {
       result = add_points(result, temp);
+      // result = temp;
     }
 
     temp = double_point(temp);
@@ -79,4 +86,33 @@ fn mul_point(p: Point, scalar: Field) -> Point {
 
   return result;
 }
+
+fn mul_point_test(p: Point, scalar: Field) -> Point {
+  var result: Point = Point (U256_ZERO, U256_ONE, U256_ONE, U256_ZERO);
+  var temp = p;
+  var scalar_iter = scalar;
+  while (!equal(scalar_iter, U256_ZERO)) {
+    if ((scalar_iter.components[7u] & 1u) == 1u) {
+      var added = add_points(result, temp);
+      result = added;
+    }
+
+    temp = double_point(temp);
+
+    var right_shifted = u256_rs1(scalar_iter);
+    scalar_iter = right_shifted;
+  }
+
+  return result;
+}
+
+// fn get_y(x: Field) -> Field {
+//   var x_squared = field_multiply(x, x);
+//   var numerator = field_sub(ALEO_FIELD_ORDER_MINUS_ONE, x_squared);
+//   var denominator = field_add(EDWARDS_D_PLUS_ONE, x_squared);
+//   var denominator_inverse = field_inverse(denominator);
+//   var y_squared = field_mul(numerator, denominator_inverse);
+//   var y = field_sqrt(y_squared);
+//   var neg_y = u256_sub(ALEO_FIELD_ORDER, y);
+// }
 `;

@@ -29,6 +29,10 @@ const U256_ONE: u256 = u256(
   array<u32, 8>(0, 0, 0, 0, 0, 0, 0, 1)
 );
 
+const U256_TWO: u256 = u256(
+  array<u32, 8>(0, 0, 0, 0, 0, 0, 0, 2)
+);
+
 const U256_ZERO: u256 = u256(
   array<u32, 8>(0, 0, 0, 0, 0, 0, 0, 0)
 );
@@ -36,6 +40,11 @@ const U256_ZERO: u256 = u256(
 // 8444461749428370424248824938781546531375899335154063827935233455917409239042
 const ALEO_FIELD_ORDER_PLUS_ONE: Field = Field(
     array<u32, 8>(313222494, 2586617174, 1622428958, 1547153409, 1504343806, 3489660929, 168919040, 2)
+);
+
+// 8444461749428370424248824938781546531375899335154063827935233455917409239040
+const ALEO_FIELD_ORDER_MINUS_ONE: Field = Field(
+    array<u32, 8>(313222494, 2586617174, 1622428958, 1547153409, 1504343806, 3489660929, 168919040, 0)
 );
 
 // adds u32s together, returns a vector of the result and the carry (either 0 or 1)
@@ -158,19 +167,27 @@ fn gt(a: u256, b: u256) -> bool {
   return false;
 }
 
-// returns whether a >= b
-fn gte(a: u256, b: u256) -> bool {
-  for (var i = 0u; i < 8u; i++) {
-    if (a.components[i] < b.components[i]) {
-      return false;
-    }
+// // returns whether a >= b
+// for some reason, this function caused issues we think at the compiler level.
+// For different call stacks into this function, the gpu could become non deterministic (shit the bed).
+// fn gte(a: u256, b: u256) -> bool {
+//   for (var i = 0u; i < 8u; i++) {
+//     if (a.components[i] < b.components[i]) {
+//       return false;
+//     }
 
-    if (a.components[i] > b.components[i]) {
-      return true;
-    }
-  }
-  // if a's components are never greater, than a is equal to b
-  return true;
+//     if (a.components[i] > b.components[i]) {
+//       return true;
+//     }
+//   }
+//   // if a's components are never greater, than a is equal to b
+//   return true;
+// }
+
+fn gte(a: u256, b: u256) -> bool {
+  var agtb = gt(a, b);
+  var aeqb = equal(a, b);
+  return agtb || aeqb;
 }
 
 fn field_reduce(a: u256) -> Field {
@@ -257,22 +274,30 @@ fn field_multiply(a: Field, b: Field) -> Field {
   );
   var newA: Field = a;
   var newB: Field = b;
+  var count: u32 = 0u;
+
   while (gt(newB, U256_ZERO)) {
     if ((newB.components[7] & 1u) == 1u) {
       accumulator = u256_add(accumulator, newA);
-      if (gte(accumulator, ALEO_FIELD_ORDER)) {
-        accumulator = u256_subw(accumulator, ALEO_FIELD_ORDER);
+      
+      var accumulator_gte_ALEO = gte(accumulator, ALEO_FIELD_ORDER);
+
+      if (accumulator_gte_ALEO) {
+        accumulator = u256_sub(accumulator, ALEO_FIELD_ORDER);
       }
+      
     }
+    
     newA = u256_double(newA);
     newA = field_reduce(newA);
     newB = u256_right_shift(newB, 1u);
+    count = count + 1u;
   }
 
   return accumulator;
 }
 
-fn field_exponentiation(base: Field, exponent: Field) -> Field { 
+fn field_pow(base: Field, exponent: Field) -> Field {
   if (equal(exponent, U256_ZERO)) { 
     return U256_ONE;
   }

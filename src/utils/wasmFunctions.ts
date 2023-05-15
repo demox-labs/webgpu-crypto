@@ -26,7 +26,6 @@ export const cipherTextToNonce = async (cipherText: string): Promise<string> => 
 
 export const view_key_ciphertext_multiply = async(cipherText: string, viewKey: string): Promise<string> => {
   const aleo = await loadWasmModule();
-  // const aleoCipherText = aleo.RecordCiphertext.fromString(cipherText);
   const aleoViewKey = aleo.ViewKey.from_string(viewKey);
   const result = aleoViewKey.view_key_ciphertext_multiply(cipherText);
   return result.toString();
@@ -106,11 +105,6 @@ export const bulkDoubleFields = async (inputs: string[]): Promise<string[]> => {
   return results;
 };
 
-export const affineToProjective = async (group: string): Promise<string> => {
-  const aleo = await loadWasmModule();
-  return aleo.Address.affine_to_projective(group);
-};
-
 export const invertField = async (field: string): Promise<string> => {
   const aleo = await loadWasmModule();
   return aleo.Address.invert_field(field);
@@ -138,3 +132,49 @@ export const bulkPowFields = async (inputs1: string[], inputs2: string[]): Promi
   }
   return results;
 }
+
+export const sqrtField = async (field: string): Promise<string> => {
+  const aleo = await loadWasmModule();
+  return aleo.Address.sqrt(field);
+};
+
+export const bulkSqrtFields = async (inputs1: string[]): Promise<string[]> => {
+  const aleo = await loadWasmModule();
+  const results: string[] = [];
+  for (let i = 0; i < inputs1.length; i++) {
+    try {
+      results.push(await aleo.Address.sqrt(inputs1[i]));
+    } catch (e) {
+      console.log(inputs1[i], e);
+    }
+  }
+  return results;
+};
+
+export const addGroups = async (group1: string, group2: string): Promise<string> => {
+  const aleo = await loadWasmModule();
+  return aleo.Address.add_points(group1, group2);
+};
+
+export const bulkAddGroups = async (inputs1: string[], inputs2: string[]): Promise<string[]> => {
+  const aleo = await loadWasmModule();
+  const results: string[] = [];
+  for (let i = 0; i < inputs1.length; i++) {
+    results.push(await aleo.Address.add_points(inputs1[i], inputs2[i]));
+  }
+  return results;
+};
+
+export const groupScalarMul = async (group: string, scalar: string): Promise<string> => {
+  const aleo = await loadWasmModule();
+  return aleo.Address.group_scalar_mul(group, scalar);
+};
+
+export const bulkGroupScalarMul = async (inputs1: string[], inputs2: string[]): Promise<string[]> => {
+  const aleo = await loadWasmModule();
+  const results: string[] = [];
+  for (let i = 0; i < inputs1.length; i++) {
+    results.push(await aleo.Address.group_scalar_mul(inputs1[i], inputs2[i]));
+  }
+  return results;
+};

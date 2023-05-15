@@ -90,10 +90,22 @@ export class Address {
 */
   static poseidon_hash(field: string): string;
 /**
-* @param {string} group
+* @param {string} field
 * @returns {string}
 */
-  static affine_to_projective(group: string): string;
+  static sqrt(field: string): string;
+/**
+* @param {string} group1
+* @param {string} group2
+* @returns {string}
+*/
+  static add_points(group1: string, group2: string): string;
+/**
+* @param {string} group
+* @param {string} scalar
+* @returns {string}
+*/
+  static group_scalar_mul(group: string, scalar: string): string;
 }
 /**
 * Webassembly Representation of an Aleo function execution response

@@ -6,12 +6,12 @@ import { FieldModulusWGSL } from "../FieldModulus";
 import { FieldSubWGSL } from "../FieldSub";
 import { entry } from "./entryCreator"
 
-export const point_add = async (input1: Array<number>, input2: Array<number>) => {
+export const point_mul = async (input1: Array<number>, input2: Array<number>) => {
   const shaderEntry = `
     @group(0) @binding(0)
     var<storage, read> input1: array<AffinePoint>;
     @group(0) @binding(1)
-    var<storage, read> input2: array<AffinePoint>;
+    var<storage, read> input2: Fields;
     @group(0) @binding(2)
     var<storage, read_write> output: Fields;
 
@@ -22,24 +22,23 @@ export const point_add = async (input1: Array<number>, input2: Array<number>) =>
     ) {
       var p1 = input1[global_id.x];
       var p1_t = field_multiply(p1.x, p1.y);
-      var p2 = input2[global_id.x];
-      var p2_t = field_multiply(p2.x, p2.y);
       var z = U256_ONE;
       var ext_p1 = Point(p1.x, p1.y, p1_t, z);
-      var ext_p2 = Point(p2.x, p2.y, p2_t, z);
 
-      var added = add_points(ext_p1, ext_p2);
-      var z_inverse = field_inverse(added.z);
-      var x_normalized = field_multiply(added.x, z_inverse);
+      var scalar = input2.fields[global_id.x];
 
-      output.fields[global_id.x] = x_normalized;
+      var multiplied = mul_point(ext_p1, scalar);
+      var z_inverse = field_inverse(multiplied.z);
+      var result = field_multiply(multiplied.x, z_inverse);
+
+      output.fields[global_id.x] = result;
     }
     `;
 
   const shaderModules = [FieldModulusWGSL, FieldAddWGSL, FieldSubWGSL, FieldDoubleWGSL, FieldInverseWGSL, CurveWGSL, shaderEntry];
 
-  return await entry([input1, input2], shaderModules, 16, 32);
+  return await entry([input1, input2], shaderModules, 16, 8);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-(window as any).point_add = point_add;
+(window as any).point_mul = point_mul;
