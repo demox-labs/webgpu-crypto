@@ -10,9 +10,17 @@ import { field_exponentiation } from '../gpu/entries/fieldModulusExponentiationE
 import { field_multiply } from '../gpu/entries/fieldModulusFieldMultiplyEntry';
 import { bulkKochanski } from '../algorithms/Kochanski';
 import { field_poseidon } from '../gpu/entries/fieldPoseidonEntry';
+import { aleoMdStrings, aleoRoundConstantStrings } from '../params/PoseidonParams';
 
 const singleInputGenerator = (inputSize: number): bigint[][] => {
   return [generateRandomFields(inputSize)];
+};
+
+const poseidonGenerator = (inputSize: number): bigint[][] => { 
+  const firstInput = generateRandomFields(inputSize);
+  const secondInput = aleoMdStrings.map((arr) => arr.map((str) => BigInt(str))).flat();
+  const thirdInput = aleoRoundConstantStrings.map((arr) => arr.map((str) => BigInt(str))).flat();
+  return [firstInput, secondInput, thirdInput];
 };
 
 const doubleInputGenerator = (inputSize: number): bigint[][] => {
@@ -117,8 +125,8 @@ export const AllBenchmarks: React.FC = () => {
       />
       <Benchmark
         name={'Field Poseidon Hash'}
-        inputsGenerator={singleInputGenerator}
-        gpuFunc={(inputs: number[][]) => field_poseidon(inputs[0])}
+        inputsGenerator={poseidonGenerator}
+        gpuFunc={(inputs: number[][]) => field_poseidon(inputs[0], inputs[1], inputs[2])}
         gpuInputConverter={gpuBigIntInputConverter}
         wasmFunc={(inputs: string[][]) => bulkPoseidon(inputs[0])}
         wasmInputConverter={wasmBigIntToFieldConverter}
