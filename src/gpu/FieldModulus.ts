@@ -164,17 +164,9 @@ fn gt(a: u256, b: u256) -> bool {
 
 // returns whether a >= b
 fn gte(a: u256, b: u256) -> bool {
-  for (var i = 0u; i < 8u; i++) {
-    if (a.components[i] < b.components[i]) {
-      return false;
-    }
-
-    if (a.components[i] > b.components[i]) {
-      return true;
-    }
-  }
-  // if a's components are never greater, than a is equal to b
-  return true;
+  var agtb = gt(a, b);
+  var aeqb = equal(a, b);
+  return agtb || aeqb;
 }
 
 fn field_reduce(a: u256) -> Field {

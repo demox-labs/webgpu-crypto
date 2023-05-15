@@ -15,10 +15,18 @@ export const FieldPoseidonWGSL = `
 
     // If a full round, raise each input to the 17th power (aleo's sbox fn)
     if (isFull) { 
-      for (var i = 0u; i < 9u; i++) { 
-        var pow = field_exponentiation(newInputs[i], U256_SEVENTEEN);
-        newInputs[i] = pow;
+      for (var i = 0u; i < 9u; i++) {
+        newInputs[i] = field_exponentiation(newInputs[i], u256(array<u32, 8>(0, 0, 0, 0, 0, 0, 0, 17)));
       }
+      // newInputs[0] = field_exponentiation(newInputs[0], U256_SEVENTEEN);
+      // newInputs[1] = field_exponentiation(newInputs[1], U256_SEVENTEEN);
+      // newInputs[2] = field_exponentiation(newInputs[2], U256_SEVENTEEN);
+      // newInputs[3] = field_exponentiation(newInputs[3], U256_SEVENTEEN);
+      // newInputs[4] = field_exponentiation(newInputs[4], U256_SEVENTEEN);
+      // newInputs[5] = field_exponentiation(newInputs[5], U256_SEVENTEEN);
+      // newInputs[6] = field_exponentiation(newInputs[6], U256_SEVENTEEN);
+      // newInputs[7] = field_exponentiation(newInputs[7], U256_SEVENTEEN);
+      // newInputs[8] = field_exponentiation(newInputs[8], U256_SEVENTEEN);
     } else {
       var pow = field_exponentiation(newInputs[0], U256_SEVENTEEN);
       newInputs[0] = pow;
