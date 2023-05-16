@@ -2,7 +2,8 @@ export const entry = async(
   inputsAsArrays: Array<number>[],
   shaderModules: string[],
   byteSizePerInput?: number,
-  byteSizePerOutput?: number
+  byteSizePerOutput?: number,
+  modifier?: number
   ) => {
   const inputs = inputsAsArrays.map((input) => new Uint32Array(input));
   const bytesPerInput = byteSizePerInput ?? 8;
@@ -26,7 +27,7 @@ export const entry = async(
   const gpuBufferInputs = inputs.map((input) => createU32ArrayInputBuffer(device, input));
 
   // Result Matrix
-  const resultBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * bytesPerOutput;
+  const resultBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * bytesPerOutput * (modifier ?? 1);
   const resultBuffer = device.createBuffer({
     size: resultBufferSize,
     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
@@ -55,7 +56,7 @@ export const entry = async(
   passEncoder.setPipeline(computePipeline);
   passEncoder.setBindGroup(0, bindGroup);
   const workgroupCount = Math.ceil(numInputs / 64);
-  // console.log('workgroupcount ', workgroupCount);
+  console.log('workgroupcount ', workgroupCount);
   passEncoder.dispatchWorkgroups(workgroupCount);
   passEncoder.end();
 

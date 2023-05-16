@@ -12,9 +12,9 @@ export const fieldPoseidonMultistage = async (input1: Array<number>, input2: Arr
     @group(0) @binding(1)
     var<storage, read_write> aleoMds: array<array<u256, 9>, 9>;
     @group(0) @binding(2)
-    var<storage, read_write> aleoRoundConstants: array<array<u256, 9>,39>;
+    var<storage, read_write> aleoRoundConstants: array<array<u256, 9>, 39>;
     @group(0) @binding(3)
-    var<storage, read_write> output: array<array<Field, 9>>;
+    var<storage, read_write> output: array<array<u256, 9>>;
 
     @compute @workgroup_size(64)
     fn main(
@@ -25,71 +25,74 @@ export const fieldPoseidonMultistage = async (input1: Array<number>, input2: Arr
     }
   `;
 
-  const firstHashOutput = await entry([input1, input2, input3], [...baseShaderModules, firstHashOutputEntry]);
+  const firstHashOutput = await entry([input1, input2, input3], [...baseShaderModules, firstHashOutputEntry], 8, 8, 9);
 
-  const fourFullRoundsEntry = (roundOffset: number) => `
+  const fullRoundsEntry = (roundOffset: number) => `
     @group(0) @binding(0)
-    var<storage, read_write> input1: array<array<Field, 9>>;
+    var<storage, read_write> input1: array<array<u256, 9>>;
+    @group(0) @binding(1)
+    var<storage, read_write> aleoMds: array<array<u256, 9>, 9>;
+    @group(0) @binding(2)
+    var<storage, read_write> aleoRoundConstants: array<array<u256, 9>, 39>;
+    @group(0) @binding(3)
+    var<storage, read_write> output: array<array<u256, 9>>;
+
+    @compute @workgroup_size(64)
+    fn main(
+      @builtin(global_invocation_id) global_id : vec3<u32>
+    ) {
+      var result = poseidon_round_full(input1[global_id.x], ${roundOffset});
+      output[global_id.x] = result;
+    }
+  `;
+
+  const halfRoundsEntry = (roundOffset: number) => `
+    @group(0) @binding(0)
+    var<storage, read_write> input1: array<array<u256, 9>>;
     @group(0) @binding(1)
     var<storage, read_write> aleoMds: array<array<u256, 9>, 9>;
     @group(0) @binding(2)
     var<storage, read_write> aleoRoundConstants: array<array<u256, 9>,39>;
     @group(0) @binding(3)
-    var<storage, read_write> output: array<array<Field, 9>>;
+    var<storage, read_write> output: array<array<u256, 9>>;
 
-    @compute @workgroup_size(64, 4)
+    @compute @workgroup_size(64)
     fn main(
       @builtin(global_invocation_id) global_id : vec3<u32>
     ) {
-      var result = poseidon_round_full(input1[global_id.x], global_id.y + ${roundOffset});
-      input1[global_id.x] = result;
+      var result = poseidon_round_half(input1[global_id.x], ${roundOffset});
       output[global_id.x] = result;
     }
   `;
 
-  const fourFullRounds = await entry([Array.from(firstHashOutput), input2, input3], [...baseShaderModules, fourFullRoundsEntry(0)]);
-
-  const thirtyOneHalfRoundsEntry = (numRounds: number, roundOffset: number) => `
-    @group(0) @binding(0)
-    var<storage, read_write> input1: array<array<Field, 9>>;
-    @group(0) @binding(1)
-    var<storage, read_write> aleoMds: array<array<u256, 9>, 9>;
-    @group(0) @binding(2)
-    var<storage, read_write> aleoRoundConstants: array<array<u256, 9>,39>;
-    @group(0) @binding(3)
-    var<storage, read_write> output: array<array<Field, 9>>;
-
-    @compute @workgroup_size(64, ${numRounds})
-    fn main(
-      @builtin(global_invocation_id) global_id : vec3<u32>
-    ) {
-      var result = poseidon_round_half(input1[global_id.x], global_id.y + ${roundOffset});
-      input1[global_id.x] = result;
-      output[global_id.x] = result;
-    }
-  `;
-
-  let thirtyOneHalfRounds = await entry([Array.from(fourFullRounds), input2, input3], [...baseShaderModules, thirtyOneHalfRoundsEntry(4, 4)])
-  let numHalfRounds = 27;
-  let roundOffset = 8;
-  while (numHalfRounds > 0) {
-    const numRoundsThisChunk = numHalfRounds > 4 ? 4 : numHalfRounds;
-    thirtyOneHalfRounds = await entry([Array.from(fourFullRounds), input2, input3], [...baseShaderModules, thirtyOneHalfRoundsEntry(numRoundsThisChunk, roundOffset)]);
-    numHalfRounds -= numRoundsThisChunk;
-    roundOffset += numRoundsThisChunk;
+  let roundOffset = 0;
+  let fullRoundsResult = firstHashOutput;
+  for (let i = 0; i < 4; i++) {
+    fullRoundsResult = await entry([Array.from(fullRoundsResult), input2, input3], [...baseShaderModules, fullRoundsEntry(roundOffset)]);
+    roundOffset += 1;
   }
 
-  const fourMoreFullRounds = await entry([Array.from(thirtyOneHalfRounds), input2, input3], [...baseShaderModules, fourFullRoundsEntry(roundOffset)]);
+  let partialRoundsResult = fullRoundsResult;
+  for (let i = 0; i < 31; i++) { 
+    partialRoundsResult = await entry([Array.from(partialRoundsResult), input2, input3], [...baseShaderModules, halfRoundsEntry(roundOffset)]);
+    roundOffset += 1;
+  }
+
+  let lastFullRoundsResult = partialRoundsResult;
+  for (let i = 0; i < 4; i++) { 
+    lastFullRoundsResult = await entry([Array.from(lastFullRoundsResult), input2, input3], [...baseShaderModules, fullRoundsEntry(roundOffset)]);
+    roundOffset += 1;
+  }
 
   const finalHashEntry = `
     @group(0) @binding(0)
-    var<storage, read_write> input1: array<array<Field, 9>>;
+    var<storage, read_write> input1: array<array<u256, 9>>;
     @group(0) @binding(1)
     var<storage, read_write> aleoMds: array<array<u256, 9>, 9>;
     @group(0) @binding(2)
     var<storage, read_write> aleoRoundConstants: array<array<u256, 9>,39>;
     @group(0) @binding(3)
-    var<storage, read_write> output: array<Field>;
+    var<storage, read_write> output: array<u256>;
 
     @compute @workgroup_size(64)
     fn main(
@@ -100,5 +103,5 @@ export const fieldPoseidonMultistage = async (input1: Array<number>, input2: Arr
     }
   `;
 
-  return await entry([Array.from(fourMoreFullRounds), input2, input3], [...baseShaderModules, finalHashEntry]);
+  return await entry([Array.from(lastFullRoundsResult), input2, input3], [...baseShaderModules, finalHashEntry], 8, 8, (1/9)); 
 }
