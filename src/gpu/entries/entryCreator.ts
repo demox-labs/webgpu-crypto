@@ -45,7 +45,7 @@ export const entry = async(
     compute: {
       module: module,
       entryPoint: "main"
-    }
+    },
   });
 
   // Commands submission
@@ -55,6 +55,7 @@ export const entry = async(
   passEncoder.setPipeline(computePipeline);
   passEncoder.setBindGroup(0, bindGroup);
   const workgroupCount = Math.ceil(numInputs / 64);
+  // console.log('workgroupcount ', workgroupCount);
   passEncoder.dispatchWorkgroups(workgroupCount);
   passEncoder.end();
 
@@ -94,7 +95,7 @@ const getDevice = async () => {
     return;
   }
 
-  const adapter = await navigator.gpu.requestAdapter();
+  const adapter = await navigator.gpu.requestAdapter({ powerPreference: "high-performance" });
   if (!adapter) {
     console.log("Failed to get GPU adapter.");
     return;
@@ -122,7 +123,7 @@ const createBindGroupLayout = (device: GPUDevice, gpuInputBuffers: GPUBuffer[]) 
       binding: i,
       visibility: GPUShaderStage.COMPUTE,
       buffer: {
-        type: "read-only-storage"
+        type: "storage"
       }
     });
   }

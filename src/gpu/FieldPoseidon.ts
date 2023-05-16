@@ -81,14 +81,15 @@ export const FieldPoseidonWGSL = `
     return values;
   }
 
-  fn aleo_poseidon(recordViewKey: Field) -> Field {
+  fn aleo_poseidon(recordViewKey: Field) -> array<Field, 9> {
     var firstHashOutput = POSEIDON_FIRST_HASH_OUTPUT;
     var secondElementPlus = field_add(firstHashOutput[1], ENCRYPTION_DOMAIN);
     var thirdElementPlus = field_add(firstHashOutput[2], recordViewKey);
     firstHashOutput[1] = secondElementPlus;
     firstHashOutput[2] = thirdElementPlus;
 
-    var secondHashOutput = poseidon_hash(firstHashOutput);
-    return secondHashOutput[1];
+    return firstHashOutput;
+    // var secondHashOutput = poseidon_hash(firstHashOutput);
+    // return secondHashOutput[1];
   }
 `;

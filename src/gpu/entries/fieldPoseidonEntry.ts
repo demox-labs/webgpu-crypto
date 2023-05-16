@@ -15,12 +15,14 @@ export const field_poseidon = async (input1: Array<number>, input2: Array<number
     @group(0) @binding(3)
     var<storage, read_write> output: u256s;
 
-    @compute @workgroup_size(64)
+    @compute @workgroup_size(8, 8)
     fn main(
       @builtin(global_invocation_id) global_id : vec3<u32>
     ) {
-      var result = aleo_poseidon(input1.u256s[global_id.x]);
-      output.u256s[global_id.x] = result;
+      var result = aleo_poseidon(input1.u256s[(global_id.x * 8) + global_id.y]);
+      //u256(array<u32, 8>(0, 0, 0, 0, 0, 0, global_id.x, global_id.y));
+      //aleo_poseidon(input1.u256s[(global_id.x * 8) + global_id.y]);
+      output.u256s[(global_id.x * 8) + global_id.y] = result;
     }
   `;
 
