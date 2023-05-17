@@ -1,6 +1,6 @@
 import React from 'react';
 import { field_double } from '../gpu/entries/fieldDoubleEntry';
-import { bulkAddFields, bulkDoubleFields, bulkInvertFields, bulkMulFields, bulkSubFields, bulkPowFields, bulkSqrtFields, bulkGroupScalarMul } from '../utils/wasmFunctions';
+import { bulkAddFields, bulkDoubleFields, bulkInvertFields, bulkMulFields, bulkSubFields, bulkPowFields, bulkPowFields17, bulkSqrtFields, bulkGroupScalarMul } from '../utils/wasmFunctions';
 import { Benchmark } from './Benchmark';
 import { bigIntsToU32Array, generateRandomFields, stripFieldSuffix, stripGroupSuffix } from '../gpu/utils';
 import { field_add } from '../gpu/entries/fieldAddEntry';
@@ -13,6 +13,7 @@ import { ALEO_FIELD_MODULUS } from '../params/AleoConstants';
 import { field_sqrt } from '../gpu/entries/fieldSqrtEntry';
 import { point_mul } from '../gpu/entries/curveMulPointEntry';
 import { FieldMath } from '../utils/FieldMath';
+import { field_pow_by_17 } from '../gpu/entries/fieldPow17Entry';
 
 const singleInputGenerator = (inputSize: number): bigint[][] => {
   return [generateRandomFields(inputSize)];
@@ -154,6 +155,15 @@ export const AllBenchmarks: React.FC = () => {
         gpuFunc={(inputs: number[][]) => field_pow(inputs[0], inputs[1])}
         gpuInputConverter={gpuBigIntInputConverter}
         wasmFunc={(inputs: string[][]) => bulkPowFields(inputs[0], inputs[1])}
+        wasmInputConverter={wasmBigIntToFieldConverter}
+        wasmResultConverter={wasmFieldResultConverter}
+      />
+      <Benchmark
+        name={'Pow Fields with 17 dedicated func'}
+        inputsGenerator={singleInputGenerator}
+        gpuFunc={(inputs: number[][]) => field_pow_by_17(inputs[0])}
+        gpuInputConverter={gpuBigIntInputConverter}
+        wasmFunc={(inputs: string[][]) => bulkPowFields17(inputs[0])}
         wasmInputConverter={wasmBigIntToFieldConverter}
         wasmResultConverter={wasmFieldResultConverter}
       />

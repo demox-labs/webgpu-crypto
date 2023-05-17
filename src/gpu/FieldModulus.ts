@@ -269,6 +269,7 @@ fn u256_right_shift(a: u256, shift: u32) -> u256 {
 }
 
 fn field_multiply(a: Field, b: Field) -> Field {
+  // return a;
   var accumulator: Field = Field(
     array<u32, 8>(0, 0, 0, 0, 0, 0, 0, 0)
   );
@@ -311,12 +312,30 @@ fn field_pow(base: Field, exponent: Field) -> Field {
   var result: u256 = u256(
     array<u32, 8>(0, 0, 0, 0, 0, 0, 0, 1)
   );
-  while (gt(exp, U256_ZERO)) { 
+  while (gt(exp, U256_ZERO)) {
     if (is_odd(exp)) {
       result = field_multiply(result, bse);
     }
 
     exp = u256_rs1(exp);
+    bse = field_multiply(bse, bse);
+  }
+
+  return result;
+}
+
+fn field_pow_by_17(base: Field) -> Field {
+  var exp = 17u;
+  var bse = base;
+  var result: u256 = u256(
+    array<u32, 8>(0, 0, 0, 0, 0, 0, 0, 1)
+  );
+  while (exp > 0u) {
+    if ((exp & 1u) == 1u) {
+      result = field_multiply(result, bse);
+    }
+
+    exp = exp >> 1u;
     bse = field_multiply(bse, bse);
   }
 
