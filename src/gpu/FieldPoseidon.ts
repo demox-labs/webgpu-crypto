@@ -12,7 +12,7 @@ export const FieldPoseidonWGSL = `
     }
 
     for (var i = 0u; i < 9u; i++) {
-      newInputs[i] = field_exponentiation(newInputs[i], u256(array<u32, 8>(0, 0, 0, 0, 0, 0, 0, 17)));
+      newInputs[i] = field_pow_by_17(newInputs[i]);
     }
 
     // Matrix multiplication, but single threaded lol
@@ -42,7 +42,7 @@ export const FieldPoseidonWGSL = `
       newInputs[i] = sum;
     }
 
-    var pow = field_exponentiation(newInputs[0], U256_SEVENTEEN);
+    var pow = field_pow_by_17(newInputs[0]);
     newInputs[0] = pow;
 
     // Matrix multiplication, but single threaded lol
