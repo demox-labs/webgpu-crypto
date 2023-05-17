@@ -25,6 +25,10 @@ const U256_MAX: u256 = u256(
   array<u32, 8>(4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295, 4294967295)
 );
 
+const U256_SEVENTEEN: u256 = u256(
+  array<u32, 8>(0, 0, 0, 0, 0, 0, 0, 17)
+);
+
 const U256_ONE: u256 = u256(
   array<u32, 8>(0, 0, 0, 0, 0, 0, 0, 1)
 );
@@ -184,6 +188,7 @@ fn gt(a: u256, b: u256) -> bool {
 //   return true;
 // }
 
+// returns whether a >= b
 fn gte(a: u256, b: u256) -> bool {
   var agtb = gt(a, b);
   var aeqb = equal(a, b);

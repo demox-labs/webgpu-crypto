@@ -1,6 +1,6 @@
 import React from 'react';
 import { field_double } from '../gpu/entries/fieldDoubleEntry';
-import { bulkAddFields, bulkDoubleFields, bulkInvertFields, bulkMulFields, bulkSubFields, bulkPowFields, bulkPowFields17, bulkSqrtFields, bulkGroupScalarMul } from '../utils/wasmFunctions';
+import { bulkAddFields, bulkDoubleFields, bulkInvertFields, bulkMulFields, bulkSubFields, bulkPowFields, bulkPowFields17, bulkSqrtFields, bulkGroupScalarMul, bulkPoseidon } from '../utils/wasmFunctions';
 import { Benchmark } from './Benchmark';
 import { bigIntsToU32Array, generateRandomFields, stripFieldSuffix, stripGroupSuffix } from '../gpu/utils';
 import { field_add } from '../gpu/entries/fieldAddEntry';
@@ -14,6 +14,8 @@ import { field_sqrt } from '../gpu/entries/fieldSqrtEntry';
 import { point_mul } from '../gpu/entries/curveMulPointEntry';
 import { FieldMath } from '../utils/FieldMath';
 import { field_pow_by_17 } from '../gpu/entries/fieldPow17Entry';
+import { field_poseidon } from '../gpu/entries/fieldPoseidonEntry';
+import { aleoMdStrings, aleoRoundConstantStrings } from '../params/PoseidonParams';
 
 const singleInputGenerator = (inputSize: number): bigint[][] => {
   return [generateRandomFields(inputSize)];
@@ -45,6 +47,13 @@ const wasmSquaresResultConverter = (results: string[]): string[] => {
   const bigIntResults = wasmFieldResultConverter(results).map((result) => BigInt(result));
   return bigIntResults.map((result) => (result * result % ALEO_FIELD_MODULUS).toString());
 }
+
+const poseidonGenerator = (inputSize: number): bigint[][] => { 
+  const firstInput = generateRandomFields(inputSize);
+  const secondInput = aleoMdStrings.map((arr) => arr.map((str) => BigInt(str))).flat();
+  const thirdInput = aleoRoundConstantStrings.map((arr) => arr.map((str) => BigInt(str))).flat();
+  return [firstInput, secondInput, thirdInput];
+};
 
 const doubleInputGenerator = (inputSize: number): bigint[][] => {
   const firstInput = generateRandomFields(inputSize);
@@ -201,6 +210,15 @@ export const AllBenchmarks: React.FC = () => {
         gpuFunc={(inputs: number[][]) => gpuIsOwner(inputs[0], inputs[1])}
         wasmFunc={(inputs: string[][]) => wasmIsOwner(inputs[0], inputs[1])}
       /> */}
+      <Benchmark
+        name={'Field Poseidon Hash single pass'}
+        inputsGenerator={poseidonGenerator}
+        gpuFunc={(inputs: number[][]) => field_poseidon(inputs[0], inputs[1], inputs[2])}
+        gpuInputConverter={gpuBigIntInputConverter}
+        wasmFunc={(inputs: string[][]) => bulkPoseidon(inputs[0])}
+        wasmInputConverter={wasmBigIntToFieldConverter}
+        wasmResultConverter={wasmFieldResultConverter}
+      />
     </div>
   )
 };
