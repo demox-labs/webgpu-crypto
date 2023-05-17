@@ -325,20 +325,11 @@ fn field_pow(base: Field, exponent: Field) -> Field {
 }
 
 fn field_pow_by_17(base: Field) -> Field {
-  var exp = 17u;
-  var bse = base;
-  var result: u256 = u256(
-    array<u32, 8>(0, 0, 0, 0, 0, 0, 0, 1)
-  );
-  while (exp > 0u) {
-    if ((exp & 1u) == 1u) {
-      result = field_multiply(result, bse);
-    }
-
-    exp = exp >> 1u;
-    bse = field_multiply(bse, bse);
-  }
-
-  return result;
+  let bse = base;
+  let base2 = field_multiply(bse, bse);
+  let base4 = field_multiply(base2, base2);
+  let base8 = field_multiply(base4, base4);
+  let base16 = field_multiply(base8, base8);
+  return field_multiply(base16, bse);
 }
 `
