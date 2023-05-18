@@ -201,3 +201,14 @@ export const bulkPowFields17 = async (inputs1: string[]): Promise<string[]> => {
   }
   return results;
 }
+
+export const bulkIsOwner = async (cipherTexts: string[], viewKey: string): Promise<string[]> => {
+  const aleo = await loadWasmModule();
+  const results: string[] = [];
+  const aleoViewKey = aleo.ViewKey.from_string(viewKey);
+  for (let i = 0; i < cipherTexts.length; i++) {
+    const aleoCipherText = aleo.RecordCiphertext.fromString(cipherTexts[i]);
+    results.push(aleoCipherText.isOwner(aleoViewKey).toString());
+  }
+  return results;
+}

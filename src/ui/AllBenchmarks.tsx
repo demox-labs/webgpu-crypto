@@ -1,8 +1,8 @@
 import React from 'react';
 import { field_double } from '../gpu/entries/fieldDoubleEntry';
-import { bulkAddFields, bulkDoubleFields, bulkInvertFields, bulkMulFields, bulkSubFields, bulkPowFields, bulkPowFields17, bulkSqrtFields, bulkGroupScalarMul, bulkPoseidon } from '../utils/wasmFunctions';
+import { bulkAddFields, bulkDoubleFields, bulkInvertFields, bulkMulFields, bulkSubFields, bulkPowFields, bulkPowFields17, bulkSqrtFields, bulkGroupScalarMul, bulkPoseidon, bulkIsOwner } from '../utils/wasmFunctions';
 import { Benchmark } from './Benchmark';
-import { bigIntsToU32Array, generateRandomFields, stripFieldSuffix, stripGroupSuffix } from '../gpu/utils';
+import { bigIntToU32Array, bigIntsToU32Array, generateRandomFields, stripFieldSuffix, stripGroupSuffix } from '../gpu/utils';
 import { field_add } from '../gpu/entries/fieldAddEntry';
 import { field_sub } from '../gpu/entries/fieldSubEntry';
 import { field_inverse } from '../gpu/entries/fieldInverseEntry';
@@ -17,6 +17,8 @@ import { field_pow_by_17 } from '../gpu/entries/fieldPow17Entry';
 import { field_poseidon } from '../gpu/entries/fieldPoseidonEntry';
 import { aleoMdStrings, aleoRoundConstantStrings } from '../params/PoseidonParams';
 import { field_poseidon_multi } from '../gpu/entries/fieldPoseidonMultiPassEntry';
+import { is_owner } from '../gpu/entries/isOwnerEntry';
+import { convertBytesToFieldElement, convertCiphertextToDataView, getNonce, getPrivateOwnerBytes } from '../parsers/RecordParser';
 
 const singleInputGenerator = (inputSize: number): bigint[][] => {
   return [generateRandomFields(inputSize)];
@@ -26,18 +28,56 @@ const singleInputGenerator = (inputSize: number): bigint[][] => {
 const squaresGenerator = (inputSize: number): bigint[][] => {
   const randomFields = generateRandomFields(inputSize);
   const squaredFields = randomFields.map((field) => (field * field) % ALEO_FIELD_MODULUS);
-  console.log(squaredFields);
   return [squaredFields];
 };
 
 const pointScalarGenerator = (inputSize: number): bigint[][] => {
   const groupArr = new Array(inputSize);
   const scalarArr = new Array(inputSize);
-  scalarArr.fill(BigInt(500_000));
+  scalarArr.fill(BigInt('303411688971426691737907573487068071512981595762917890905859781721748416598'));
   // known group
   groupArr.fill(BigInt('2796670805570508460920584878396618987767121022598342527208237783066948667246'));
   // const scalarArr = generateRandomFields(inputSize);
   return [groupArr, scalarArr];
+};
+
+const ownerViewKey = "AViewKey1dS9uE4XrARX3m5QUDWSrqmUwxY3PFKVdMvPwzbtbYrUh";
+const ownerViewKeyScalar = BigInt('1047782004112991658538528321810337177976429471185056028001320450422875039246');
+const ownerAddress_x = BigInt('7090760734045932545891632488445252924506076885393655832444210322936011804429');
+const ciphertext = "record1qyqspf8z9eekgc5n8y0crj888m0ntz84psy3mrvhfp9sy2ea462em9qpqgqkzscqqgpqq5q752ylzzgduf0umw4hqafac3d6ev66feeydq4yqu9cj0e5ynqwhskrr53e4y2a3tazl7vfp94rczxzreqmxs6e4lsuvl2hu470myxqzcjrqqpqyqxyxjxxlp0a6m25sma5vgjn49ztqf3wvu0cx09q3ptjf59k4aarz9sl3flmy4lxsejs46h3nhrtap4m4tn3sck3lydeldlhfyg50vqslc83g4w0qmgepzdv5du8dyu0x2vq23j6w6f427qwhwfeewk8qagy4pgcyl";
+
+const cipherTextsGenerator = (inputSize: number): string[][] => {
+  const cipherTextArr = new Array(inputSize);
+  cipherTextArr.fill(ciphertext);
+  return [cipherTextArr];
+};
+
+const gpuCipherTextInputConverter = (inputs: string[][]): number[][] => {
+  const cipherTexts = inputs[0];
+  const dataViews = cipherTexts.map((ct) => convertCiphertextToDataView(ct));
+  const owner_fields = dataViews.map((dv) => BigInt(convertBytesToFieldElement(getPrivateOwnerBytes(dv))));
+  const x_coords = dataViews.map(dv => getNonce(dv));
+  const fieldMath = new FieldMath();
+  const y_coords_map = new Map<bigint, bigint>();
+  const y_coords = x_coords.map((x) => {
+    const known_y = y_coords_map.get(x);
+    const y = known_y ?? fieldMath.getPointFromX(x).y;
+    y_coords_map.set(x, y);
+    return y;
+  });
+  const point_inputs = x_coords.map((x, i) => [x, y_coords[i]]).flat();
+
+  const aleoMds = aleoMdStrings.map((arr) => arr.map((str) => BigInt(str))).flat();
+  const aleoRoundConstants = aleoRoundConstantStrings.map((arr) => arr.map((str) => BigInt(str))).flat();
+
+  return [
+    Array.from(bigIntsToU32Array(point_inputs)),
+    Array.from(bigIntsToU32Array(owner_fields)),
+    Array.from(bigIntsToU32Array(aleoMds)),
+    Array.from(bigIntsToU32Array(aleoRoundConstants)),
+    Array.from(bigIntToU32Array(ownerViewKeyScalar)),
+    Array.from(bigIntToU32Array(ownerAddress_x))
+  ];
 };
 
 const gpuSquaresResultConverter = (results: bigint[]): string[] => {
@@ -105,6 +145,15 @@ const wasmPointMulConverter = (inputs: bigint[][]): string[][] => {
 export const AllBenchmarks: React.FC = () => {
   return (
     <div>
+      <Benchmark
+        name={'Is Ownership Single Pass'}
+        inputsGenerator={cipherTextsGenerator}
+        gpuFunc={(inputs: number[][]) => is_owner(inputs[0], inputs[1], inputs[2], inputs[3], inputs[4], inputs[5])}
+        gpuInputConverter={gpuCipherTextInputConverter}
+        wasmFunc={(inputs: string[][]) => bulkIsOwner(inputs[0], ownerViewKey)}
+        wasmInputConverter={(inputs: string[][]) => {return inputs}}
+        wasmResultConverter={(results: string[]) => {return results}}
+      />
       <Benchmark
         name={'Add Fields'}
         inputsGenerator={doubleInputGenerator}

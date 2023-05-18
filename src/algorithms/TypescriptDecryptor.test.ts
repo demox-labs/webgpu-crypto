@@ -21,6 +21,12 @@ describe('TypescriptDecryptor', () => {
         '89674762694835401405354684705026152384484900051666265698758937237777245203',
         'aleo1szk6r8y2nmhwnd5y3u8tlsm20u6n4cwqwzyexe4vvmfvcrfk0cqs3q0lgh',
         true
+      ],
+      [
+        'record1qyqspf8z9eekgc5n8y0crj888m0ntz84psy3mrvhfp9sy2ea462em9qpqgqkzscqqgpqq5q752ylzzgduf0umw4hqafac3d6ev66feeydq4yqu9cj0e5ynqwhskrr53e4y2a3tazl7vfp94rczxzreqmxs6e4lsuvl2hu470myxqzcjrqqpqyqxyxjxxlp0a6m25sma5vgjn49ztqf3wvu0cx09q3ptjf59k4aarz9sl3flmy4lxsejs46h3nhrtap4m4tn3sck3lydeldlhfyg50vqslc83g4w0qmgepzdv5du8dyu0x2vq23j6w6f427qwhwfeewk8qagy4pgcyl',
+        '1047782004112991658538528321810337177976429471185056028001320450422875039246',
+        'aleo1ph8cnsfgh9pp73cepkmfhjpplv2mzdcxx45w4ge5fsd5waf6458sl038tj',
+        true
       ]
     ])('verifies owner address for private owner', (recordCiphertext: string, viewKeyScalar: string, address: string, expectedIsOwner: boolean) => {
       const decryptor = new TypescriptDecryptor();

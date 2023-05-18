@@ -6,6 +6,7 @@ describe('wasmFunctions', () => {
       ["aleo19ww3ekwpey2hu7wl5qx42nmajr8lrre49y34axtkpfen3ttpvygs3kdxmw", "7861376730610257387365356374468253089179341461915214956037840476249878469931field"],
       ["aleo135gwscehwgkecnrh3nlj3eefh6xq2p8pxzh4xdhmpevn24k90ypsd4kce2", "1572089008791902793871872918413366858350187239173770875335286338153704067213field"],
       ["aleo1uwr7xnpraqxp3n0dssy4t5lxpfhthg9z55rh82ey5sryxr3luqyqvzqas3", "4014711725694245909088977175391072928052841749563878781134887696252562278371field"],
+      ["aleo1ph8cnsfgh9pp73cepkmfhjpplv2mzdcxx45w4ge5fsd5waf6458sl038tj", "7090760734045932545891632488445252924506076885393655832444210322936011804429field"]
     ])('returns the x coordinate of an address', async (address: string, expectedX: string) => {
       const xCoordinate = await addressToXCoordinate(address);
 

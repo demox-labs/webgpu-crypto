@@ -20,7 +20,6 @@ export class TypescriptDecryptor {
       const ownerBytes = getPrivateOwnerBytes(dataView);
       const ownerField = BigInt(convertBytesToFieldElement(ownerBytes));
       
-      // console.log(ownerField);
       const nonceField = getNonce(dataView);
       const nonceGroup = fieldMath.getPointFromX(nonceField);
       const multiplication = fieldMath.multiply(nonceGroup.x, nonceGroup.y, viewKeyScalar);
