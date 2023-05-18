@@ -235,12 +235,12 @@ export const field_poseidon_multi = async (input1: Array<number>, input2: Array<
       entryPoint: "main"
     }
   });
-  
+
   // Stitch it all together, rip. This can easily be cleaned up and DRY'd by cba
   const commandEncoder = gpu.createCommandEncoder();
 
   // initial hash compute pass
-  runComputePass(commandEncoder, firstHashPipeline, firstHashBindGroup, numInputs / workgroupSize);
+  runComputePass(commandEncoder, firstHashPipeline, firstHashBindGroup, Math.ceil(numInputs / workgroupSize));
 
   commandEncoder.copyBufferToBuffer(
     firstHashResultBuffer /* source buffer */,
@@ -252,7 +252,7 @@ export const field_poseidon_multi = async (input1: Array<number>, input2: Array<
 
   // First 4 full rounds
   for (let i = 0; i < fullRoundPipelines.length; i++) { 
-    runComputePass(commandEncoder, fullRoundPipelines[i], fullRoundBindGroups[i], numInputs / workgroupSize);
+    runComputePass(commandEncoder, fullRoundPipelines[i], fullRoundBindGroups[i], Math.ceil(numInputs / workgroupSize));
     if (i !== fullRoundPipelines.length - 1) {
       commandEncoder.copyBufferToBuffer(
         fullRoundResultBuffers[i] /* source buffer */,
@@ -274,7 +274,7 @@ export const field_poseidon_multi = async (input1: Array<number>, input2: Array<
 
   // 31 partial rounds
   for (let i = 0; i < partialRoundPipelines.length; i++) { 
-    runComputePass(commandEncoder, partialRoundPipelines[i], partialRoundBindGroups[i], numInputs / workgroupSize);
+    runComputePass(commandEncoder, partialRoundPipelines[i], partialRoundBindGroups[i], Math.ceil(numInputs / workgroupSize));
     if (i !== partialRoundPipelines.length - 1) { 
       commandEncoder.copyBufferToBuffer(
         partialRoundResultBuffers[i] /* source buffer */,
@@ -296,7 +296,7 @@ export const field_poseidon_multi = async (input1: Array<number>, input2: Array<
 
   // Last 4 full rounds
   for (let i = 0; i < lastFullRoundPipelines.length; i++) { 
-    runComputePass(commandEncoder, lastFullRoundPipelines[i], lastFullRoundBindGroups[i], numInputs / workgroupSize);
+    runComputePass(commandEncoder, lastFullRoundPipelines[i], lastFullRoundBindGroups[i], Math.ceil(numInputs / workgroupSize));
     if (i !== lastFullRoundPipelines.length - 1) { 
       commandEncoder.copyBufferToBuffer(
         lastFullRoundResultBuffers[i] /* source buffer */,
@@ -322,7 +322,7 @@ export const field_poseidon_multi = async (input1: Array<number>, input2: Array<
     usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
   });
 
-  runComputePass(commandEncoder, finalEntryPipeline, finalEntryBindGroup, numInputs / workgroupSize);
+  runComputePass(commandEncoder, finalEntryPipeline, finalEntryBindGroup, Math.ceil(numInputs / workgroupSize));
 
   commandEncoder.copyBufferToBuffer(
     finalEntryResultBuffer /* source buffer */,
