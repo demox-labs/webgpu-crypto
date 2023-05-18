@@ -215,8 +215,6 @@ export const field_poseidon_multi = async (input1: Array<number>, input2: Array<
     lastFullRoundBindGroups.push(bindGroup);
     lastFullRoundPipelines.push(pipeline);
   }
-  
-
   // final entry boilerplate
   const finalShaderCode = [FieldModulusWGSL, finalEntry];
   const finalEntryShaderModule = createGpuShaderModule(gpu, finalShaderCode);
@@ -237,8 +235,7 @@ export const field_poseidon_multi = async (input1: Array<number>, input2: Array<
       entryPoint: "main"
     }
   });
-
-
+  
   // Stitch it all together, rip. This can easily be cleaned up and DRY'd by cba
   const commandEncoder = gpu.createCommandEncoder();
 
@@ -267,6 +264,14 @@ export const field_poseidon_multi = async (input1: Array<number>, input2: Array<
     }
   }
 
+  commandEncoder.copyBufferToBuffer(
+    fullRoundResultBuffers[fullRoundResultBuffers.length - 1] /* source buffer */,
+    0 /* source offset */,
+    partialRoundInputBuffers[0][0] /* destination buffer */,
+    0 /* destination offset */,
+    arrayBufferSize /* size */
+  );
+
   // 31 partial rounds
   for (let i = 0; i < partialRoundPipelines.length; i++) { 
     runComputePass(commandEncoder, partialRoundPipelines[i], partialRoundBindGroups[i], numInputs / workgroupSize);
@@ -280,6 +285,14 @@ export const field_poseidon_multi = async (input1: Array<number>, input2: Array<
       );
     }
   }
+
+  commandEncoder.copyBufferToBuffer(
+    partialRoundResultBuffers[partialRoundResultBuffers.length - 1] /* source buffer */,
+    0 /* source offset */,
+    lastFullRoundInputBuffers[0][0] /* destination buffer */,
+    0 /* destination offset */,
+    arrayBufferSize /* size */
+  );
 
   // Last 4 full rounds
   for (let i = 0; i < lastFullRoundPipelines.length; i++) { 
@@ -297,7 +310,7 @@ export const field_poseidon_multi = async (input1: Array<number>, input2: Array<
 
   // Take output from last full round and put into final entry input buffer
   commandEncoder.copyBufferToBuffer(
-    lastFullRoundResultBuffers[fullRoundResultBuffers.length - 1] /* source buffer */,
+    lastFullRoundResultBuffers[lastFullRoundResultBuffers.length - 1] /* source buffer */,
     0 /* source offset */,
     finalEntryInputBuffer /* destination buffer */,
     0 /* destination offset */,
