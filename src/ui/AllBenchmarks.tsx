@@ -16,6 +16,7 @@ import { FieldMath } from '../utils/FieldMath';
 import { field_pow_by_17 } from '../gpu/entries/fieldPow17Entry';
 import { field_poseidon } from '../gpu/entries/fieldPoseidonEntry';
 import { aleoMdStrings, aleoRoundConstantStrings } from '../params/PoseidonParams';
+import { field_poseidon_multi } from '../gpu/entries/fieldPoseidonMultiPassEntry';
 
 const singleInputGenerator = (inputSize: number): bigint[][] => {
   return [generateRandomFields(inputSize)];
@@ -214,6 +215,15 @@ export const AllBenchmarks: React.FC = () => {
         name={'Field Poseidon Hash single pass'}
         inputsGenerator={poseidonGenerator}
         gpuFunc={(inputs: number[][]) => field_poseidon(inputs[0], inputs[1], inputs[2])}
+        gpuInputConverter={gpuBigIntInputConverter}
+        wasmFunc={(inputs: string[][]) => bulkPoseidon(inputs[0])}
+        wasmInputConverter={wasmBigIntToFieldConverter}
+        wasmResultConverter={wasmFieldResultConverter}
+      />
+      <Benchmark
+        name={'Field Poseidon Hash multi pass'}
+        inputsGenerator={poseidonGenerator}
+        gpuFunc={(inputs: number[][]) => field_poseidon_multi(inputs[0], inputs[1], inputs[2])}
         gpuInputConverter={gpuBigIntInputConverter}
         wasmFunc={(inputs: string[][]) => bulkPoseidon(inputs[0])}
         wasmInputConverter={wasmBigIntToFieldConverter}

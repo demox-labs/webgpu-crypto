@@ -141,7 +141,7 @@ export const powField = async (field: string, exponent: string): Promise<string>
 export const bulkPowFields = async (inputs1: string[], inputs2: string[]): Promise<string[]> => {
   const aleo = await loadWasmModule();
   const results: string[] = [];
-  console.log(inputs2);
+  // console.log(inputs2);
   for (let i = 0; i < inputs1.length; i++) {
     results.push(await aleo.Address.pow_field(inputs1[i], inputs2[i]));
   }
