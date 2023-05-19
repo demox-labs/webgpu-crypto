@@ -7,7 +7,10 @@ import { workgroupSize } from "../params";
  * @param gpu Device to run passes on
  * @param passes Code to run on each pass. Order of list is respected.
  */
-export const multipassEntryCreator = async (gpu: GPUDevice, passes: IGPUExecution[], entryInfo: IEntryInfo): Promise<Uint32Array> => {
+export const multipassEntryCreator = async (passes: IGPUExecution[], entryInfo: IEntryInfo): Promise<Uint32Array> => {
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const gpu = (await getDevice())!;
+  
   const commandEncoder = gpu.createCommandEncoder();
 
   let previousResultBuffer: GPUBuffer | undefined;
@@ -218,3 +221,17 @@ const createBindGroup = (device: GPUDevice, bindGroupLayout: GPUBindGroupLayout,
 
   return bindGroup;
 };
+
+const getDevice = async () => {
+  if (!("gpu" in navigator)) {
+    console.log("WebGPU is not supported on this device");
+    return;
+  }
+
+  const adapter = await navigator.gpu.requestAdapter({powerPreference: "high-performance"});
+  if (!adapter) { 
+    console.log("Adapter not found");
+    return;
+  }
+  return await adapter.requestDevice();
+}

@@ -5,8 +5,6 @@ import { FieldAddWGSL } from "../FieldAdd";
 import { multipassEntryCreator, GPUExecution, IShaderCode, IGPUInput, IGPUResult, IEntryInfo } from "./multipassEntryCreator";
 
 export const field_poseidon_multi_2 = async (input1: Array<number>, input2: Array<number>, input3: Array<number>) => {
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const gpu = (await getDevice())!;
   const baseModules = [PoseidonConstantsWGSL, FieldModulusWGSL, FieldAddWGSL];
   const numInputs = input1.length / 8;
   const nonArrayBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * 8;
@@ -200,22 +198,8 @@ export const field_poseidon_multi_2 = async (input1: Array<number>, input2: Arra
     numInputs: numInputs,
     outputSize: nonArrayBufferSize
   };
-  return await multipassEntryCreator(gpu, executionSteps, entryInfo);
+  return await multipassEntryCreator(executionSteps, entryInfo);
 };
-
-const getDevice = async () => {
-  if (!("gpu" in navigator)) {
-    console.log("WebGPU is not supported on this device");
-    return;
-  }
-
-  const adapter = await navigator.gpu.requestAdapter({powerPreference: "high-performance"});
-  if (!adapter) { 
-    console.log("Adapter not found");
-    return;
-  }
-  return await adapter.requestDevice();
-}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 (window as any).field_poseidon_multi_2 = field_poseidon_multi_2;
