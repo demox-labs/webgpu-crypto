@@ -32,7 +32,7 @@ export const is_owner = async (
     @group(0) @binding(2)
     var<storage, read> aleoMds: array<array<u256, 9>, 9>;
     @group(0) @binding(3)
-    var<storage, read> aleoRoundConstants: array<array<u256, 9>,39>;
+    var<storage, read> aleoRoundConstants: array<array<u256, 9>, 39>;
     @group(0) @binding(4)
     var<storage, read_write> output: Fields;
 
@@ -56,7 +56,7 @@ export const is_owner = async (
 
       output.fields[global_id.x] = field_sub(owner_to_compare, EMBEDDED_ADDRESS_X);
     }
-    `;
+  `;
 
   const shaderModules = [
     PoseidonConstantsWGSL,

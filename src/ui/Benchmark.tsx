@@ -18,7 +18,7 @@ interface BenchmarkProps {
 export const Benchmark: React.FC<BenchmarkProps> = (
   {name, inputsGenerator, gpuFunc, gpuInputConverter, gpuResultConverter, wasmFunc, wasmInputConverter, wasmResultConverter}
   ) => {
-  const initialDefaultInputSize = 10_000;
+  const initialDefaultInputSize = 1_000;
   const [inputSize, setInputSize] = useState(initialDefaultInputSize);
   const [gpuTime, setGpuTime] = useState(0);
   const [wasmTime, setWasmTime] = useState(0);

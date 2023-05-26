@@ -3,10 +3,22 @@ import { PoseidonFirstHashOutputWGSL, PoseidonRoundFullWGSL, PoseidonRoundPartia
 import { PoseidonConstantsWGSL } from "../PoseidonConstants";
 import { FieldAddWGSL } from "../FieldAdd";
 import { multipassEntryCreator, GPUExecution, IShaderCode, IGPUInput, IGPUResult, IEntryInfo } from "./multipassEntryCreator";
+import { workgroupSize } from "../params";
 
 export const field_poseidon_multi_2 = async (input1: Array<number>, input2: Array<number>, input3: Array<number>) => {
+  const [executionSteps, entryInfo] = poseidon_multipass_info(input1.length / 8, input1, input2, input3);
+
+  return await multipassEntryCreator(executionSteps, entryInfo);
+};
+
+export const poseidon_multipass_info = (
+  numInputs: number,
+  input1: Array<number>,
+  aleoMds: Array<number>, 
+  aleoRoundConstants: Array<number>,
+  useInputs = true
+  ): [GPUExecution[], IEntryInfo] => {
   const baseModules = [PoseidonConstantsWGSL, FieldModulusWGSL, FieldAddWGSL];
-  const numInputs = input1.length / 8;
   const nonArrayBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * 8;
   const arrayBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * 8 * 9; // Because 9 fields per array
   const aleoMdsBufferSize = Uint32Array.BYTES_PER_ELEMENT * 9 * 8 * 9;
@@ -18,7 +30,7 @@ export const field_poseidon_multi_2 = async (input1: Array<number>, input2: Arra
     @group(0) @binding(1)
     var<storage, read_write> output: array<array<Field, 9>>;
 
-    @compute @workgroup_size(64)
+    @compute @workgroup_size(${workgroupSize})
     fn main(
       @builtin(global_invocation_id) global_id : vec3<u32>
     ) {
@@ -37,7 +49,7 @@ export const field_poseidon_multi_2 = async (input1: Array<number>, input2: Arra
     @group(0) @binding(3)
     var<storage, read_write> output: array<array<Field, 9>>;
 
-     @compute @workgroup_size(64)
+     @compute @workgroup_size(${workgroupSize})
     fn main(
       @builtin(global_invocation_id) global_id : vec3<u32>
     ) {
@@ -56,7 +68,7 @@ export const field_poseidon_multi_2 = async (input1: Array<number>, input2: Arra
     @group(0) @binding(3)
     var<storage, read_write> output: array<array<Field, 9>>;
 
-    @compute @workgroup_size(64)
+    @compute @workgroup_size(${workgroupSize})
     fn main(
       @builtin(global_invocation_id) global_id : vec3<u32>
     ) {
@@ -71,7 +83,7 @@ export const field_poseidon_multi_2 = async (input1: Array<number>, input2: Arra
     @group(0) @binding(1)
     var<storage, read_write> output: array<u256>;
 
-    @compute @workgroup_size(64)
+    @compute @workgroup_size(${workgroupSize})
     fn main(
       @builtin(global_invocation_id) global_id : vec3<u32>
     ) {
@@ -91,7 +103,7 @@ export const field_poseidon_multi_2 = async (input1: Array<number>, input2: Arra
     inputBufferTypes: ["read-only-storage"],
     inputBufferSizes: [nonArrayBufferSize],
     inputBufferUsages: [GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST],
-    mappedInputs: new Map<number, Uint32Array>([[0, new Uint32Array(input1)]])
+    mappedInputs: useInputs ? new Map<number, Uint32Array>([[0, new Uint32Array(input1)]]) : undefined
   }
   const firstHashResult: IGPUResult = { 
     resultBufferType: "storage",
@@ -115,7 +127,7 @@ export const field_poseidon_multi_2 = async (input1: Array<number>, input2: Arra
         GPUBufferUsage.STORAGE,
         GPUBufferUsage.STORAGE
       ],
-      mappedInputs: new Map<number, Uint32Array>([[1, new Uint32Array(input2)], [2, new Uint32Array(input3)]])
+      mappedInputs: new Map<number, Uint32Array>([[1, new Uint32Array(aleoMds)], [2, new Uint32Array(aleoRoundConstants)]])
     }
     const fullRoundResult: IGPUResult = { 
       resultBufferType: "storage",
@@ -140,7 +152,7 @@ export const field_poseidon_multi_2 = async (input1: Array<number>, input2: Arra
         GPUBufferUsage.STORAGE,
         GPUBufferUsage.STORAGE
       ],
-      mappedInputs: new Map<number, Uint32Array>([[1, new Uint32Array(input2)], [2, new Uint32Array(input3)]])
+      mappedInputs: new Map<number, Uint32Array>([[1, new Uint32Array(aleoMds)], [2, new Uint32Array(aleoRoundConstants)]])
     }
     const partialRoundResult: IGPUResult = { 
       resultBufferType: "storage",
@@ -165,7 +177,7 @@ export const field_poseidon_multi_2 = async (input1: Array<number>, input2: Arra
         GPUBufferUsage.STORAGE,
         GPUBufferUsage.STORAGE
       ],
-      mappedInputs: new Map<number, Uint32Array>([[1, new Uint32Array(input2)], [2, new Uint32Array(input3)]])
+      mappedInputs: new Map<number, Uint32Array>([[1, new Uint32Array(aleoMds)], [2, new Uint32Array(aleoRoundConstants)]])
     }
     const fullRoundResult: IGPUResult = { 
       resultBufferType: "storage",
@@ -198,8 +210,8 @@ export const field_poseidon_multi_2 = async (input1: Array<number>, input2: Arra
     numInputs: numInputs,
     outputSize: nonArrayBufferSize
   };
-  return await multipassEntryCreator(executionSteps, entryInfo);
-};
+  return [executionSteps, entryInfo];
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 (window as any).field_poseidon_multi_2 = field_poseidon_multi_2;

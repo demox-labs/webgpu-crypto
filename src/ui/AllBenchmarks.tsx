@@ -18,6 +18,7 @@ import { field_poseidon } from '../gpu/entries/fieldPoseidonEntry';
 import { aleoMdStrings, aleoRoundConstantStrings } from '../params/PoseidonParams';
 import { field_poseidon_multi } from '../gpu/entries/fieldPoseidonMultiPassEntry';
 import { is_owner } from '../gpu/entries/isOwnerEntry';
+import { is_owner_multi } from '../gpu/entries/isOwnerMultipassEntry';
 import { convertBytesToFieldElement, convertCiphertextToDataView, getNonce, getPrivateOwnerBytes } from '../parsers/RecordParser';
 import { field_poseidon_multi_2 } from '../gpu/entries/poseidonMultiPass';
 
@@ -150,6 +151,16 @@ export const AllBenchmarks: React.FC = () => {
         name={'Is Ownership Single Pass'}
         inputsGenerator={cipherTextsGenerator}
         gpuFunc={(inputs: number[][]) => is_owner(inputs[0], inputs[1], inputs[2], inputs[3], inputs[4], inputs[5])}
+        gpuInputConverter={gpuCipherTextInputConverter}
+        gpuResultConverter={(results: bigint[]) => { return results.map((result) => result === BigInt(0) ? 'true' : 'false')}}
+        wasmFunc={(inputs: string[][]) => bulkIsOwner(inputs[0], ownerViewKey)}
+        wasmInputConverter={(inputs: string[][]) => {return inputs}}
+        wasmResultConverter={(results: string[]) => {return results}}
+      />
+      <Benchmark
+        name={'Is Ownership Multi Pass'}
+        inputsGenerator={cipherTextsGenerator}
+        gpuFunc={(inputs: number[][]) => is_owner_multi(inputs[0], inputs[1], inputs[2], inputs[3], inputs[4], inputs[5])}
         gpuInputConverter={gpuCipherTextInputConverter}
         gpuResultConverter={(results: bigint[]) => { return results.map((result) => result === BigInt(0) ? 'true' : 'false')}}
         wasmFunc={(inputs: string[][]) => bulkIsOwner(inputs[0], ownerViewKey)}
