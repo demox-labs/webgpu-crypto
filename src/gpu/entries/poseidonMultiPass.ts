@@ -210,6 +210,7 @@ export const poseidon_multipass_info = (
     numInputs: numInputs,
     outputSize: nonArrayBufferSize
   };
+
   return [executionSteps, entryInfo];
 }
 

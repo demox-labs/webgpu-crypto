@@ -17,7 +17,7 @@ export const is_owner_multi = async (
   scalar: Array<number>,
   address_x: Array<number>
   ) => {
-  const embededScalarsWGSL = `
+  const embededConstantsWGSL = `
     const EMBEDDED_SCALAR: Field = Field(
       array<u32, 8>(${scalar[0]}, ${scalar[1]}, ${scalar[2]}, ${scalar[3]}, ${scalar[4]}, ${scalar[5]}, ${scalar[6]}, ${scalar[7]})
     );
@@ -35,52 +35,16 @@ export const is_owner_multi = async (
     FieldDoubleWGSL,
     FieldInverseWGSL,
     CurveWGSL,
-    embededScalarsWGSL
+    embededConstantsWGSL
   ];
   const numInputs = cipherTextAffineCoords.length / 16;
   const affinePointArraySize = Uint32Array.BYTES_PER_ELEMENT * numInputs * 8 * 2;
   const fieldArraySize = Uint32Array.BYTES_PER_ELEMENT * numInputs * 8;
 
-  // const shaderEntry = `
-  //   @group(0) @binding(0)
-  //   var<storage, read> input1: array<AffinePoint>;
-  //   @group(0) @binding(1)
-  //   var<storage, read> owner_field_x: array<Field>;
-  //   @group(0) @binding(2)
-  //   var<storage, read> aleoMds: array<array<u256, 9>, 9>;
-  //   @group(0) @binding(3)
-  //   var<storage, read> aleoRoundConstants: array<array<u256, 9>, 39>;
-  //   @group(0) @binding(4)
-  //   var<storage, read_write> output: Fields;
-
-  //   @compute @workgroup_size(64)
-  //   fn main(
-  //     @builtin(global_invocation_id)
-  //     global_id : vec3<u32>
-  //   ) {
-  //     var p1 = input1[global_id.x];
-  //     var p1_t = field_multiply(p1.x, p1.y);
-  //     var z = U256_ONE;
-  //     var ext_p1 = Point(p1.x, p1.y, p1_t, z);
-
-  //     var multiplied = mul_point(ext_p1, EMBEDDED_SCALAR);
-  //     var z_inverse = field_inverse(multiplied.z);
-  //     var result = field_multiply(multiplied.x, z_inverse);
-
-  //     var hash = aleo_poseidon(result);
-
-  //     var owner_to_compare = field_sub(owner_field_x[global_id.x], hash);
-
-  //     output.fields[global_id.x] = field_sub(owner_to_compare, EMBEDDED_ADDRESS_X);
-  //   }
-  // `;
-
   const pointScalarEntry = `
     @group(0) @binding(0)
     var<storage, read> input1: array<AffinePoint>;
     @group(0) @binding(1)
-    var<storage, read> owner_field_x: array<Field>;
-    @group(0) @binding(2)
     var<storage, read_write> output: Fields;
 
     @compute @workgroup_size(${workgroupSize})
@@ -127,10 +91,10 @@ export const is_owner_multi = async (
     entryPoint: "main"
   };
   const pointScalarInputs: IGPUInput = {
-    inputBufferTypes: ["read-only-storage", "read-only-storage"],
-    inputBufferSizes: [affinePointArraySize, fieldArraySize],
-    inputBufferUsages: [GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST],
-    mappedInputs: new Map<number, Uint32Array>([[0, new Uint32Array(cipherTextAffineCoords)], [1, new Uint32Array(encryptedOwnerXs)]])
+    inputBufferTypes: ["read-only-storage"],
+    inputBufferSizes: [affinePointArraySize],
+    inputBufferUsages: [GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST],
+    mappedInputs: new Map<number, Uint32Array>([[0, new Uint32Array(cipherTextAffineCoords)]])
   }
   const pointScalarResultInfo: IGPUResult = {
     resultBufferType: "storage",
@@ -152,7 +116,8 @@ export const is_owner_multi = async (
   const postHashInputs: IGPUInput = {
     inputBufferTypes: ["read-only-storage", "read-only-storage"],
     inputBufferSizes: [fieldArraySize, fieldArraySize],
-    inputBufferUsages: [GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST]
+    inputBufferUsages: [GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST],
+    mappedInputs: new Map<number, Uint32Array>([[1, new Uint32Array(encryptedOwnerXs)]])
   }
   const postHashResultInfo: IGPUResult = { 
     resultBufferType: "storage",
