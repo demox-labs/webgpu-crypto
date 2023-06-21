@@ -1,8 +1,15 @@
 import { bech32m } from "bech32";
 import BN from "bn.js";
+import bs58 from "bs58";
 
 export const parseAddressToXCoordinate = (address: string): bigint => {
   const bytes = parseAddressToBytes(address);
+  return BigInt(convertBytesToFieldElement(bytes));
+}
+
+export const parseViewKeyToScalar = (viewKey: string): bigint => {
+  let bytes = bs58.decode(viewKey);
+  bytes = bytes.slice(7);
   return BigInt(convertBytesToFieldElement(bytes));
 }
 

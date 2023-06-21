@@ -79,7 +79,9 @@ export const is_owner_multi = async (
       var hash = input1[global_id.x];
       var owner_to_compare = field_sub(owner_field_x[global_id.x], hash);
 
-      output.fields[global_id.x] = field_sub(owner_to_compare, EMBEDDED_ADDRESS_X);
+      var sub = field_sub(owner_to_compare, EMBEDDED_ADDRESS_X);
+
+      output.fields[global_id.x] = field_add(sub, U256_ONE);
     }
   `;
 

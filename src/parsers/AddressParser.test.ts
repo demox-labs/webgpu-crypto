@@ -1,4 +1,4 @@
-import { convertXCoordinateToAddress, parseAddressToXCoordinate } from "./AddressParser";
+import { convertXCoordinateToAddress, parseAddressToXCoordinate, parseViewKeyToScalar } from "./AddressParser";
 
 describe('AddressParser', () => {
   describe('parseAddressToXCoordinate', () => {
@@ -21,6 +21,18 @@ describe('AddressParser', () => {
       ]
     ])('should return the x coordinate for an address', (address: string, expectedXCoordinate: string) => {
       const xCoordinate = parseAddressToXCoordinate(address);
+      expect(xCoordinate.toString()).toEqual(expectedXCoordinate);
+    });
+  });
+
+  describe('parseViewKeyToXCoordinate', () => {
+    it.each([
+      [
+        'AViewKey1dS9uE4XrARX3m5QUDWSrqmUwxY3PFKVdMvPwzbtbYrUh',
+        '1047782004112991658538528321810337177976429471185056028001320450422875039246'
+      ]
+    ])('should return the x coordinate for an viewKey', (viewKey: string, expectedXCoordinate: string) => {
+      const xCoordinate = parseViewKeyToScalar(viewKey);
       expect(xCoordinate.toString()).toEqual(expectedXCoordinate);
     });
   });
