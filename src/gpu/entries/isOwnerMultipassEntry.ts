@@ -6,7 +6,6 @@ import { FieldModulusWGSL } from "../FieldModulus";
 import { FieldSubWGSL } from "../FieldSub";
 import { PoseidonConstantsWGSL } from "../PoseidonConstants";
 import { poseidon_multipass_info } from "./poseidonMultiPass";
-import { point_mul_multipass_info } from "./curveMulPointMultiPassEntry";
 import { workgroupSize } from "../params";
 import { GPUExecution, IShaderCode, IGPUInput, IGPUResult, IEntryInfo, multipassEntryCreator } from "./multipassEntryCreator";
 
@@ -39,30 +38,7 @@ export const is_owner_multi = async (
     embededConstantsWGSL
   ];
   const numInputs = cipherTextAffineCoords.length / 16;
-  const affinePointArraySize = Uint32Array.BYTES_PER_ELEMENT * numInputs * 8 * 2;
   const fieldArraySize = Uint32Array.BYTES_PER_ELEMENT * numInputs * 8;
-
-  const pointScalarEntry = `
-    @group(0) @binding(0)
-    var<storage, read> input1: array<AffinePoint>;
-    @group(0) @binding(1)
-    var<storage, read_write> output: Fields;
-
-    @compute @workgroup_size(${workgroupSize})
-    fn main(
-      @builtin(global_invocation_id)
-      global_id : vec3<u32>
-    ) {
-      var p1 = input1[global_id.x];
-      var p1_t = field_multiply(p1.x, p1.y);
-      var z = U256_ONE;
-      var ext_p1 = Point(p1.x, p1.y, p1_t, z);
-
-      var multiplied = mul_point(ext_p1, EMBEDDED_SCALAR);
-      var z_inverse = field_inverse(multiplied.z);
-      output.fields[global_id.x] = field_multiply(multiplied.x, z_inverse);
-    }
-  `;
 
   const postHashEntry = `
     @group(0) @binding(0)
@@ -87,27 +63,7 @@ export const is_owner_multi = async (
   `;
 
   let executionSteps: GPUExecution[] = [];
-  
-  // Add point scalar entry
-  // const pointScalarShader: IShaderCode = {
-  //   code: [...baseModules, pointScalarEntry].join("\n"),
-  //   entryPoint: "main"
-  // };
-  // const pointScalarInputs: IGPUInput = {
-  //   inputBufferTypes: ["read-only-storage"],
-  //   inputBufferSizes: [affinePointArraySize],
-  //   inputBufferUsages: [GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST],
-  //   mappedInputs: new Map<number, Uint32Array>([[0, new Uint32Array(cipherTextAffineCoords)]])
-  // }
-  // const pointScalarResultInfo: IGPUResult = {
-  //   resultBufferTypes: ["storage"],
-  //   resultBufferSizes: [fieldArraySize],
-  //   resultBufferUsages: [GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC]
-  // }
-  // const pointScalarExecution = new GPUExecution(pointScalarShader, pointScalarInputs, pointScalarResultInfo);
-  // executionSteps.push(pointScalarExecution);
-
-  const pointScalarPasses = point_mul_multipass(numInputs, cipherTextAffineCoords, encryptedOwnerXs, [embededConstantsWGSL]);
+  const pointScalarPasses = point_mul_multipass(numInputs, cipherTextAffineCoords, [embededConstantsWGSL]);
   executionSteps = executionSteps.concat(pointScalarPasses[0]);
 
   // Add poseidon rounds
@@ -146,7 +102,6 @@ export const is_owner_multi = async (
 const point_mul_multipass = (
   numInputs: number,
   affinePoints: Array<number>,
-  scalar: Array<number>,
   extraBaseShaders: string[]
 ): [GPUExecution[], IEntryInfo] => {
   let baseModules = [FieldModulusWGSL, FieldAddWGSL, FieldSubWGSL, FieldDoubleWGSL, FieldInverseWGSL, CurveWGSL];

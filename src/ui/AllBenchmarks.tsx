@@ -270,7 +270,7 @@ export const AllBenchmarks: React.FC = () => {
         wasmResultConverter={(results: string[]) => { return results.map((result) => stripGroupSuffix(result))}}
       />
       <Benchmark
-        name={'Point Scalar Mul multistage'}
+        name={'Point Scalar Mul multi pass'}
         inputsGenerator={pointScalarGenerator}
         gpuFunc={(inputs: number[][]) => point_mul_multi(inputs[0], inputs[1])}
         gpuInputConverter={gpuPointScalarInputConverter}
