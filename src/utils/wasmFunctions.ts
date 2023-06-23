@@ -210,5 +210,6 @@ export const bulkIsOwner = async (cipherTexts: string[], viewKey: string): Promi
     const aleoCipherText = aleo.RecordCiphertext.fromString(cipherTexts[i]);
     results.push(aleoCipherText.isOwner(aleoViewKey).toString());
   }
+  
   return results;
 }

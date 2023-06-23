@@ -13,7 +13,7 @@ export const multipassEntryCreator = async (passes: IGPUExecution[], entryInfo: 
   
   const commandEncoder = gpu.createCommandEncoder();
 
-  let previousResultBuffer: GPUBuffer | undefined;
+  let previousResultBuffers: GPUBuffer[] | undefined;
   for (let i = 0; i < passes.length; i++) {
     const execution = passes[i];
 
@@ -44,17 +44,21 @@ export const multipassEntryCreator = async (passes: IGPUExecution[], entryInfo: 
       }
     }
 
-    // Create result buffer
-    const resultBuffer = gpu.createBuffer({
-      size: resultData.resultBufferSize,
-      usage: resultData.resultBufferUsage
-    });
+    // Create result buffers
+    const resultBuffers: GPUBuffer[] = [];
+    for (let i = 0; i < resultData.resultBufferTypes.length; i++) { 
+      const resultBuffer = gpu.createBuffer({
+        size: resultData.resultBufferSizes[i],
+        usage: resultData.resultBufferUsages[i]
+      });
+      resultBuffers.push(resultBuffer);
+    }
 
     // Create bind group layout
-    const bindGroupLayout = createBindGroupLayout(gpu, inputBuffers, inputData.inputBufferTypes);
+    const bindGroupLayout = createBindGroupLayout(gpu, inputBuffers, resultBuffers, inputData.inputBufferTypes);
 
     // Create bind group
-    const bindGroup = createBindGroup(gpu, bindGroupLayout, inputBuffers, resultBuffer);
+    const bindGroup = createBindGroup(gpu, bindGroupLayout, inputBuffers, resultBuffers);
 
     // Create pipeline
     const pipeline = gpu.createComputePipeline({
@@ -66,14 +70,16 @@ export const multipassEntryCreator = async (passes: IGPUExecution[], entryInfo: 
     });
 
     // Copy previous result buffer to input buffer
-    if (previousResultBuffer != undefined) {
-      commandEncoder.copyBufferToBuffer(
-        previousResultBuffer,
-        0,
-        inputBuffers[0],
-        0,
-        inputData.inputBufferSizes[0]
-      );
+    if (previousResultBuffers != undefined) {
+      for (let i = 0; i < previousResultBuffers.length; i++) {
+        commandEncoder.copyBufferToBuffer(
+          previousResultBuffers[i],
+          0,
+          inputBuffers[i],
+          0,
+          inputData.inputBufferSizes[i]
+        );
+      }
     }
 
     // Run compute pass
@@ -83,7 +89,7 @@ export const multipassEntryCreator = async (passes: IGPUExecution[], entryInfo: 
     passEncoder.dispatchWorkgroups(Math.ceil(entryInfo.numInputs / workgroupSize));
     passEncoder.end();
 
-    previousResultBuffer = resultBuffer;
+    previousResultBuffers = resultBuffers;
   }
 
   // Create buffer to read result
@@ -92,9 +98,9 @@ export const multipassEntryCreator = async (passes: IGPUExecution[], entryInfo: 
     usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
   });
   
-  if (previousResultBuffer) {
+  if (previousResultBuffers) {
     commandEncoder.copyBufferToBuffer(
-      previousResultBuffer,
+      previousResultBuffers[0],
       0,
       gpuReadBuffer,
       0,
@@ -127,12 +133,14 @@ export interface IGPUInput {
 }
 
 /**
- * Descriptior of gpu result buffer
+ * Descriptior of gpu result buffers
+ * 
+ * Expected that resultBufferTypes and resultBufferSizes are the same length.
  */
 export interface IGPUResult {
-  resultBufferType: GPUBufferBindingType;
-  resultBufferSize: number;
-  resultBufferUsage: number;
+  resultBufferTypes: GPUBufferBindingType[];
+  resultBufferSizes: number[];
+  resultBufferUsages: number[];
 }
 
 export interface IShaderCode {
@@ -142,7 +150,6 @@ export interface IShaderCode {
 
 interface IGPUExecution {
   shader: IShaderCode;
-  executionCount: number;
   gpuInput: IGPUInput;
   gpuOutput: IGPUResult;
 }
@@ -151,14 +158,12 @@ export class GPUExecution implements IGPUExecution {
   shader: IShaderCode;
   gpuInput: IGPUInput;
   gpuOutput: IGPUResult;
-  executionCount: number;
 
 
-  constructor(shader: IShaderCode, gpuInput: IGPUInput, gpuOutput: IGPUResult, executionCount = 1) {
+  constructor(shader: IShaderCode, gpuInput: IGPUInput, gpuOutput: IGPUResult) {
     this.shader = shader;
     this.gpuInput = gpuInput;
     this.gpuOutput = gpuOutput;
-    this.executionCount = executionCount;
   }
 }
 
@@ -169,7 +174,7 @@ export interface IEntryInfo {
 
 // Currently has the assumption that input buffers are in order of binding
 // Also assumes that the result buffer will always be of type "storage"
-const createBindGroupLayout = (device: GPUDevice, gpuInputBuffers: GPUBuffer[], types: GPUBufferBindingType[]) => {
+const createBindGroupLayout = (device: GPUDevice, gpuInputBuffers: GPUBuffer[], gpuResultBuffers: GPUBuffer[], types: GPUBufferBindingType[]) => {
   // Bind group layout and bind group
   const layoutEntries: GPUBindGroupLayoutEntry[] = [];
   for (let i = 0; i < gpuInputBuffers.length; i++) {
@@ -182,23 +187,23 @@ const createBindGroupLayout = (device: GPUDevice, gpuInputBuffers: GPUBuffer[], 
     });
   }
 
-  const resultLayoutEntry: GPUBindGroupLayoutEntry = {
-    binding: gpuInputBuffers.length,
-    visibility: GPUShaderStage.COMPUTE,
-    buffer: {
-      type: "storage"
-    }
-  };
-
-  layoutEntries.push(resultLayoutEntry);
+  for (let i = 0; i < gpuResultBuffers.length; i++) {
+    layoutEntries.push({
+      binding: i + gpuInputBuffers.length,
+      visibility: GPUShaderStage.COMPUTE,
+      buffer: {
+        type: "storage"
+      }
+    });
+  }
 
   const layout = { entries: layoutEntries };
 
   return device.createBindGroupLayout(layout);
 };
 
-const createBindGroup = (device: GPUDevice, bindGroupLayout: GPUBindGroupLayout, gpuInputBuffers: GPUBuffer[], gpuOutputBuffer: GPUBuffer) => {
-  const entriesToBind = gpuInputBuffers.map((gpuInputBuffer, i) => {
+const createBindGroup = (device: GPUDevice, bindGroupLayout: GPUBindGroupLayout, gpuInputBuffers: GPUBuffer[], gpuOutputBuffers: GPUBuffer[]) => {
+  const inputEntriesToBind = gpuInputBuffers.map((gpuInputBuffer, i) => {
     return {
       binding: i,
       resource: {
@@ -207,12 +212,16 @@ const createBindGroup = (device: GPUDevice, bindGroupLayout: GPUBindGroupLayout,
     };
   });
 
-  entriesToBind.push({
-    binding: gpuInputBuffers.length,
-    resource: {
-      buffer: gpuOutputBuffer
+  const resultEntriesToBind = gpuOutputBuffers.map((gpuOutputBuffer, i) => {
+    return {
+      binding: i + gpuInputBuffers.length,
+      resource: {
+        buffer: gpuOutputBuffer
+      }
     }
   });
+
+  const entriesToBind = inputEntriesToBind.concat(resultEntriesToBind);
 
   const bindGroup = device.createBindGroup({
     layout: bindGroupLayout,

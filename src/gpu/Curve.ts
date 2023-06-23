@@ -20,6 +20,12 @@ struct Point {
   z: Field
 }
 
+struct MulPointIntermediate {
+  result: Point,
+  temp: Point,
+  scalar: Field
+}
+
 const ZERO_POINT = Point (U256_ZERO, U256_ONE, U256_ONE, U256_ZERO);
 const ZERO_AFFINE = AffinePoint (U256_ZERO, U256_ONE);
 
@@ -85,6 +91,52 @@ fn mul_point(p: Point, scalar: Field) -> Point {
   }
 
   return result;
+}
+
+fn mul_point_64_bits_start(p: Point, scalar: Field) -> MulPointIntermediate { 
+  var result: Point = Point (U256_ZERO, U256_ONE, U256_ZERO, U256_ONE);
+  var temp = p;
+  var scalar_iter = scalar;
+  for (var i = 0u; i < 64u; i = i + 1u) {
+    if (equal(scalar_iter, U256_ZERO)) {
+      break;
+    }
+
+    if (is_odd(scalar_iter)) {
+      result = add_points(result, temp);
+    }
+
+    temp = double_point(temp);
+
+    scalar_iter = u256_rs1(scalar_iter);
+  }
+
+  return MulPointIntermediate(result, temp, scalar_iter);
+}
+
+fn mul_point_64_bits(p: Point, scalar: Field, t: Point) -> MulPointIntermediate {
+  if (equal(scalar, U256_ZERO)) {
+    return MulPointIntermediate(p, t, scalar);
+  }
+
+  var result: Point = p;
+  var temp = t;
+  var scalar_iter = scalar;
+  for (var i = 0u; i < 64u; i = i + 1u) {
+    if (equal(scalar_iter, U256_ZERO)) { 
+      break;
+    }
+
+    if (is_odd(scalar_iter)) {
+      result = add_points(result, temp);
+    }
+
+    temp = double_point(temp);
+
+    scalar_iter = u256_rs1(scalar_iter);
+  }
+
+  return MulPointIntermediate(result, temp, scalar_iter);
 }
 
 fn mul_point_test(p: Point, scalar: Field) -> Point {

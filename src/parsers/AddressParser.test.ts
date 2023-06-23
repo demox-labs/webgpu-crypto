@@ -18,6 +18,10 @@ describe('AddressParser', () => {
       [
         'aleo1xr8udktvjhhackktfldsygjuf84fpm5k377gw4dcxhswtnyt8urq2q7xtv',
         '2826153323360709902210507492352501050408684853149149403539658328382212853552'
+      ],
+      [
+        'aleo14rwswfzqwmtym372kd2amu7jzw6xmkz38gwdg9j6thv9g544kvgqhxu2s2',
+        '7554522637667228564357761306560014769896981682593547110129454045518044323240'
       ]
     ])('should return the x coordinate for an address', (address: string, expectedXCoordinate: string) => {
       const xCoordinate = parseAddressToXCoordinate(address);
@@ -30,6 +34,10 @@ describe('AddressParser', () => {
       [
         'AViewKey1dS9uE4XrARX3m5QUDWSrqmUwxY3PFKVdMvPwzbtbYrUh',
         '1047782004112991658538528321810337177976429471185056028001320450422875039246'
+      ],
+      [
+        'AViewKey1sbprcE2wG2nh1kYbDLU42FFKmGnxxKUq8oNsMaAU9ByS',
+        '752209293482294422588181595597784470577861263737725847909891016010783237344'
       ]
     ])('should return the x coordinate for an viewKey', (viewKey: string, expectedXCoordinate: string) => {
       const xCoordinate = parseViewKeyToScalar(viewKey);

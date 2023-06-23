@@ -12,6 +12,7 @@ import { bulkKochanski } from '../algorithms/Kochanski';
 import { ALEO_FIELD_MODULUS } from '../params/AleoConstants';
 import { field_sqrt } from '../gpu/entries/fieldSqrtEntry';
 import { point_mul } from '../gpu/entries/curveMulPointEntry';
+import { point_mul_multi } from '../gpu/entries/curveMulPointMultiPassEntry';
 import { FieldMath } from '../utils/FieldMath';
 import { field_pow_by_17 } from '../gpu/entries/fieldPow17Entry';
 import { field_poseidon } from '../gpu/entries/fieldPoseidonEntry';
@@ -263,6 +264,15 @@ export const AllBenchmarks: React.FC = () => {
         name={'Point Scalar Mul'}
         inputsGenerator={pointScalarGenerator}
         gpuFunc={(inputs: number[][]) => point_mul(inputs[0], inputs[1])}
+        gpuInputConverter={gpuPointScalarInputConverter}
+        wasmFunc={(inputs: string[][]) => bulkGroupScalarMul(inputs[0], inputs[1])}
+        wasmInputConverter={wasmPointMulConverter}
+        wasmResultConverter={(results: string[]) => { return results.map((result) => stripGroupSuffix(result))}}
+      />
+      <Benchmark
+        name={'Point Scalar Mul multistage'}
+        inputsGenerator={pointScalarGenerator}
+        gpuFunc={(inputs: number[][]) => point_mul_multi(inputs[0], inputs[1])}
         gpuInputConverter={gpuPointScalarInputConverter}
         wasmFunc={(inputs: string[][]) => bulkGroupScalarMul(inputs[0], inputs[1])}
         wasmInputConverter={wasmPointMulConverter}

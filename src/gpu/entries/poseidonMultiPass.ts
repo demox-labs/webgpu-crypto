@@ -14,7 +14,7 @@ export const field_poseidon_multi_2 = async (input1: Array<number>, input2: Arra
 export const poseidon_multipass_info = (
   numInputs: number,
   input1: Array<number>,
-  aleoMds: Array<number>, 
+  aleoMds: Array<number>,
   aleoRoundConstants: Array<number>,
   useInputs = true
   ): [GPUExecution[], IEntryInfo] => {
@@ -49,7 +49,7 @@ export const poseidon_multipass_info = (
     @group(0) @binding(3)
     var<storage, read_write> output: array<array<Field, 9>>;
 
-     @compute @workgroup_size(${workgroupSize})
+    @compute @workgroup_size(${workgroupSize})
     fn main(
       @builtin(global_invocation_id) global_id : vec3<u32>
     ) {
@@ -106,9 +106,9 @@ export const poseidon_multipass_info = (
     mappedInputs: useInputs ? new Map<number, Uint32Array>([[0, new Uint32Array(input1)]]) : undefined
   }
   const firstHashResult: IGPUResult = { 
-    resultBufferType: "storage",
-    resultBufferSize: arrayBufferSize,
-    resultBufferUsage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
+    resultBufferTypes: ["storage"],
+    resultBufferSizes: [arrayBufferSize],
+    resultBufferUsages: [GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC]
   };
   const firstHashExecution = new GPUExecution(firstHashShader, firstHashInputs, firstHashResult);
   executionSteps.push(firstHashExecution);
@@ -130,9 +130,9 @@ export const poseidon_multipass_info = (
       mappedInputs: new Map<number, Uint32Array>([[1, new Uint32Array(aleoMds)], [2, new Uint32Array(aleoRoundConstants)]])
     }
     const fullRoundResult: IGPUResult = { 
-      resultBufferType: "storage",
-      resultBufferSize: arrayBufferSize,
-      resultBufferUsage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
+      resultBufferTypes: ["storage"],
+      resultBufferSizes: [arrayBufferSize],
+      resultBufferUsages: [GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC]
     };
     const fullRoundExecution = new GPUExecution(fullRoundShader, fullRoundInputs, fullRoundResult);
     executionSteps.push(fullRoundExecution);
@@ -155,9 +155,9 @@ export const poseidon_multipass_info = (
       mappedInputs: new Map<number, Uint32Array>([[1, new Uint32Array(aleoMds)], [2, new Uint32Array(aleoRoundConstants)]])
     }
     const partialRoundResult: IGPUResult = { 
-      resultBufferType: "storage",
-      resultBufferSize: arrayBufferSize,
-      resultBufferUsage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
+      resultBufferTypes: ["storage"],
+      resultBufferSizes: [arrayBufferSize],
+      resultBufferUsages: [GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC]
     };
     const partialRoundExecution = new GPUExecution(partialRoundShader, partialRoundInputs, partialRoundResult);
     executionSteps.push(partialRoundExecution);
@@ -180,9 +180,9 @@ export const poseidon_multipass_info = (
       mappedInputs: new Map<number, Uint32Array>([[1, new Uint32Array(aleoMds)], [2, new Uint32Array(aleoRoundConstants)]])
     }
     const fullRoundResult: IGPUResult = { 
-      resultBufferType: "storage",
-      resultBufferSize: arrayBufferSize,
-      resultBufferUsage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
+      resultBufferTypes: ["storage"],
+      resultBufferSizes: [arrayBufferSize],
+      resultBufferUsages: [GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC]
     };
     const fullRoundExecution = new GPUExecution(fullRoundShader, fullRoundInputs, fullRoundResult);
     executionSteps.push(fullRoundExecution);
@@ -199,9 +199,9 @@ export const poseidon_multipass_info = (
     inputBufferUsages: [GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST]
   }
   const finalResult: IGPUResult = { 
-    resultBufferType: "storage",
-    resultBufferSize: nonArrayBufferSize,
-    resultBufferUsage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC
+    resultBufferTypes: ["storage"],
+    resultBufferSizes: [nonArrayBufferSize],
+    resultBufferUsages: [GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC]
   };
   const finalExecution = new GPUExecution(finalShader, finalInputs, finalResult);
   executionSteps.push(finalExecution);
