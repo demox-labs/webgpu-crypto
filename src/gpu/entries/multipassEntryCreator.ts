@@ -13,6 +13,8 @@ export const multipassEntryCreator = async (passes: IGPUExecution[], entryInfo: 
   
   const commandEncoder = gpu.createCommandEncoder();
 
+  const allBuffers: GPUBuffer[] = [];
+
   let previousResultBuffers: GPUBuffer[] | undefined;
   for (let i = 0; i < passes.length; i++) {
     const execution = passes[i];
@@ -90,6 +92,8 @@ export const multipassEntryCreator = async (passes: IGPUExecution[], entryInfo: 
     passEncoder.end();
 
     previousResultBuffers = resultBuffers;
+    allBuffers.push(...inputBuffers);
+    allBuffers.push(...resultBuffers);
   }
 
   // Create buffer to read result
@@ -97,6 +101,7 @@ export const multipassEntryCreator = async (passes: IGPUExecution[], entryInfo: 
     size: entryInfo.outputSize,
     usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
   });
+  allBuffers.push(gpuReadBuffer);
   
   if (previousResultBuffers) {
     commandEncoder.copyBufferToBuffer(
@@ -115,6 +120,12 @@ export const multipassEntryCreator = async (passes: IGPUExecution[], entryInfo: 
   const arrayBuffer = gpuReadBuffer.getMappedRange();
   const result = new Uint32Array(arrayBuffer.slice(0));
   gpuReadBuffer.unmap();
+
+  // Destroy all buffers
+  for (const buffer of allBuffers) {
+    buffer.destroy();
+  }
+  gpu.destroy();
   
   return result;
 }

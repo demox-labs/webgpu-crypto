@@ -153,7 +153,7 @@ export const AllBenchmarks: React.FC = () => {
         inputsGenerator={cipherTextsGenerator}
         gpuFunc={(inputs: number[][]) => is_owner(inputs[0], inputs[1], inputs[2], inputs[3], inputs[4], inputs[5])}
         gpuInputConverter={gpuCipherTextInputConverter}
-        gpuResultConverter={(results: bigint[]) => { return results.map((result) => result === BigInt(1) ? 'true' : 'false')}}
+        gpuResultConverter={(results: bigint[]) => { return results.map((result) => result === BigInt(0) ? 'true' : 'false')}}
         // gpuResultConverter={(results: bigint[]) => { return results.map((result) => result.toString())}}
         wasmFunc={(inputs: string[][]) => bulkIsOwner(inputs[0], ownerViewKey)}
         wasmInputConverter={(inputs: string[][]) => {return inputs}}
