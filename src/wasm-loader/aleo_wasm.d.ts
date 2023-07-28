@@ -106,6 +106,12 @@ export class Address {
 * @returns {string}
 */
   static group_scalar_mul(group: string, scalar: string): string;
+/**
+* @param {Array<any>} groups
+* @param {Array<any>} scalars
+* @returns {string}
+*/
+  static msm(groups: Array<any>, scalars: Array<any>): string;
 }
 /**
 * Webassembly Representation of an Aleo function execution response

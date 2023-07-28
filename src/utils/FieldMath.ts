@@ -1,10 +1,11 @@
-import { CurveFn, twistedEdwards } from "@noble/curves/abstract/edwards";
+import { CurveFn, ExtPointType, twistedEdwards } from "@noble/curves/abstract/edwards";
 import { sha512 } from '@noble/hashes/sha512';
 import { poseidon, PoseidonOpts } from '@noble/curves/abstract/poseidon';
 import { Field, IField } from "@noble/curves/abstract/modular";
 import { randomBytes } from "crypto";
 import { aleoMdStrings, aleoRoundConstantStrings } from "../params/PoseidonParams";
 import { ALEO_FIELD_MODULUS, EDWARDS_A, EDWARDS_D, SUBGROUP_CHARACTERISTIC } from "../params/AleoConstants";
+import { AffinePoint } from "@noble/curves/abstract/curve";
 
 export class FieldMath {
   customEdwards: CurveFn;
@@ -26,7 +27,7 @@ export class FieldMath {
     this.encryptionDomain = BigInt('1187534166381405136191308758137566032926460981470575291457');
     this.poseidonDomain = BigInt('4470955116825994810352013241409');
     this.aleoFieldOrder = ALEO_FIELD_MODULUS;
-    this.Fp = Field(ALEO_FIELD_MODULUS, undefined, true);
+    this.Fp = Field(ALEO_FIELD_MODULUS, undefined, false);
     this.aleoMdsAsBigInts = aleoMdStrings.map(row => row.map(elm => this.Fp.create(BigInt(elm))));
     this.aleoRoundConstantsAsBigInts = aleoRoundConstantStrings.map(row => row.map(elm => this.Fp.create(BigInt(elm))));
     this.customEdwards = this.instantiateCustomEdwards();
@@ -57,6 +58,16 @@ export class FieldMath {
       const negY = this.Fp.neg(y);
       return aleoEdwards.ExtendedPoint.fromAffine({ x: x_field, y: negY });
     }
+  }
+
+  createPoint = (x: bigint, y: bigint, t: bigint, z: bigint): ExtPointType => {
+    return new this.customEdwards.ExtendedPoint(x, y, z, t);
+  }
+
+  addPoints = (points: ExtPointType[]): AffinePoint<bigint> => {
+    // iterate through the points and add all of them up together
+    const extPointResult = points.reduce((acc, point) => {return acc.add(point)}, this.customEdwards.ExtendedPoint.ZERO);
+    return extPointResult.toAffine();
   }
 
   subtract = (x: bigint, y: bigint): bigint => {

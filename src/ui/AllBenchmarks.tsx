@@ -1,6 +1,6 @@
 import React from 'react';
 import { field_double } from '../gpu/entries/fieldDoubleEntry';
-import { bulkAddFields, bulkDoubleFields, bulkInvertFields, bulkMulFields, bulkSubFields, bulkPowFields, bulkPowFields17, bulkSqrtFields, bulkGroupScalarMul, bulkPoseidon, bulkIsOwner } from '../utils/wasmFunctions';
+import { bulkAddFields, bulkDoubleFields, bulkInvertFields, bulkMulFields, bulkSubFields, bulkPowFields, bulkPowFields17, bulkSqrtFields, bulkGroupScalarMul, bulkPoseidon, bulkIsOwner, msm } from '../utils/wasmFunctions';
 import { Benchmark } from './Benchmark';
 import { bigIntToU32Array, bigIntsToU32Array, generateRandomFields, stripFieldSuffix, stripGroupSuffix } from '../gpu/utils';
 import { field_add } from '../gpu/entries/fieldAddEntry';
@@ -22,6 +22,7 @@ import { is_owner } from '../gpu/entries/isOwnerEntry';
 import { is_owner_multi } from '../gpu/entries/isOwnerMultipassEntry';
 import { convertBytesToFieldElement, convertCiphertextToDataView, getNonce, getPrivateOwnerBytes } from '../parsers/RecordParser';
 import { field_poseidon_multi_2 } from '../gpu/entries/poseidonMultiPass';
+import { naive_msm } from '../gpu/entries/naiveMSMEntry';
 
 const singleInputGenerator = (inputSize: number): bigint[][] => {
   return [generateRandomFields(inputSize)];
@@ -310,6 +311,16 @@ export const AllBenchmarks: React.FC = () => {
         wasmFunc={(inputs: string[][]) => bulkPoseidon(inputs[0])}
         wasmInputConverter={wasmBigIntToFieldConverter}
         wasmResultConverter={wasmFieldResultConverter}
+      />
+      <Benchmark
+        name={'Naive MSM'}
+        inputsGenerator={pointScalarGenerator}
+        // change to custom summation function using FieldMath.addPoints
+        gpuFunc={(inputs: number[][]) => naive_msm(inputs[0], inputs[1])}
+        gpuInputConverter={gpuPointScalarInputConverter}
+        wasmFunc={(inputs: string[][]) => msm(inputs[0], inputs[1])}
+        wasmInputConverter={wasmPointMulConverter}
+        wasmResultConverter={(results: string[]) => { return results.map((result) => stripGroupSuffix(result))}}
       />
     </div>
   )

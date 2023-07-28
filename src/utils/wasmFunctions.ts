@@ -193,6 +193,7 @@ export const bulkGroupScalarMul = async (inputs1: string[], inputs2: string[]): 
   }
   return results;
 };
+
 export const bulkPowFields17 = async (inputs1: string[]): Promise<string[]> => {
   const aleo = await loadWasmModule();
   const results: string[] = [];
@@ -212,4 +213,9 @@ export const bulkIsOwner = async (cipherTexts: string[], viewKey: string): Promi
   }
   
   return results;
+}
+
+export const msm = async (groups: string[], scalars: string[]): Promise<string[]> => {
+  const aleo = await loadWasmModule();
+  return [aleo.Address.msm(groups, scalars)];
 }
