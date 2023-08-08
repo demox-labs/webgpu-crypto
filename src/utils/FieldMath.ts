@@ -34,7 +34,7 @@ export class FieldMath {
     this.subgroupCharacteristic = SUBGROUP_CHARACTERISTIC;
   }
 
-  getPointFromX = (x_field: bigint): { x: bigint, y: bigint } => {
+  getPointFromX = (x_field: bigint): ExtPointType => {
     // Compute y^2 = (a - x^2) / (1 + d * x^2) mod F (a = -1 for aleo (or 1 less than the field size))
 
     const xSquared = this.Fp.sqr(x_field);

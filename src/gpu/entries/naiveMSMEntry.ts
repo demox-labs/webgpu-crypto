@@ -16,6 +16,7 @@ export const naive_msm = async (input1: Array<number>, input2: Array<number>) =>
 
   const bufferResult = await multipassEntryCreator(execution, entryInfo);
   const bigIntResult = u32ArrayToBigInts(bufferResult || new Uint32Array(0));
+  console.log(bigIntResult);
 
   const fieldMath = new FieldMath();
   const pointArray: ExtPointType[] = [];
@@ -30,7 +31,7 @@ export const naive_msm = async (input1: Array<number>, input2: Array<number>) =>
     const point = fieldMath.createPoint(x, y, t, z);
     pointArray.push(point);
   }
-
+  console.log(pointArray);
   const affineResult = fieldMath.addPoints(pointArray);
   const u32XCoord = bigIntToU32Array(affineResult.x);
   return u32XCoord;

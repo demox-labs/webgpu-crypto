@@ -1,5 +1,31 @@
 import { ALEO_FIELD_MODULUS } from "../params/AleoConstants";
 
+export const bigIntsToU16Array = (beBigInts: bigint[]): Uint16Array => {
+  const intsAs16s = beBigInts.map(bigInt => bigIntToU16Array(bigInt));
+  const u16Array = new Uint16Array(beBigInts.length * 16);
+  intsAs16s.forEach((intAs16, index) => {u16Array.set(intAs16, index * 16)});
+  return u16Array;
+}
+
+export const bigIntToU16Array = (beBigInt: bigint): Uint16Array => {
+  const numBits = 256;
+  const bitsPerElement = 16;
+  const numElements = numBits / bitsPerElement; // 16
+  const u16Array = new Uint16Array(numElements); // [[]... []] size 16
+  const nonZeroBitString = beBigInt.toString(2); // just converts to a string of 0's and 1's but doesn't mean it's 256 in size
+  const paddedZeros = '0'.repeat(numBits - nonZeroBitString.length); // number of 0's needed to add to make the string 256 bits
+  const bitString = paddedZeros + nonZeroBitString; // should be full 256 bit string
+  for (let i = 0; i < numElements; i++) {
+    const startIndex = i * bitsPerElement;
+    const endIndex = startIndex + bitsPerElement;
+    const bitStringSlice = bitString.slice(startIndex, endIndex);
+    const u16 = parseInt(bitStringSlice, 2);
+    u16Array[i] = u16;
+  } // just chopping up the bits into 16 bit slices and dumping them into new array
+
+  return u16Array;
+};
+
 // assume bigints are big endian 256-bit integers
 export const bigIntsToU32Array = (beBigInts: bigint[]): Uint32Array => {
   const intsAs32s = beBigInts.map(bigInt => bigIntToU32Array(bigInt));
