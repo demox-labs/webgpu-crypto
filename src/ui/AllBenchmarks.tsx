@@ -2,7 +2,8 @@ import React from 'react';
 import { field_double } from '../gpu/entries/field/fieldDoubleEntry';
 import { bulkAddFields, bulkDoubleFields, bulkInvertFields, bulkMulFields, bulkSubFields, bulkPowFields, bulkPowFields17, bulkSqrtFields, bulkGroupScalarMul, bulkPoseidon, bulkIsOwner, msm, bulkAddGroups } from '../utils/aleoWasmFunctions';
 import { Benchmark } from './Benchmark';
-import { bigIntToU32Array, bigIntsToU32Array, generateRandomFields, stripFieldSuffix, stripGroupSuffix } from '../gpu/utils';
+import { PippingerBenchmark } from './PippingerBenchmark';
+import { bigIntToU32Array, bigIntsToU16Array, bigIntsToU32Array, generateRandomFields, stripFieldSuffix, stripGroupSuffix } from '../gpu/utils';
 import { field_add } from '../gpu/entries/field/fieldAddEntry';
 import { field_sub } from '../gpu/entries/field/fieldSubEntry';
 import { field_inverse } from '../gpu/entries/field/fieldInverseEntry';
@@ -27,6 +28,8 @@ import { point_add } from '../gpu/entries/curve/curveAddPointsEntry';
 import { point_mul_windowed } from '../gpu/entries/curve/curveMulPointWindowedEntry';
 import { field_poseidon_reuse } from '../gpu/entries/poseidonMultiPassBufferReuse';
 import { point_mul_multi_reuse } from '../gpu/entries/pointScalarMultipassReuseBuffer';
+import { pippinger_msm } from '../gpu/entries/pippingerMSMEntry';
+import { ExtPointType } from '@noble/curves/abstract/edwards';
 
 const singleInputGenerator = (inputSize: number): bigint[][] => {
   return [generateRandomFields(inputSize)];
@@ -39,13 +42,12 @@ const squaresGenerator = (inputSize: number): bigint[][] => {
   return [squaredFields];
 };
 
+// Note: For now this will generate random scalars, but generate the same point
+// for the inputs. This point is a known point on the curve.
 const pointScalarGenerator = (inputSize: number): bigint[][] => {
   const groupArr = new Array(inputSize);
-  const scalarArr = new Array(inputSize);
-  scalarArr.fill(BigInt('303411688971426691737907573487068071512981595762917890905859781721748416598'));
-  // known group
   groupArr.fill(BigInt('2796670805570508460920584878396618987767121022598342527208237783066948667246'));
-  // const scalarArr = generateRandomFields(inputSize);
+  const scalarArr = generateRandomFields(inputSize);
   return [groupArr, scalarArr];
 };
 
@@ -163,6 +165,19 @@ const gpuPointsInputConverter = (inputs: bigint[][]): number[][] => {
 
   return pointInputs.map((input) => Array.from(bigIntsToU32Array(input)));
 }
+// After instantiating the FieldMath object here, it needs to be passed anywhere we need to 
+// use the field math library to do operations (like add or multiply) on these points. 
+// Was seeing a "Point is not instance of Point" error otherwise.
+const pippingerGpuInputConverter = (scalars: bigint[]): [ExtPointType[], number[], FieldMath] => {
+  const fieldMath = new FieldMath();
+  const pointsArr = new Array(scalars.length);
+  const x = BigInt('2796670805570508460920584878396618987767121022598342527208237783066948667246');
+  const y = BigInt('8134280397689638111748378379571739274369602049665521098046934931245960532166');
+  const t = BigInt('3446088593515175914550487355059397868296219355049460558182099906777968652023');
+  const z = BigInt('1');
+  const extPoint = fieldMath.createPoint(x, y , t, z);
+  return [pointsArr.fill(extPoint), Array.from(bigIntsToU16Array(scalars)), fieldMath];
+};
 
 const wasmFieldResultConverter = (results: string[]): string[] => {
   return results.map((result) => stripFieldSuffix(result));
@@ -385,6 +400,15 @@ export const AllBenchmarks: React.FC = () => {
         // change to custom summation function using FieldMath.addPoints
         gpuFunc={(inputs: number[][]) => naive_msm(inputs[0], inputs[1])}
         gpuInputConverter={gpuPointScalarInputConverter}
+        wasmFunc={(inputs: string[][]) => msm(inputs[0], inputs[1])}
+        wasmInputConverter={wasmPointMulConverter}
+        wasmResultConverter={(results: string[]) => { return results.map((result) => stripGroupSuffix(result))}}
+      />
+      <PippingerBenchmark
+        name={'Pippinger MSM V1'}
+        inputsGenerator={pointScalarGenerator}
+        gpuFunc={(points: ExtPointType[], scalars: number[], fieldMath: FieldMath) => pippinger_msm(points, scalars, fieldMath)}
+        gpuInputConverter={pippingerGpuInputConverter}
         wasmFunc={(inputs: string[][]) => msm(inputs[0], inputs[1])}
         wasmInputConverter={wasmPointMulConverter}
         wasmResultConverter={(results: string[]) => { return results.map((result) => stripGroupSuffix(result))}}

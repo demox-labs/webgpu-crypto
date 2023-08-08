@@ -97,6 +97,10 @@ fn is_odd(a: u256) -> bool {
   return (a.components[7u] & 1u) == 1u;
 }
 
+fn is_odd_32_bits(a: u32) -> bool {
+  return (a & 1u) == 1u;
+}
+
 // no underflow checking for u256
 fn u256_sub(a: u256, b: u256) -> u256 {
   var sub: u256;

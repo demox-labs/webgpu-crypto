@@ -6,6 +6,8 @@ describe('curveMulPoint', () => {
   let browser: Browser;
   beforeAll(async () => {
     browser = await puppeteer.launch({
+      // Might need to be configurable at some point. 
+      // '/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome'
       executablePath: '/Applications/Google\ Chrome\ Beta.app/Contents/MacOS/Google\ Chrome\ Beta',
       devtools: true,
       headless: false,
