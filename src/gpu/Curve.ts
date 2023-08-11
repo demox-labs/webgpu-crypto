@@ -75,6 +75,24 @@ fn double_point(p: Point) -> Point {
   return Point(doubled_x, doubled_y, doubled_t, doubled_z);
 }
 
+fn mul_point_32_bit_scalar(p: Point, scalar: u32) -> Point {
+  var result: Point = Point (U256_ZERO, U256_ONE, U256_ZERO, U256_ONE);
+  var temp = p;
+  var scalar_iter = scalar;
+  while (!(scalar_iter == 0u)) {
+    if ((scalar_iter & 1u) == 1u) {
+      result = add_points(result, temp);
+      // result = temp;
+    }
+
+    temp = double_point(temp);
+
+    scalar_iter = scalar_iter >> 1u;
+  }
+
+  return result;
+}
+
 fn mul_point(p: Point, scalar: Field) -> Point {
   var result: Point = Point (U256_ZERO, U256_ONE, U256_ZERO, U256_ONE);
   var temp = p;

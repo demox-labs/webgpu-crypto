@@ -25,7 +25,6 @@ import { convertBytesToFieldElement, convertCiphertextToDataView, getNonce, getP
 import { field_poseidon_multi_2 } from '../gpu/entries/poseidonMultiPass';
 import { naive_msm } from '../gpu/entries/naiveMSMEntry';
 import { pippinger_msm } from '../gpu/entries/pippingerMSMEntry';
-import { ExtPointType } from '@noble/curves/abstract/edwards';
 
 const singleInputGenerator = (inputSize: number): bigint[][] => {
   return [generateRandomFields(inputSize)];
@@ -143,13 +142,8 @@ const gpuPointScalarInputConverter = (inputs: bigint[][]): number[][] => {
   return [Array.from(bigIntsToU32Array(point_inputs)), Array.from(bigIntsToU32Array(inputs[1]))];
 };
 
-const dennisConverter = (inputs: bigint[][]): [ExtPointType[], number[]] => {
-  const x_coords = inputs[0];
-  const fieldMath = new FieldMath();
-
-  const extended_points = x_coords.map((x) => fieldMath.getPointFromX(x));
-
-  return [Array.from(extended_points), Array.from(bigIntsToU16Array(inputs[1]))];
+const pippingerGpuInputConverter = (inputs: bigint[][]): [bigint[], number[]] => {
+  return [Array.from(inputs[0]), Array.from(bigIntsToU16Array(inputs[1]))];
 };
 
 const wasmFieldResultConverter = (results: string[]): string[] => {
@@ -346,8 +340,8 @@ export const AllBenchmarks: React.FC = () => {
       <PippingerBenchmark
         name={'Pippinger MSM V1'}
         inputsGenerator={pointScalarGenerator}
-        gpuFunc={(points: ExtPointType[], scalars: number[]) => pippinger_msm(points, scalars)}
-        gpuInputConverter={dennisConverter}
+        gpuFunc={(points: bigint[], scalars: number[]) => pippinger_msm(points, scalars)}
+        gpuInputConverter={pippingerGpuInputConverter}
         wasmFunc={(inputs: string[][]) => msm(inputs[0], inputs[1])}
         wasmInputConverter={wasmPointMulConverter}
         wasmResultConverter={(results: string[]) => { return results.map((result) => stripGroupSuffix(result))}}

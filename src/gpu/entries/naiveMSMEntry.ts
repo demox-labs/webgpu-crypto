@@ -16,7 +16,6 @@ export const naive_msm = async (input1: Array<number>, input2: Array<number>) =>
 
   const bufferResult = await multipassEntryCreator(execution, entryInfo);
   const bigIntResult = u32ArrayToBigInts(bufferResult || new Uint32Array(0));
-  console.log(bigIntResult);
 
   const fieldMath = new FieldMath();
   const pointArray: ExtPointType[] = [];

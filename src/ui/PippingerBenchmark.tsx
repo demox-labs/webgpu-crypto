@@ -3,13 +3,12 @@
 import React, { useEffect, useState } from 'react';
 import { u32ArrayToBigInts } from '../gpu/utils';
 import CSVExportButton from './CSVExportButton';
-import { ExtPointType } from '@noble/curves/abstract/edwards';
 
 interface PippingerBenchmarkProps {
   name: string;
   inputsGenerator: (inputSize: number) => any[][];
-  gpuFunc: (points: ExtPointType[], scalars: number[]) => Promise<Uint32Array>;
-  gpuInputConverter: (inputs: bigint[][]) => [ExtPointType[], number[]];
+  gpuFunc: (points: bigint[], scalars: number[]) => Promise<Uint32Array>;
+  gpuInputConverter: (inputs: bigint[][]) => [bigint[], number[]];
   gpuResultConverter?: (results: bigint[]) => string[];
   wasmFunc: (inputs: any[][]) => Promise<string[]>;
   wasmInputConverter: (inputs: any[][]) => string[][];

@@ -7,9 +7,6 @@ import { FieldSubWGSL } from "../FieldSub";
 import { entry } from "./entryCreator"
 
 export const point_mul = async (input1: Array<number>, input2: Array<number>) => {
-  console.log("DENNIS");
-  console.log(input1);
-  console.log(input2);
   const shaderEntry = `
     @group(0) @binding(0)
     var<storage, read> input1: array<AffinePoint>;
