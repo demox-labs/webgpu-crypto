@@ -25,6 +25,7 @@ import { convertBytesToFieldElement, convertCiphertextToDataView, getNonce, getP
 import { field_poseidon_multi_2 } from '../gpu/entries/poseidonMultiPass';
 import { naive_msm } from '../gpu/entries/naiveMSMEntry';
 import { pippinger_msm } from '../gpu/entries/pippingerMSMEntry';
+import { ExtPointType } from '@noble/curves/abstract/edwards';
 
 const singleInputGenerator = (inputSize: number): bigint[][] => {
   return [generateRandomFields(inputSize)];
@@ -142,8 +143,15 @@ const gpuPointScalarInputConverter = (inputs: bigint[][]): number[][] => {
   return [Array.from(bigIntsToU32Array(point_inputs)), Array.from(bigIntsToU32Array(inputs[1]))];
 };
 
-const pippingerGpuInputConverter = (inputs: bigint[][]): [bigint[], number[]] => {
-  return [Array.from(inputs[0]), Array.from(bigIntsToU16Array(inputs[1]))];
+const pippingerGpuInputConverter = (scalars: bigint[]): [ExtPointType[], number[], FieldMath] => {
+  const fieldMath = new FieldMath();
+  const pointsArr = new Array(scalars.length);
+  const x = BigInt('2796670805570508460920584878396618987767121022598342527208237783066948667246');
+  const y = BigInt('8134280397689638111748378379571739274369602049665521098046934931245960532166');
+  const t = BigInt('3446088593515175914550487355059397868296219355049460558182099906777968652023');
+  const z = BigInt('1');
+  const extPoint = fieldMath.createPoint(x, y , t, z);
+  return [pointsArr.fill(extPoint), Array.from(bigIntsToU16Array(scalars)), fieldMath];
 };
 
 const wasmFieldResultConverter = (results: string[]): string[] => {
@@ -340,7 +348,7 @@ export const AllBenchmarks: React.FC = () => {
       <PippingerBenchmark
         name={'Pippinger MSM V1'}
         inputsGenerator={pointScalarGenerator}
-        gpuFunc={(points: bigint[], scalars: number[]) => pippinger_msm(points, scalars)}
+        gpuFunc={(points: ExtPointType[], scalars: number[], fieldMath: FieldMath) => pippinger_msm(points, scalars, fieldMath)}
         gpuInputConverter={pippingerGpuInputConverter}
         wasmFunc={(inputs: string[][]) => msm(inputs[0], inputs[1])}
         wasmInputConverter={wasmPointMulConverter}

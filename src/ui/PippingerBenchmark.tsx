@@ -3,12 +3,14 @@
 import React, { useEffect, useState } from 'react';
 import { u32ArrayToBigInts } from '../gpu/utils';
 import CSVExportButton from './CSVExportButton';
+import { ExtPointType } from '@noble/curves/abstract/edwards';
+import { FieldMath } from '../utils/FieldMath';
 
 interface PippingerBenchmarkProps {
   name: string;
   inputsGenerator: (inputSize: number) => any[][];
-  gpuFunc: (points: bigint[], scalars: number[]) => Promise<Uint32Array>;
-  gpuInputConverter: (inputs: bigint[][]) => [bigint[], number[]];
+  gpuFunc: (points: ExtPointType[], scalars: number[], fieldMath: FieldMath) => Promise<Uint32Array>;
+  gpuInputConverter: (scalars: bigint[]) => [ExtPointType[], number[], FieldMath];
   gpuResultConverter?: (results: bigint[]) => string[];
   wasmFunc: (inputs: any[][]) => Promise<string[]>;
   wasmInputConverter: (inputs: any[][]) => string[][];
@@ -83,10 +85,10 @@ export const PippingerBenchmark: React.FC<PippingerBenchmarkProps> = (
   };
 
   const runGpu = async () => {
-    const gpuInputs = gpuInputConverter(inputs);
+    const gpuInputs = gpuInputConverter(inputs[1]);
     setGpuRunning(true);
     const gpuStart = performance.now();
-    const result = await gpuFunc(gpuInputs[0], gpuInputs[1]);
+    const result = await gpuFunc(gpuInputs[0], gpuInputs[1], gpuInputs[2]);
     const gpuEnd = performance.now();
     const gpuPerformance = gpuEnd - gpuStart;
     setGpuTime(gpuPerformance);

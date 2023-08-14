@@ -54,36 +54,26 @@ function chunkArray<T>(inputArray: T[], chunkSize = 20000): T[][] {
     return tempArray;
 }
 
-export const pippinger_msm = async (points: bigint[], scalars: number[]) => {
+export const pippinger_msm = async (points: ExtPointType[], scalars: number[], fieldMath: FieldMath) => {
     const C = 16;
-    const fieldMath = new FieldMath();
-    
-    // The points array contains only a list of x coordinates so we 
-    // need to get the full extended points
-
-    let start = performance.now();
-    const extendedPoints = points.map((x) => fieldMath.getPointFromX(x)); 
-    let end = performance.now();
-    console.log(`Time taken to create extended points: ${end - start} milliseconds`);
 
     // Need to setup our 16 MSM (T_1, T_2, ..., T_16). We'll do this
     // by via the bucket method for each MSM
-
-    start = performance.now();
+    let start = performance.now();
     const msms = [];
     for (let i = 0; i < C; i++) {
         msms.push(initializeBucket(fieldMath, C));
     }
-    end = performance.now();
+    let end = performance.now();
     console.log(`Time taken to create 16 Maps: ${end - start} milliseconds`);
 
     start = performance.now();
     let scalarIndex = 0;
     let pointsIndex = 0;
-    while (pointsIndex < extendedPoints.length) {
+    while (pointsIndex < points.length) {
         
         const scalar = scalars[scalarIndex];
-        const pointToAdd = extendedPoints[pointsIndex];
+        const pointToAdd = points[pointsIndex];
 
         const msmIndex = scalarIndex % C;
         
