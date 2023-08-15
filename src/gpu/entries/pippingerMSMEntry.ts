@@ -41,18 +41,18 @@ const initializeBucket = (fieldMath: FieldMath, c: number): Map<number, ExtPoint
     return T;
 }
 
-function chunkArray<T>(inputArray: T[], chunkSize = 20000): T[][] {
-    let index = 0;
-    const arrayLength = inputArray.length;
-    const tempArray = [];
+// function chunkArray<T>(inputArray: T[], chunkSize = 20000): T[][] {
+//     let index = 0;
+//     const arrayLength = inputArray.length;
+//     const tempArray = [];
     
-    while (index < arrayLength) {
-        tempArray.push(inputArray.slice(index, index + chunkSize));
-        index += chunkSize;
-    }
+//     while (index < arrayLength) {
+//         tempArray.push(inputArray.slice(index, index + chunkSize));
+//         index += chunkSize;
+//     }
     
-    return tempArray;
-}
+//     return tempArray;
+// }
 
 export const pippinger_msm = async (points: ExtPointType[], scalars: number[], fieldMath: FieldMath) => {
     const C = 16;
@@ -90,40 +90,55 @@ export const pippinger_msm = async (points: ExtPointType[], scalars: number[], f
     console.log(`Time taken to apply bucket method: ${end - start} milliseconds`);
 
     start = performance.now();
-    const results = [];
+    const pointsConcatenated: bigint[] = [];
+    const scalarsConcatenated: number[] = [];
     for (let i = 0; i < msms.length; i++) {
-        const startLoop = performance.now();
-        const flattenedPoints = Array.from(msms[i].values()).map((x) => [x.ex, x.ey, x.et, x.ez]).flat();
-
-        const chunkedPoints = chunkArray(flattenedPoints, 20000);
-        const chunkedScalars = chunkArray(Array.from(msms[0].keys()), 5000);
-
-        const bigIntResult = [];
-
-        for (let i = 0; i < chunkedPoints.length; i++) {
-            const bufferResult = await point_mul(Array.from(bigIntsToU32Array(chunkedPoints[i])), chunkedScalars[i]);
-            bigIntResult.push(...u32ArrayToBigInts(bufferResult || new Uint32Array(0)));
-        }
-
-        const pointArray: ExtPointType[] = [];
-
-        // convert big int result to extended points
-        for (let i = 0; i < bigIntResult.length; i += 4) {
-            const x = bigIntResult[i];
-            const y = bigIntResult[i + 1];
-            const t = bigIntResult[i + 2];
-            const z = bigIntResult[i + 3];
-            const point = fieldMath.createPoint(x, y, t, z);
-            pointArray.push(point);
-        }
-        
-        results.push(pointArray.reduce((acc, point) => {return acc.add(point)}, fieldMath.customEdwards.ExtendedPoint.ZERO));
-        const endLoop = performance.now();
-        console.log(`Time taken to solve individual MSM (T_i): ${endLoop - startLoop} milliseconds`);
+        Array.from(msms[i].values()).map((x) => { 
+            const expanded = [x.ex, x.ey, x.et, x.ez];
+            pointsConcatenated.push(...expanded);
+        });
+        scalarsConcatenated.push(...Array.from(msms[i].keys()))
     }
     end = performance.now();
-    console.log(`Time taken to solve all 16 MSMs: ${end - start} milliseconds`);
+    console.log(`Time taken to prep scalars and points for GPU inputs: ${end - start} milliseconds`);
+    
+    start = performance.now();
+    const bufferResult = await point_mul(Array.from(bigIntsToU32Array(pointsConcatenated)), scalarsConcatenated);
+    end = performance.now();
+    console.log(`Time taken to do single pass GPU computation with all inputs: ${end - start} milliseconds`);
+    const bigIntResults = (u32ArrayToBigInts(bufferResult) || new Uint32Array());
+    const pointArray: ExtPointType[] = [];
 
+    start = performance.now();
+    // convert big int result to extended points
+    for (let i = 0; i < bigIntResults.length; i += 4) {
+        const x = bigIntResults[i];
+        const y = bigIntResults[i + 1];
+        const t = bigIntResults[i + 2];
+        const z = bigIntResults[i + 3];
+        const point = fieldMath.createPoint(x, y, t, z);
+        pointArray.push(point);
+    }
+    end = performance.now();
+    console.log(`Time taken to convert GPU results back to Extended Point Types: ${end - start} milliseconds`);
+
+    start = performance.now();
+    const results = [];
+    let currentSum = fieldMath.customEdwards.ExtendedPoint.ZERO;
+    for (let i = 0; i < pointArray.length; i++) {
+        currentSum = currentSum.add(pointArray[i]);
+
+        if (i % 65536 === 0 && i !== 0) {
+            results.push(currentSum);
+            currentSum = fieldMath.customEdwards.ExtendedPoint.ZERO;
+        }
+    }
+    
+    results.push(currentSum);
+    end = performance.now();
+    console.log(`Time taken to sum up individual MSMs: ${end - start} milliseconds`);
+
+    // UNCOMMENT ME 
     start = performance.now();
     let anotherResult = results[0];
     for (let i = 1; i < results.length; i++) {
@@ -139,6 +154,58 @@ export const pippinger_msm = async (points: ExtPointType[], scalars: number[], f
     end = performance.now();
     console.log(`Time taken to prepare and return result: ${end - start} milliseconds`);
     return u32XCoord;
+
+    // start = performance.now();
+    // const results = [];
+    // for (let i = 0; i < msms.length; i++) {
+    //     const startLoop = performance.now();
+    //     const flattenedPoints = Array.from(msms[i].values()).map((x) => [x.ex, x.ey, x.et, x.ez]).flat();
+
+    //     const chunkedPoints = chunkArray(flattenedPoints, 20000);
+    //     const chunkedScalars = chunkArray(Array.from(msms[0].keys()), 5000);
+
+    //     const bigIntResult = [];
+
+    //     for (let i = 0; i < chunkedPoints.length; i++) {
+    //         const bufferResult = await point_mul(Array.from(bigIntsToU32Array(chunkedPoints[i])), chunkedScalars[i]);
+    //         bigIntResult.push(...u32ArrayToBigInts(bufferResult || new Uint32Array(0)));
+    //     }
+
+    //     const pointArray: ExtPointType[] = [];
+
+    //     // convert big int result to extended points
+    //     for (let i = 0; i < bigIntResult.length; i += 4) {
+    //         const x = bigIntResult[i];
+    //         const y = bigIntResult[i + 1];
+    //         const t = bigIntResult[i + 2];
+    //         const z = bigIntResult[i + 3];
+    //         const point = fieldMath.createPoint(x, y, t, z);
+    //         pointArray.push(point);
+    //     }
+        
+    //     results.push(pointArray.reduce((acc, point) => {return acc.add(point)}, fieldMath.customEdwards.ExtendedPoint.ZERO));
+    //     const endLoop = performance.now();
+    //     console.log(`Time taken to solve individual MSM (T_i): ${endLoop - startLoop} milliseconds`);
+    // }
+    // end = performance.now();
+    // console.log(`Time taken to solve all 16 MSMs: ${end - start} milliseconds`);
+
+    // UNCOMMENT ME 
+    // start = performance.now();
+    // let anotherResult = results[0];
+    // for (let i = 1; i < results.length; i++) {
+    //     anotherResult = anotherResult.multiplyUnsafe(BigInt(Math.pow(2, C)));
+    //     anotherResult = anotherResult.add(results[i]);
+    // }
+    // end = performance.now();
+    // console.log(`Time taken to solve for original MSM: ${end - start} milliseconds`);
+
+    // start = performance.now();
+    // const affineResult = anotherResult.toAffine();
+    // const u32XCoord = bigIntToU32Array(affineResult.x);
+    // end = performance.now();
+    // console.log(`Time taken to prepare and return result: ${end - start} milliseconds`);
+    // return u32XCoord;
 }
 
 export const point_mul = async (input1: Array<number>, input2: Array<number>) => {
