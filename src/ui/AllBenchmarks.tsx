@@ -48,11 +48,10 @@ const squaresGenerator = (inputSize: number): bigint[][] => {
 // };
 const pointScalarGenerator = (inputSize: number): bigint[][] => {
   const groupArr = new Array(inputSize);
-  const scalarArr = new Array(inputSize);
-  scalarArr.fill(BigInt('303411688971426691737907573487068071512981595762917890905859781721748416598'));
+  //scalarArr.fill(BigInt('303411688971426691737907573487068071512981595762917890905859781721748416598'));
   // known group
   groupArr.fill(BigInt('2796670805570508460920584878396618987767121022598342527208237783066948667246'));
-  // const scalarArr = generateRandomFields(inputSize);
+  const scalarArr = generateRandomFields(inputSize);
   return [groupArr, scalarArr];
 };
 
