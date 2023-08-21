@@ -38,7 +38,7 @@ export const point_add = async (input1: Array<number>, input2: Array<number>) =>
 
   const shaderModules = [FieldModulusWGSL, FieldAddWGSL, FieldSubWGSL, FieldDoubleWGSL, FieldInverseWGSL, CurveWGSL, shaderEntry];
 
-  return await entry([input1, input2], shaderModules, 16, 32);
+  return await entry([input1, input2], shaderModules, 16, 8);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
