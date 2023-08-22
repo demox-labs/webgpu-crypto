@@ -63,8 +63,9 @@ export const addManyPointsMedium = async(points: ExtPointType[], fieldMath: Fiel
 }
 
 export const addManyPointsLarge = async(points: ExtPointType[], fieldMath: FieldMath) => {
-    const bucketSize = 16;
+    const bucketSize = 2;
     const numberOfBuckets = Math.ceil(points.length / bucketSize);
+    console.log('Number of Buckets', numberOfBuckets);
 
     // Flatten the array and extend with zeros
     const flattened = points.concat(new Array(bucketSize * numberOfBuckets - points.length).fill(fieldMath.customEdwards.ExtendedPoint.ZERO));
@@ -74,7 +75,8 @@ export const addManyPointsLarge = async(points: ExtPointType[], fieldMath: Field
         flattenedPoints.push(...expanded);
     });
 
-    const chunkedPoints = chunkArray(flattenedPoints, numberOfBuckets/5, bucketSize);
+    const chunkedPoints = chunkArray(flattenedPoints, 65536, 4*bucketSize);
+    console.log(chunkedPoints);
     const bigIntResults = [];
     for (let i = 0; i < chunkedPoints.length; i++) {
         const start = performance.now();
@@ -126,20 +128,23 @@ export const addManyPoints = async (points: ExtPointType[], fieldMath: FieldMath
 }
 
 export const addPointLists = async (input1: Uint32Array, arrSize: number) => {
-    const numBuckets = 16;
+    const numBucketsPerWorkgroup = 8;
     const shaderEntry = `
       @group(0) @binding(0)
       var<storage, read> input1: array<array<Point, ${arrSize}>>;
       @group(0) @binding(1)
       var<storage, read_write> output: array<Point>; // Instantiate to array zero points of size numBuckets
 
-      @compute @workgroup_size(${numBuckets}, ${arrSize})
+      @compute @workgroup_size(${numBucketsPerWorkgroup})
       fn main(
         @builtin(global_invocation_id) global_id : vec3<u32>
       ) {
+        // if (global_id.x > input1.length()) {
+        //   return;
+        // }
         var points = input1[global_id.x];
 
-        output[global_id.x] = add_points(points[global_id.y], output[global_id.x]);
+        output[global_id.x] = add_points(points[0], points[1]);
       }
       `;
 

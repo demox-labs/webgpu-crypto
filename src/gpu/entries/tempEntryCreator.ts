@@ -38,14 +38,14 @@ const resultBuffer = device.createBuffer({
     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST
 });
 
-const zeroBigInts = [BigInt(0), BigInt(1), BigInt(0), BigInt(1)];
-const zeroPoint = bigIntsToU32Array(zeroBigInts);
-const zeroU32 = new Uint32Array(numInputs*32);
-for (let i = 0; i < numInputs; i++) {
-    zeroU32.set(zeroPoint, i * zeroPoint.length);
-}
+// const zeroBigInts = [BigInt(0), BigInt(1), BigInt(0), BigInt(1)];
+// const zeroPoint = bigIntsToU32Array(zeroBigInts);
+// const zeroU32 = new Uint32Array(Uint32Array.BYTES_PER_ELEMENT * (numInputs / 16) * 32);
+// for (let i = 0; i < (numInputs / 16); i++) {
+//     zeroU32.set(zeroPoint, i * zeroPoint.length);
+// }
 
-device.queue.writeBuffer(resultBuffer, 0, zeroU32);
+// device.queue.writeBuffer(resultBuffer, 0, zeroU32);
 
 // Bind group layout and bind group
 const bindGroupLayout = createBindGroupLayout(device, gpuBufferInputs);
@@ -69,7 +69,9 @@ const commandEncoder = device.createCommandEncoder();
 const passEncoder = commandEncoder.beginComputePass();
 passEncoder.setPipeline(computePipeline);
 passEncoder.setBindGroup(0, bindGroup);
-const workgroupCount = Math.ceil(numInputs / 16);
+const workgroupCount = Math.ceil(numInputs / 2);
+console.log('numInputs', numInputs);
+console.log('workgroupCount', workgroupCount);
 passEncoder.dispatchWorkgroups(workgroupCount);
 passEncoder.end();
 

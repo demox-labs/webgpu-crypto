@@ -3,7 +3,7 @@ import { FieldMath } from "../../utils/FieldMath";
 import { bigIntToU32Array, bigIntsToU32Array, u32ArrayToBigInts } from "../utils";
 
 export const addManyPointsBenchmarkV2= async (points: ExtPointType[], fieldMath: FieldMath) => {
-    const bucketSize = 20;
+    const bucketSize = 2;
     const numberOfBuckets = Math.ceil(points.length / bucketSize);
 
     // Flatten the array and extend with zeros
