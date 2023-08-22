@@ -25,7 +25,13 @@ import { convertBytesToFieldElement, convertCiphertextToDataView, getNonce, getP
 import { field_poseidon_multi_2 } from '../gpu/entries/poseidonMultiPass';
 import { naive_msm } from '../gpu/entries/naiveMSMEntry';
 import { pippinger_msm } from '../gpu/entries/pippingerMSMEntry';
+import { bucket_add } from '../gpu/entries/bucketAddEntry';
+import { bucket_add_benchmark } from '../gpu/entries/bucketAddBenchmark';
+import { addManyPoints, addManyPointsSmall, addManyPointsMedium, addManyPointsLarge } from '../gpu/entries/addManyPoints';
+import { addManyPointsBenchmark, addManyPointsBenchmarkV2 } from '../gpu/entries/addManyPointsBenchmark';
 import { ExtPointType } from '@noble/curves/abstract/edwards';
+import { BucketAddPointsBenchmark } from './BucketAddPointsBenchmark';
+import { MultipleAddPointsBenchmark } from './MultipleAddPointsBenchmark';
 
 const singleInputGenerator = (inputSize: number): bigint[][] => {
   return [generateRandomFields(inputSize)];
@@ -46,13 +52,20 @@ const squaresGenerator = (inputSize: number): bigint[][] => {
 //   const scalarArr = generateRandomFields(inputSize);
 //   return [groupArr, scalarArr];
 // };
+
 const pointScalarGenerator = (inputSize: number): bigint[][] => {
   const groupArr = new Array(inputSize);
-  //scalarArr.fill(BigInt('303411688971426691737907573487068071512981595762917890905859781721748416598'));
   // known group
   groupArr.fill(BigInt('2796670805570508460920584878396618987767121022598342527208237783066948667246'));
   const scalarArr = generateRandomFields(inputSize);
   return [groupArr, scalarArr];
+};
+
+const pointsGenerator = (inputSize: number): bigint[][] => {
+  const groupArr = new Array(inputSize);
+  // known group
+  groupArr.fill(BigInt('2796670805570508460920584878396618987767121022598342527208237783066948667246'));
+  return [groupArr];
 };
 
 const ownerViewKey = "AViewKey1dS9uE4XrARX3m5QUDWSrqmUwxY3PFKVdMvPwzbtbYrUh";
@@ -141,6 +154,17 @@ const gpuPointScalarInputConverter = (inputs: bigint[][]): number[][] => {
 
   return [Array.from(bigIntsToU32Array(point_inputs)), Array.from(bigIntsToU32Array(inputs[1]))];
 };
+
+const pointsConverter = (input: bigint[]): [ExtPointType[], FieldMath] => {
+  const fieldMath = new FieldMath();
+  const pointsArr = new Array(input.length);
+  const x = BigInt('2796670805570508460920584878396618987767121022598342527208237783066948667246');
+  const y = BigInt('8134280397689638111748378379571739274369602049665521098046934931245960532166');
+  const t = BigInt('3446088593515175914550487355059397868296219355049460558182099906777968652023');
+  const z = BigInt('1');
+  const extPoint = fieldMath.createPoint(x, y , t, z);
+  return [pointsArr.fill(extPoint), fieldMath];
+}
 
 const pippingerGpuInputConverter = (scalars: bigint[]): [ExtPointType[], number[], FieldMath] => {
   const fieldMath = new FieldMath();
@@ -333,6 +357,22 @@ export const AllBenchmarks: React.FC = () => {
         wasmInputConverter={wasmBigIntToFieldConverter}
         wasmResultConverter={wasmFieldResultConverter}
       />
+      <MultipleAddPointsBenchmark
+        name={'Add Multiple Points'}
+        inputsGenerator={pointsGenerator}
+        gpuFunc={(points: ExtPointType[], fieldMath: FieldMath) => addManyPointsLarge(points, fieldMath)}
+        gpuInputConverter={pointsConverter}
+        wasmFunc={(points: ExtPointType[], fieldMath: FieldMath) => addManyPointsBenchmarkV2(points, fieldMath)}
+        wasmInputConverter={pointsConverter}
+      />
+      <BucketAddPointsBenchmark
+        name={'Bucket Add Points'}
+        inputsGenerator={pointScalarGenerator}
+        gpuFunc={(points: ExtPointType[], scalars: number[], fieldMath: FieldMath) => bucket_add(points, scalars, fieldMath)}
+        gpuInputConverter={pippingerGpuInputConverter}
+        wasmFunc={(points: ExtPointType[], scalars: number[], fieldMath: FieldMath) => bucket_add_benchmark(points, scalars, fieldMath)}
+        wasmInputConverter={pippingerGpuInputConverter}
+      />
       <Benchmark
         name={'Naive MSM'}
         inputsGenerator={pointScalarGenerator}
@@ -343,7 +383,6 @@ export const AllBenchmarks: React.FC = () => {
         wasmInputConverter={wasmPointMulConverter}
         wasmResultConverter={(results: string[]) => { return results.map((result) => stripGroupSuffix(result))}}
       />
-
       <PippingerBenchmark
         name={'Pippinger MSM V1'}
         inputsGenerator={pointScalarGenerator}

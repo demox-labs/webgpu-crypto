@@ -26,7 +26,7 @@ struct MulPointIntermediate {
   scalar: Field
 }
 
-const ZERO_POINT = Point (U256_ZERO, U256_ONE, U256_ONE, U256_ZERO);
+const ZERO_POINT = Point (U256_ZERO, U256_ONE, U256_ZERO, U256_ONE);
 const ZERO_AFFINE = AffinePoint (U256_ZERO, U256_ONE);
 
 fn mul_by_a(f: Field) -> Field {
