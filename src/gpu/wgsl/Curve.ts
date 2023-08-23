@@ -149,6 +149,40 @@ fn mul_point_test(p: Point, scalar: Field) -> Point {
   return result;
 }
 
+// Additional required functions
+fn get_bits(x: Field, start: u32, length: u32) -> u32 {
+  let bit_pos: u32 = start % 32;  // Bit position within the u32 component
+  let idx: u32 = 7 - (start / 32);  // Index of the u32 component in the Field
+  let mask: u32 = (1u << length) - 1u;  // Create a mask with 'length' number of 1s
+  // Extract the required u32 component and shift it so that the bits we're interested in are at the rightmost position
+  let shifted: u32 = x.components[idx] >> bit_pos;
+  // Apply the mask to isolate the bits we're interested in
+  return shifted & mask;
+}
+
+fn mul_point_windowed(p: Point, scalar: Field) -> Point {
+  // Pre-computation
+  var precomputed: array<Point, 16> = array<Point, 16>();
+  precomputed[0] = Point(U256_ZERO, U256_ONE, U256_ZERO, U256_ONE);  // Neutral element
+  precomputed[1] = p;
+  for (var i: u32 = 2; i < 16; i = i + 1) {
+    precomputed[i] = add_points(precomputed[i - 1], p);
+  }
+  // Initialize result
+  var result: Point = Point(U256_ZERO, U256_ONE, U256_ZERO, U256_ONE); // Neutral element
+  // Calculate the number of windows
+  let num_windows: u32 = (256 + 3) / 4;  // number of bits divided by the window size, rounded up
+  // Multiply
+  for (var window: u32 = num_windows; window > 0; window = window - 1) {
+    result = double_point(double_point(double_point(double_point(result))));  // Double it 4 times
+    // Take the next 4 bits from scalar
+    let bits: u32 = get_bits(scalar, (window - 1) * 4, 4);
+    // Add the corresponding precomputed point
+    result = add_points(result, precomputed[bits]);
+  }
+  return result;
+}
+
 // fn get_y(x: Field) -> Field {
 //   var x_squared = field_multiply(x, x);
 //   var numerator = field_sub(FIELD_ORDER_MINUS_ONE, x_squared);
