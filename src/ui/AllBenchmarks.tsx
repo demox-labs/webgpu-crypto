@@ -24,6 +24,7 @@ import { convertBytesToFieldElement, convertCiphertextToDataView, getNonce, getP
 import { aleo_poseidon_multi_2 } from '../gpu/entries/bls12-377Algorithms/aleoPoseidonMultiPass';
 import { naive_msm } from '../gpu/entries/naiveMSMEntry';
 import { point_add } from '../gpu/entries/curve/curveAddPointsEntry';
+import { point_mul_windowed } from '../gpu/entries/curve/curveMulPointWindowedEntry';
 
 const singleInputGenerator = (inputSize: number): bigint[][] => {
   return [generateRandomFields(inputSize)];
@@ -307,6 +308,15 @@ export const AllBenchmarks: React.FC = () => {
         name={'Point Scalar Mul'}
         inputsGenerator={pointScalarGenerator}
         gpuFunc={(inputs: number[][]) => point_mul(inputs[0], inputs[1])}
+        gpuInputConverter={gpuPointScalarInputConverter}
+        wasmFunc={(inputs: string[][]) => bulkGroupScalarMul(inputs[0], inputs[1])}
+        wasmInputConverter={wasmPointMulConverter}
+        wasmResultConverter={(results: string[]) => { return results.map((result) => stripGroupSuffix(result))}}
+      />
+      <Benchmark
+        name={'Point Scalar Mul Windowed'}
+        inputsGenerator={pointScalarGenerator}
+        gpuFunc={(inputs: number[][]) => point_mul_windowed(inputs[0], inputs[1])}
         gpuInputConverter={gpuPointScalarInputConverter}
         wasmFunc={(inputs: string[][]) => bulkGroupScalarMul(inputs[0], inputs[1])}
         wasmInputConverter={wasmPointMulConverter}

@@ -45,7 +45,7 @@ export const is_owner = async (
       var z = U256_ONE;
       var ext_p1 = Point(p1.x, p1.y, p1_t, z);
 
-      var multiplied = mul_point(ext_p1, EMBEDDED_SCALAR);
+      var multiplied = mul_point_windowed(ext_p1, EMBEDDED_SCALAR);
       var z_inverse = field_inverse(multiplied.z);
       var result = field_multiply(multiplied.x, z_inverse);
 
