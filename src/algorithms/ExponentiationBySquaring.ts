@@ -1,6 +1,6 @@
-import { ALEO_FIELD_MODULUS } from "../params/AleoConstants";
+import { FIELD_MODULUS } from "../params/BLS12_377Constants";
 
-export const Exponentiation = function exponentiation(base: bigint, exp: bigint, mod: bigint = ALEO_FIELD_MODULUS) {
+export const Exponentiation = function exponentiation(base: bigint, exp: bigint, mod: bigint = FIELD_MODULUS) {
     base %= mod;  // Update base if it is more than or equal to N
     let result = BigInt(1);
 

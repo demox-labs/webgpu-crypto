@@ -1,7 +1,7 @@
-import { ALEO_FIELD_MODULUS } from "../params/AleoConstants";
+import { FIELD_MODULUS } from "../params/BLS12_377Constants";
 import { bigIntsToU32Array } from "../gpu/utils";
 
-export const Kochanski = (a: bigint, b: bigint, modulus: bigint = ALEO_FIELD_MODULUS) => {
+export const Kochanski = (a: bigint, b: bigint, modulus: bigint = FIELD_MODULUS) => {
   let accumulator = BigInt(0);
 
   while (b > 0) {

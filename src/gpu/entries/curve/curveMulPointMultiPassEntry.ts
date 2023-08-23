@@ -1,38 +1,16 @@
-import { ExtPointType } from "@noble/curves/abstract/edwards";
-import { FieldMath } from "../../utils/BLS12_377FieldMath";
-import { CurveWGSL } from "../wgsl/Curve";
-import { FieldModulusWGSL } from "../wgsl/FieldModulus";
-import { workgroupSize } from "../params";
-import { bigIntToU32Array, u32ArrayToBigInts } from "../utils";
-import { IEntryInfo, IGPUInput, IGPUResult, IShaderCode, multipassEntryCreator } from "./multipassEntryCreator";
-import { GPUExecution } from "./multipassEntryCreator";
-import { U256WGSL } from "../wgsl/U256";
-import { BLS12_377ParamsWGSL } from "../wgsl/BLS12-377Params";
-import { AFFINE_POINT_SIZE, EXT_POINT_SIZE, FIELD_SIZE } from "../U32Sizes";
+import { CurveWGSL } from "../../wgsl/Curve";
+import { FieldModulusWGSL } from "../../wgsl/FieldModulus";
+import { workgroupSize } from "../../params";
+import { IEntryInfo, IGPUInput, IGPUResult, IShaderCode, multipassEntryCreator } from "../multipassEntryCreator";
+import { GPUExecution } from "../multipassEntryCreator";
+import { U256WGSL } from "../../wgsl/U256";
+import { BLS12_377ParamsWGSL } from "../../wgsl/BLS12-377Params";
+import { AFFINE_POINT_SIZE, EXT_POINT_SIZE, FIELD_SIZE } from "../../U32Sizes";
 
-export const naive_msm = async (input1: Array<number>, input2: Array<number>) => {
+export const point_mul_multi = async (input1: Array<number>, input2: Array<number>) => {
   const [execution, entryInfo] = point_mul_multipass_info(input1.length / 16, input1, input2, true);
 
-  const bufferResult = await multipassEntryCreator(execution, entryInfo);
-  const bigIntResult = u32ArrayToBigInts(bufferResult || new Uint32Array(0));
-
-  const fieldMath = new FieldMath();
-  const pointArray: ExtPointType[] = [];
-  console.log('point x: ' + bigIntResult[0].toString());
-
-  // convert big int result to extended points
-  for (let i = 0; i < bigIntResult.length; i += 4) {
-    const x = bigIntResult[i];
-    const y = bigIntResult[i + 1];
-    const t = bigIntResult[i + 2];
-    const z = bigIntResult[i + 3];
-    const point = fieldMath.createPoint(x, y, t, z);
-    pointArray.push(point);
-  }
-
-  const affineResult = fieldMath.addPoints(pointArray);
-  const u32XCoord = bigIntToU32Array(affineResult.x);
-  return u32XCoord;
+  return await multipassEntryCreator(execution, entryInfo);
 }
 
 export const point_mul_multipass_info = (
@@ -145,15 +123,17 @@ export const point_mul_multipass_info = (
     @group(0) @binding(0)
     var<storage, read> mulPoints: array<Point>;
     @group(0) @binding(1)
-    var<storage, read_write> output: array<Point>;
+    var<storage, read_write> output: Fields;
 
     @compute @workgroup_size(${workgroupSize})
     fn main(
       @builtin(global_invocation_id) global_id : vec3<u32>
     ) {
       var point = mulPoints[global_id.x];
+      var z_inverse = field_inverse(point.z);
+      var result = field_multiply(point.x, z_inverse);
 
-      output[global_id.x] = point;
+      output.fields[global_id.x] = result;
     }
   `;
 
@@ -245,7 +225,7 @@ export const point_mul_multipass_info = (
   }
   const inverseResult: IGPUResult = {
     resultBufferTypes: ["storage"],
-    resultBufferSizes: [pointsBufferSize],
+    resultBufferSizes: [scalarsBufferSize],
     resultBufferUsages: [GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC]
   }
   const inverseStep = new GPUExecution(inverseShader, inverseInputs, inverseResult);
@@ -253,11 +233,11 @@ export const point_mul_multipass_info = (
 
   const entryInfo: IEntryInfo = {
     numInputs: numInputs,
-    outputSize: pointsBufferSize
+    outputSize: scalarsBufferSize
   }
 
   return [executionSteps, entryInfo];
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-(window as any).naive_msm = naive_msm;
+(window as any).point_mul_multi = point_mul_multi;

@@ -1,4 +1,4 @@
-import { ALEO_FIELD_MODULUS } from '../params/AleoConstants';
+import { FIELD_MODULUS } from '../params/BLS12_377Constants';
 import { preComputedTShanks, tonelli_shanks } from './ShanksTonelli';
 
 const testData = [
@@ -10,7 +10,7 @@ const testData = [
 
 describe('ShanksTonelli', () => {
     it.each(testData)('returns square root', (input: bigint, expected: bigint) => {
-        const result = tonelli_shanks(input, ALEO_FIELD_MODULUS);
+        const result = tonelli_shanks(input, FIELD_MODULUS);
         expect(result).toBe(expected);
     });
 

@@ -1,4 +1,4 @@
-import { ALEO_FIELD_MODULUS } from "../params/AleoConstants";
+import { FIELD_MODULUS } from "../params/BLS12_377Constants";
 
 const pow_mod = (x: bigint, n: bigint, p: bigint): bigint => {
   if (n === BigInt(0)) return BigInt(1);
@@ -55,7 +55,7 @@ export const tonelli_shanks = (n: bigint, p: bigint): bigint => {
 export const preComputedTShanks = (n: bigint): bigint => {
   const q = BigInt('60001509534603559531609739528203892656505753216962260608619555');
   const s = BigInt(47);
-  const p = ALEO_FIELD_MODULUS;
+  const p = FIELD_MODULUS;
   let c = BigInt('6924886788847882060123066508223519077232160750698452411071850219367055984476')
   let r = pow_mod(n, BigInt('30000754767301779765804869764101946328252876608481130304309778'), p);
   let t = pow_mod(n, q, p);

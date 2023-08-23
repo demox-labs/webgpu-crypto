@@ -1,12 +1,12 @@
 export const entry = async(
   inputsAsArrays: Array<number>[],
   shaderModules: string[],
-  byteSizePerFirstInput?: number,
-  byteSizePerOutput?: number
+  u32SizePerFirstInput?: number,
+  u32SizePerOutput?: number
   ) => {
   const inputs = inputsAsArrays.map((input) => new Uint32Array(input));
-  const bytesPerFirstInput = byteSizePerFirstInput ?? 8;
-  const bytesPerOutput = byteSizePerOutput ?? 8;
+  const bytesPerFirstInput = u32SizePerFirstInput ?? 8;
+  const bytesPerOutput = u32SizePerOutput ?? 8;
   const firstSetOfInputs = inputs[0];
   
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

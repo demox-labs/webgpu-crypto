@@ -7,7 +7,7 @@ import { AllBenchmarks } from "./ui/AllBenchmarks";
 
 const App = () => (
   <>
-    <h1 className="font-bold">GPU Record Scanning {new Date().toLocaleDateString()}</h1>
+    <h1 className="font-bold">WebGPU Crypto {new Date().toLocaleDateString()}</h1>
     <AllBenchmarks />
     <GPUFunctionLoader />
   </>

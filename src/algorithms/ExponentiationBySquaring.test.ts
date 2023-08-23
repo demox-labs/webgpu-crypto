@@ -1,5 +1,4 @@
 import { Exponentiation } from './ExponentiationBySquaring';
-import { ALEO_FIELD_MODULUS } from '../params/AleoConstants';
 
 describe('Exponentiation', () => {
     it.each([
