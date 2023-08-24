@@ -1,9 +1,9 @@
 import { 
-  ALEO_FIELD_MODULUS as N, 
-  ALEO_MONTGOMERY_RADIX as R, 
-  ALEO_MONTGOMERY_RINVERSE as R_PRIME, 
-  ALEO_FIELD_MODULUS_NPRIME as N_PRIME
-} from "../params/AleoConstants";
+  FIELD_MODULUS as N, 
+  MONTGOMERY_RADIX as R, 
+  MONTGOMERY_RINVERSE as R_PRIME, 
+  FIELD_MODULUS_NPRIME as N_PRIME
+} from "../params/BLS12_377Constants";
 
 /**
  * Computes a x b mod AleoFieldModulus using Montgomery multiplication.
