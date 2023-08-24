@@ -1,7 +1,8 @@
-import { FieldModulusWGSL } from "../FieldModulus";
-import { PoseidonFirstHashOutputWGSL, PoseidonRoundFullWGSL, PoseidonRoundPartialWGSL } from "../FieldPoseidon";
-import { PoseidonConstantsWGSL } from "../PoseidonConstants";
-import { FieldAddWGSL } from "../FieldAdd";
+import { FieldModulusWGSL } from "../wgsl/FieldModulus";
+import { PoseidonFirstHashOutputWGSL, PoseidonRoundFullWGSL, PoseidonRoundPartialWGSL } from "../wgsl/AleoPoseidon";
+import { AleoPoseidonConstantsWGSL } from "../wgsl/AleoPoseidonConstants";
+import { U256WGSL } from "../wgsl/U256";
+import { BLS12_377ParamsWGSL } from "../wgsl/BLS12-377Params";
 import { GPUExecution, IShaderCode, IGPUInput, IGPUResult, IEntryInfo, multipassEntryCreatorReuseBuffers } from "./multipassEntryCreatorBufferReuse";
 import { workgroupSize } from "../params";
 
@@ -21,7 +22,7 @@ export const poseidon_multipass_info_buffers = (
   buffersToReuse: Map<number, GPUBuffer[]>,
   useInputs = true
   ): [GPUExecution[], IEntryInfo] => {
-  const baseModules = [PoseidonConstantsWGSL, FieldModulusWGSL, FieldAddWGSL];
+  const baseModules = [AleoPoseidonConstantsWGSL, FieldModulusWGSL, U256WGSL, BLS12_377ParamsWGSL];
   const fieldsBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * 8;
   const arrayBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * 8 * 9; // Because 9 fields per array
   const aleoMdsBufferSize = Uint32Array.BYTES_PER_ELEMENT * 9 * 8 * 9;
@@ -190,7 +191,7 @@ export const poseidon_multipass_info_buffers = (
 
   // Add final step
   const finalShader: IShaderCode = {
-    code: [FieldModulusWGSL, finalEntry].join('\n'),
+    code: [FieldModulusWGSL, U256WGSL, BLS12_377ParamsWGSL, finalEntry].join('\n'),
     entryPoint: "main"
   };
   const finalInputs: IGPUInput = {

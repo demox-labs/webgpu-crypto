@@ -1,10 +1,8 @@
-import { CurveWGSL } from "../Curve";
-import { FieldAddWGSL } from "../FieldAdd";
-import { FieldDoubleWGSL } from "../FieldDouble";
-import { FieldInverseWGSL } from "../FieldInverse";
-import { FieldModulusWGSL } from "../FieldModulus";
-import { FieldSubWGSL } from "../FieldSub";
-import { PoseidonConstantsWGSL } from "../PoseidonConstants";
+import { CurveWGSL } from "../wgsl/Curve";
+import { FieldModulusWGSL } from "../wgsl/FieldModulus";
+import { U256WGSL } from "../wgsl/U256";
+import { BLS12_377ParamsWGSL } from "../wgsl/BLS12-377Params";
+import { AleoPoseidonConstantsWGSL } from "../wgsl/AleoPoseidonConstants";
 import { poseidon_multipass_info_buffers } from "./poseidonMultiPassBufferReuse";
 import { workgroupSize } from "../params";
 import { GPUExecution, IShaderCode, IGPUInput, IGPUResult, IEntryInfo, multipassEntryCreatorReuseBuffers } from "./multipassEntryCreatorBufferReuse";
@@ -33,12 +31,10 @@ export const is_owner_multi_reuse_buffers = async (
   const buffersMap = new Map<number, GPUBuffer[]>();
 
   const baseModules = [
-    PoseidonConstantsWGSL,
+    AleoPoseidonConstantsWGSL,
     FieldModulusWGSL,
-    FieldAddWGSL,
-    FieldSubWGSL,
-    FieldDoubleWGSL,
-    FieldInverseWGSL,
+    U256WGSL,
+    BLS12_377ParamsWGSL,
     CurveWGSL,
     embededConstantsWGSL
   ];
@@ -115,7 +111,7 @@ const point_mul_multipass = (
   extraBaseShaders: string[],
   buffersToReuse: Map<number, GPUBuffer[]>
 ): [GPUExecution[], IEntryInfo] => {
-  let baseModules = [FieldModulusWGSL, FieldAddWGSL, FieldSubWGSL, FieldDoubleWGSL, FieldInverseWGSL, CurveWGSL];
+  let baseModules = [FieldModulusWGSL, U256WGSL, BLS12_377ParamsWGSL, CurveWGSL];
   baseModules = baseModules.concat(extraBaseShaders);
 
   const affinePointsBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * 8 * 2; // 2 fields per affine point

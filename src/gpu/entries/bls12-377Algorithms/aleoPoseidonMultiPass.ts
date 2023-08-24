@@ -6,7 +6,7 @@ import { workgroupSize } from "../../params";
 import { U256WGSL } from "../../wgsl/U256";
 import { BLS12_377ParamsWGSL } from "../../wgsl/BLS12-377Params";
 
-export const aleo_poseidon_multi_2 = async (input1: Array<number>, input2: Array<number>, input3: Array<number>) => {
+export const aleo_poseidon_multi = async (input1: Array<number>, input2: Array<number>, input3: Array<number>) => {
   const [executionSteps, entryInfo] = poseidon_multipass_info(input1.length / 8, input1, input2, input3);
 
   return await multipassEntryCreator(executionSteps, entryInfo);
@@ -19,7 +19,7 @@ export const poseidon_multipass_info = (
   aleoRoundConstants: Array<number>,
   useInputs = true
   ): [GPUExecution[], IEntryInfo] => {
-  const baseModules = [AleoPoseidonConstantsWGSL, FieldModulusWGSL];
+  const baseModules = [AleoPoseidonConstantsWGSL, FieldModulusWGSL, U256WGSL, BLS12_377ParamsWGSL];
   const nonArrayBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * 8;
   const arrayBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * 8 * 9; // Because 9 fields per array
   const aleoMdsBufferSize = Uint32Array.BYTES_PER_ELEMENT * 9 * 8 * 9;
@@ -216,4 +216,4 @@ export const poseidon_multipass_info = (
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-(window as any).aleo_poseidon_multi_2 = aleo_poseidon_multi_2;
+(window as any).aleo_poseidon_multi_2 = aleo_poseidon_multi;

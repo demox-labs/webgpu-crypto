@@ -1,9 +1,7 @@
-import { CurveWGSL } from "../Curve";
-import { FieldAddWGSL } from "../FieldAdd";
-import { FieldDoubleWGSL } from "../FieldDouble";
-import { FieldInverseWGSL } from "../FieldInverse";
-import { FieldModulusWGSL } from "../FieldModulus";
-import { FieldSubWGSL } from "../FieldSub";
+import { CurveWGSL } from "../wgsl/Curve";
+import { FieldModulusWGSL } from "../wgsl/FieldModulus";
+import { U256WGSL } from "../wgsl/U256";
+import { BLS12_377ParamsWGSL } from "../wgsl/BLS12-377Params";
 import { workgroupSize } from "../params";
 import { GPUExecution, IEntryInfo, IGPUInput, IGPUResult, IShaderCode, multipassEntryCreatorReuseBuffers } from "./multipassEntryCreatorBufferReuse";
 
@@ -28,7 +26,7 @@ export const point_mul_multipass_info = (
   scalars: Array<number>,
   useInputs = true,
 ): [GPUExecution[], IEntryInfo, GPUBuffer[]] => {
-  const baseModules = [FieldModulusWGSL, FieldAddWGSL, FieldSubWGSL, FieldDoubleWGSL, FieldInverseWGSL, CurveWGSL];
+  const baseModules = [FieldModulusWGSL, CurveWGSL, U256WGSL, BLS12_377ParamsWGSL];
   const affinePointsBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * 8 * 2; // 2 fields per affine point
   const scalarsBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * 8;
   const pointsBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * 8 * 4; // 4 fields per point

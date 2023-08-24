@@ -1,4 +1,4 @@
-import { AFFINE_POINT_SIZE, EXT_POINT_SIZE } from "../../U32Sizes";
+import { AFFINE_POINT_SIZE } from "../../U32Sizes";
 import { BLS12_377ParamsWGSL } from "../../wgsl/BLS12-377Params";
 import { CurveWGSL } from "../../wgsl/Curve";
 import { FieldModulusWGSL } from "../../wgsl/FieldModulus";
@@ -37,7 +37,7 @@ export const point_add = async (input1: Array<number>, input2: Array<number>) =>
 
   const shaderModules = [U256WGSL, BLS12_377ParamsWGSL, FieldModulusWGSL, CurveWGSL, shaderEntry];
 
-  return await entry([input1, input2], shaderModules, AFFINE_POINT_SIZE, EXT_POINT_SIZE);
+  return await entry([input1, input2], shaderModules, AFFINE_POINT_SIZE, 8);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

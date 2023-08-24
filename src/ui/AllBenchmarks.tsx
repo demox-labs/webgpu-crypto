@@ -17,27 +17,20 @@ import { FieldMath } from '../utils/BLS12_377FieldMath';
 import { field_pow_by_17 } from '../gpu/entries/field/fieldPow17Entry';
 import { aleo_poseidon } from '../gpu/entries/bls12-377Algorithms/aleoPoseidonEntry';
 import { aleoMdStrings, aleoRoundConstantStrings } from '../params/AleoPoseidonParams';
-import { aleo_poseidon_multi } from '../gpu/entries/bls12-377Algorithms/aleoPoseidonMultiPassEntry';
 import { is_owner } from '../gpu/entries/bls12-377Algorithms/aleoIsOwnerEntry';
 import { is_owner_multi } from '../gpu/entries/bls12-377Algorithms/aleoIsOwnerMultipassEntry';
 import { is_owner_multi_reuse_buffers } from '../gpu/entries/isOwnerMultipassReuseBuffers';
 import { convertBytesToFieldElement, convertCiphertextToDataView, getNonce, getPrivateOwnerBytes } from '../parsers/aleo/RecordParser';
-import { aleo_poseidon_multi_2 } from '../gpu/entries/bls12-377Algorithms/aleoPoseidonMultiPass';
+import { aleo_poseidon_multi } from '../gpu/entries/bls12-377Algorithms/aleoPoseidonMultiPass';
 import { naive_msm } from '../gpu/entries/naiveMSMEntry';
 import { point_add } from '../gpu/entries/curve/curveAddPointsEntry';
 import { point_mul_windowed } from '../gpu/entries/curve/curveMulPointWindowedEntry';
 import { field_poseidon_reuse } from '../gpu/entries/poseidonMultiPassBufferReuse';
 import { point_mul_multi_reuse } from '../gpu/entries/pointScalarMultipassReuseBuffer';
-import { testing_reuse } from '../gpu/entries/testingBufferReuse';
 
 const singleInputGenerator = (inputSize: number): bigint[][] => {
   return [generateRandomFields(inputSize)];
 };
-
-const singleNumberGenerator = (inputSize: number): number[][] => {
-  const numArray = new Array(inputSize);
-  return [numArray.fill(2)];
-}
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const squaresGenerator = (inputSize: number): bigint[][] => {
@@ -136,10 +129,6 @@ const gpuBigIntInputConverter = (inputs: bigint[][]): number[][] => {
   return inputs.map((input) => Array.from(bigIntsToU32Array(input)));
 };
 
-const noChangeInputConverter = (inputs: number[][]): number[][] => {
-  return inputs;
-}
-
 const gpuPointScalarInputConverter = (inputs: bigint[][]): number[][] => {
   const x_coords = inputs[0];
   const fieldMath = new FieldMath();
@@ -196,15 +185,6 @@ const wasmPointConverter = (inputs: bigint[][]): string[][] => {
 export const AllBenchmarks: React.FC = () => {
   return (
     <div>
-      <Benchmark
-        name={'Testing Reuse'}
-        inputsGenerator={singleNumberGenerator}
-        gpuFunc={(inputs: number[][]) => testing_reuse(inputs[0])}
-        gpuInputConverter={noChangeInputConverter}
-        wasmFunc={(inputs: string[][]) => bulkDoubleFields(inputs[0])}
-        wasmInputConverter={wasmBigIntToFieldConverter}
-        wasmResultConverter={wasmFieldResultConverter}
-      />
       <Benchmark
         name={'Is Ownership Single Pass'}
         inputsGenerator={cipherTextsGenerator}
@@ -372,14 +352,8 @@ export const AllBenchmarks: React.FC = () => {
         wasmInputConverter={wasmPointMulConverter}
         wasmResultConverter={(results: string[]) => { return results.map((result) => stripGroupSuffix(result))}}
       />
-      {/* <Benchmark
-        name={'Is Owner'}
-        inputsGenerator={recordGenerator}
-        gpuFunc={(inputs: number[][]) => gpuIsOwner(inputs[0], inputs[1])}
-        wasmFunc={(inputs: string[][]) => wasmIsOwner(inputs[0], inputs[1])}
-      /> */}
       <Benchmark
-        name={'Field Poseidon Hash single pass'}
+        name={'Aleo Poseidon Hash single pass'}
         inputsGenerator={poseidonGenerator}
         gpuFunc={(inputs: number[][]) => aleo_poseidon(inputs[0], inputs[1], inputs[2])}
         gpuInputConverter={gpuBigIntInputConverter}
@@ -388,7 +362,7 @@ export const AllBenchmarks: React.FC = () => {
         wasmResultConverter={wasmFieldResultConverter}
       />
       <Benchmark
-        name={'Field Poseidon Hash multi pass'}
+        name={'Aleo Poseidon Hash multi pass'}
         inputsGenerator={poseidonGenerator}
         gpuFunc={(inputs: number[][]) => aleo_poseidon_multi(inputs[0], inputs[1], inputs[2])}
         gpuInputConverter={gpuBigIntInputConverter}
@@ -397,9 +371,9 @@ export const AllBenchmarks: React.FC = () => {
         wasmResultConverter={wasmFieldResultConverter}
       />
       <Benchmark
-        name={'Field Poseidon Hash multi pass 2'}
+        name={'Aleo Poseidon Hash multi pass reuse'}
         inputsGenerator={poseidonGenerator}
-        gpuFunc={(inputs: number[][]) => aleo_poseidon_multi_2(inputs[0], inputs[1], inputs[2])}
+        gpuFunc={(inputs: number[][]) => field_poseidon_reuse(inputs[0], inputs[1], inputs[2])}
         gpuInputConverter={gpuBigIntInputConverter}
         wasmFunc={(inputs: string[][]) => bulkPoseidon(inputs[0])}
         wasmInputConverter={wasmBigIntToFieldConverter}
@@ -414,15 +388,6 @@ export const AllBenchmarks: React.FC = () => {
         wasmFunc={(inputs: string[][]) => msm(inputs[0], inputs[1])}
         wasmInputConverter={wasmPointMulConverter}
         wasmResultConverter={(results: string[]) => { return results.map((result) => stripGroupSuffix(result))}}
-      />
-      <Benchmark
-        name={'Field Poseidon Hash multi pass reuse'}
-        inputsGenerator={poseidonGenerator}
-        gpuFunc={(inputs: number[][]) => field_poseidon_reuse(inputs[0], inputs[1], inputs[2])}
-        gpuInputConverter={gpuBigIntInputConverter}
-        wasmFunc={(inputs: string[][]) => bulkPoseidon(inputs[0])}
-        wasmInputConverter={wasmBigIntToFieldConverter}
-        wasmResultConverter={wasmFieldResultConverter}
       />
     </div>
   )
