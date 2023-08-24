@@ -5,7 +5,7 @@ import { FieldDoubleWGSL } from "../FieldDouble";
 import { FieldInverseWGSL } from "../FieldInverse";
 import { FieldModulusWGSL } from "../FieldModulus";
 import { FieldSubWGSL } from "../FieldSub";
-import { tempEntry } from "./tempEntryCreator";
+import { getDevice, tempEntry } from "./tempEntryCreator";
 import { FieldMath } from "../../utils/FieldMath";
 import { bigIntToU32Array, bigIntsToU32Array, u32ArrayToBigInts } from "../utils";
 
@@ -77,16 +77,26 @@ export const addManyPointsLarge = async(points: ExtPointType[], fieldMath: Field
 
     const chunkedPoints = chunkArray(flattenedPoints, 65536, 4*bucketSize);
     console.log(chunkedPoints);
+    let totalGPUTime = 0;
+    let totalInputCreationTime = 0;
     const bigIntResults = [];
     for (let i = 0; i < chunkedPoints.length; i++) {
+        const inputStart = performance.now();
+        const input = bigIntsToU32Array(chunkedPoints[i]);
+        const inputEnd = performance.now();
+        totalInputCreationTime += inputEnd - inputStart;
         const start = performance.now();
-        const bufferResult = await addPointLists(bigIntsToU32Array(chunkedPoints[i]), bucketSize);
+        const bufferResult = await addPointLists(input, bucketSize);
         const end = performance.now();
         console.log(`Time taken to add points in chunk number ${i}: ${end - start} milliseconds`);
+        totalGPUTime += end - start;
         bigIntResults.push(u32ArrayToBigInts(bufferResult));
     }
+    console.log('Total input creation time: ', totalInputCreationTime);
+    console.log('TOTAL GPU ADD TIME: ', totalGPUTime);
 
     const affinePointResults = [];
+    const affineStart = performance.now();
     for (let i = 0; i < bigIntResults.length; i++) {
         const resultArray = bigIntResults[i];
         for (let j = 0; j < resultArray.length; j+=4) {
@@ -98,6 +108,8 @@ export const addManyPointsLarge = async(points: ExtPointType[], fieldMath: Field
             affinePointResults.push(point.toAffine());
         }
     }
+    const affineEnd = performance.now();
+    console.log('Time to convert to affine points: ', affineEnd - affineStart);
 
     console.log(affinePointResults);
     return new Uint32Array();
@@ -142,9 +154,9 @@ export const addPointLists = async (input1: Uint32Array, arrSize: number) => {
         // if (global_id.x > input1.length()) {
         //   return;
         // }
-        var points = input1[global_id.x];
+        // var points = input1[global_id.x];
 
-        output[global_id.x] = add_points(points[0], points[1]);
+        output[global_id.x] = add_points(input1[global_id.x][0], input1[global_id.x][1]);
       }
       `;
 
@@ -205,7 +217,18 @@ export const addPointLists = async (input1: Uint32Array, arrSize: number) => {
   
     const shaderModules = [FieldModulusWGSL, FieldAddWGSL, FieldSubWGSL, FieldDoubleWGSL, FieldInverseWGSL, CurveWGSL, shaderEntry];
   
-    return await tempEntry(input1, shaderModules, arrSize*32, 32);
+    let shaderCode = '';
+    for (const shaderModule of shaderModules) {
+        shaderCode += shaderModule;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const device = (await getDevice())!;
+
+    const module = device.createShaderModule({
+        code: shaderCode
+    });
+    return await tempEntry(device, input1, module, arrSize*32, 32);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

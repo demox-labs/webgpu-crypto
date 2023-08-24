@@ -1,6 +1,6 @@
 import React from 'react';
 import { field_double } from '../gpu/entries/fieldDoubleEntry';
-import { bulkAddFields, bulkDoubleFields, bulkInvertFields, bulkMulFields, bulkSubFields, bulkPowFields, bulkPowFields17, bulkSqrtFields, bulkGroupScalarMul, bulkPoseidon, bulkIsOwner, msm } from '../utils/wasmFunctions';
+import { bulkAddFields, bulkDoubleFields, bulkInvertFields, bulkMulFields, bulkSubFields, bulkPowFields, bulkPowFields17, bulkSqrtFields, bulkGroupScalarMul, bulkPoseidon, bulkIsOwner, msm, bulkAddGroups } from '../utils/wasmFunctions';
 import { Benchmark } from './Benchmark';
 import { PippingerBenchmark } from './PippingerBenchmark';
 import { bigIntToU32Array, bigIntsToU16Array, bigIntsToU32Array, generateRandomFields, stripFieldSuffix, stripGroupSuffix } from '../gpu/utils';
@@ -32,6 +32,7 @@ import { addManyPointsBenchmark, addManyPointsBenchmarkV2 } from '../gpu/entries
 import { ExtPointType } from '@noble/curves/abstract/edwards';
 import { BucketAddPointsBenchmark } from './BucketAddPointsBenchmark';
 import { MultipleAddPointsBenchmark } from './MultipleAddPointsBenchmark';
+import { point_add, point_add_single_input } from '../gpu/entries/curveAddPointsEntry';
 
 const singleInputGenerator = (inputSize: number): bigint[][] => {
   return [generateRandomFields(inputSize)];
@@ -52,6 +53,14 @@ const squaresGenerator = (inputSize: number): bigint[][] => {
 //   const scalarArr = generateRandomFields(inputSize);
 //   return [groupArr, scalarArr];
 // };
+
+const doublePointGenerator = (inputSize: number): bigint[][] => {
+  const groupArr1 = new Array(inputSize);
+  groupArr1.fill(BigInt('2796670805570508460920584878396618987767121022598342527208237783066948667246'));
+  const groupArr2 = new Array(inputSize);
+  groupArr2.fill(BigInt('2796670805570508460920584878396618987767121022598342527208237783066948667246'));
+  return [groupArr1, groupArr2];
+};
 
 const pointScalarGenerator = (inputSize: number): bigint[][] => {
   const groupArr = new Array(inputSize);
@@ -136,8 +145,32 @@ const seventeenGenerator = (inputSize: number): bigint[][] => {
   return [firstInput, arr];
 }
 
+const gpuPointsInputConverter = (inputs: bigint[][]): number[][] => {
+  const fieldMath = new FieldMath();
+  const y_coords_map = new Map<bigint, bigint>();
+
+  for (let i = 0; i < inputs.length; i++) {
+    const x = inputs[i][0];
+    const known_y = y_coords_map.get(x);
+    const y = known_y ?? fieldMath.getPointFromX(x).y;
+    y_coords_map.set(x, y);
+  }
+
+  const pointInputs: bigint[][] = [];
+  for (let i = 0; i < inputs.length; i++) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    pointInputs[i] = inputs[i].map(x_coord => [x_coord, y_coords_map.get(x_coord)!]).flat();
+  }
+
+  return pointInputs.map((input) => Array.from(bigIntsToU32Array(input)));
+}
+
 const gpuBigIntInputConverter = (inputs: bigint[][]): number[][] => {
   return inputs.map((input) => Array.from(bigIntsToU32Array(input)));
+};
+
+const wasmPointConverter = (inputs: bigint[][]): string[][] => {
+  return inputs.map((input) => input.map((group) => `${group}group`));
 };
 
 const gpuPointScalarInputConverter = (inputs: bigint[][]): number[][] => {
@@ -364,6 +397,30 @@ export const AllBenchmarks: React.FC = () => {
         gpuInputConverter={pointsConverter}
         wasmFunc={(points: ExtPointType[], fieldMath: FieldMath) => addManyPointsBenchmarkV2(points, fieldMath)}
         wasmInputConverter={pointsConverter}
+      />
+      <Benchmark
+        name={'Point Add'}
+        inputsGenerator={doublePointGenerator}
+        gpuFunc={(inputs: number[][]) => point_add(inputs[0], inputs[1])}
+        gpuInputConverter={gpuPointsInputConverter}
+        wasmFunc={(inputs: string[][]) => bulkAddGroups(inputs[0], inputs[1])}
+        wasmInputConverter={wasmPointConverter}
+        wasmResultConverter={(results: string[]) => { return results.map((result) => stripGroupSuffix(result))}}
+      />
+      <Benchmark
+        name={'Point Add Single Array'}
+        inputsGenerator={doublePointGenerator}
+        gpuFunc={(inputs: number[][]) => {
+          const start = performance.now();
+          const input = inputs.flat();
+          const end = performance.now();
+          console.log('Time to flatten input: ', end - start);
+          return point_add_single_input(input);
+        }}
+        gpuInputConverter={gpuPointsInputConverter}
+        wasmFunc={(inputs: string[][]) => bulkAddGroups(inputs[0], inputs[1])}
+        wasmInputConverter={wasmPointConverter}
+        wasmResultConverter={(results: string[]) => { return results.map((result) => stripGroupSuffix(result))}}
       />
       <BucketAddPointsBenchmark
         name={'Bucket Add Points'}

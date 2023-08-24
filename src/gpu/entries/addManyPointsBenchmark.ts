@@ -15,14 +15,24 @@ export const addManyPointsBenchmarkV2= async (points: ExtPointType[], fieldMath:
     }
 
     const results = [];
+    let totalTimeToAdd = 0;
+    let totalAffineTime = 0;
     for (let i = 0; i < buckets.length; i++) {
         let result = fieldMath.customEdwards.ExtendedPoint.ZERO;
+        const cpuAddStart = performance.now();
         for (let j = 0; j < buckets[i].length; j++) {
             result = result.add(buckets[i][j])
         }
+        const cpuAddEnd = performance.now();
+        totalTimeToAdd += cpuAddEnd - cpuAddStart;
+        const affineStart = performance.now();
         const affinePoint = result.toAffine();
+        const affineEnd = performance.now();
+        totalAffineTime += affineEnd - affineStart;
         results.push(affinePoint);
     }
+    console.log(`Total time to add points on CPU: `, totalTimeToAdd);
+    console.log(`Total time to convert points to affine on CPU: `, totalAffineTime);
 
     console.log(results);
     return new Uint32Array();

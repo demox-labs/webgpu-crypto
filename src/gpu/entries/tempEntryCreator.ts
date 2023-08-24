@@ -1,8 +1,9 @@
 import { bigIntToU32Array, bigIntsToU32Array } from "../utils";
 
 export const tempEntry = async(
+device: GPUDevice,
 input: Uint32Array,
-shaderModules: string[],
+module: GPUShaderModule,
 byteSizePerFirstInput?: number,
 byteSizePerOutput?: number
 ) => {
@@ -14,20 +15,11 @@ const bytesPerOutput = byteSizePerOutput ?? 8;
 //console.log(bytesPerOutput);
 
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-const device = (await getDevice())!;
+// const device = (await getDevice())!;
 
 const numInputs = input.length / bytesPerFirstInput;
 //console.log("Num Inputs");
 //console.log(numInputs);
-
-let shaderCode = '';
-for (const shaderModule of shaderModules) {
-    shaderCode += shaderModule;
-}
-
-const module = device.createShaderModule({
-    code: shaderCode
-});
 
 const gpuBufferInputs = [createU32ArrayInputBuffer(device, input)];
 
@@ -70,8 +62,8 @@ const passEncoder = commandEncoder.beginComputePass();
 passEncoder.setPipeline(computePipeline);
 passEncoder.setBindGroup(0, bindGroup);
 const workgroupCount = Math.ceil(numInputs / 2);
-console.log('numInputs', numInputs);
-console.log('workgroupCount', workgroupCount);
+// console.log('numInputs', numInputs);
+// console.log('workgroupCount', workgroupCount);
 passEncoder.dispatchWorkgroups(workgroupCount);
 passEncoder.end();
 
@@ -103,20 +95,20 @@ gpuReadBuffer.unmap();
 return result;
 }
 
-const getDevice = async () => {
-if (!("gpu" in navigator)) {
-    console.log(
-    "WebGPU is not supported. Enable chrome://flags/#enable-unsafe-webgpu flag."
-    );
-    return;
-}
+export const getDevice = async () => {
+  if (!("gpu" in navigator)) {
+      console.log(
+      "WebGPU is not supported. Enable chrome://flags/#enable-unsafe-webgpu flag."
+      );
+      return;
+  }
 
-const adapter = await navigator.gpu.requestAdapter();
-if (!adapter) {
-    console.log("Failed to get GPU adapter.");
-    return;
-}
-return await adapter.requestDevice();
+  const adapter = await navigator.gpu.requestAdapter();
+  if (!adapter) {
+      console.log("Failed to get GPU adapter.");
+      return;
+  }
+  return await adapter.requestDevice();
 };
 
 const createU32ArrayInputBuffer = (device: GPUDevice, uint32s: Uint32Array) => {

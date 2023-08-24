@@ -83,6 +83,13 @@ export const entry = async(
   const result = new Uint32Array(arrayBuffer.slice(0));
   gpuReadBuffer.unmap();
   
+  const start = performance.now();
+  for (const buffer of gpuBufferInputs) {
+    buffer.destroy();
+  }
+  const end = performance.now();
+  console.log('Destroyed input buffers ', end-start);
+  
   return result;
 }
 

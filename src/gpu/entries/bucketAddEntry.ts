@@ -167,7 +167,8 @@ export const addPointLists = async (pointLists: Uint32Array, arraySize: number) 
   
     const shaderModules = [FieldModulusWGSL, FieldAddWGSL, FieldSubWGSL, FieldDoubleWGSL, FieldInverseWGSL, CurveWGSL, shaderEntry];
   
-    return await tempEntry(pointLists, shaderModules, arraySize*32, 32);
+    return new Uint32Array(0);
+    // return await tempEntry(pointLists, shaderModules, arraySize*32, 32);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
