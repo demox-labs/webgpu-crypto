@@ -11,6 +11,7 @@ export const entry = async(
   
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const device = (await getDevice())!;
+  const allBuffers: GPUBuffer[] = [];
   
   const numInputs = firstSetOfInputs.length / bytesPerFirstInput;
 
@@ -64,6 +65,10 @@ export const entry = async(
     usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
   });
 
+  allBuffers.push(...gpuBufferInputs);
+  allBuffers.push(resultBuffer);
+  allBuffers.push(gpuReadBuffer);
+
   // Encode commands for copying buffer to buffer.
   commandEncoder.copyBufferToBuffer(
     resultBuffer /* source buffer */,
@@ -82,6 +87,12 @@ export const entry = async(
   const arrayBuffer = gpuReadBuffer.getMappedRange();
   const result = new Uint32Array(arrayBuffer.slice(0));
   gpuReadBuffer.unmap();
+
+  // Destroy all buffers
+  for (const buffer of allBuffers) {
+    buffer.destroy();
+  }
+  device.destroy();
   
   return result;
 }
