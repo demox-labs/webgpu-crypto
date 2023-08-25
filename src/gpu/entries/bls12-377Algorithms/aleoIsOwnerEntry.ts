@@ -4,24 +4,26 @@ import { FieldModulusWGSL } from "../../wgsl/FieldModulus";
 import { AleoPoseidonWGSL } from "../../wgsl/AleoPoseidon";
 import { AleoPoseidonConstantsWGSL } from "../../wgsl/AleoPoseidonConstants";
 import { U256WGSL } from "../../wgsl/U256";
-import { entry } from "../entryCreator"
-import { AFFINE_POINT_SIZE, FIELD_SIZE } from "../../U32Sizes";
+import { batchedEntry } from "../entryCreator"
+import { FIELD_SIZE } from "../../U32Sizes";
+import { gpuU32Inputs } from "../../utils";
 
 export const is_owner = async (
-  cipherTextAffineCoords: Array<number>,
-  encryptedOwnerXs: Array<number>,
-  aleoMds: Array<number>,
-  aleoRoundConstants: Array<number>,
-  scalar: Array<number>,
-  address_x: Array<number>
+  cipherTextAffineCoords: gpuU32Inputs,
+  encryptedOwnerXs: gpuU32Inputs,
+  aleoMds: gpuU32Inputs,
+  aleoRoundConstants: gpuU32Inputs,
+  scalar: gpuU32Inputs,
+  address_x: gpuU32Inputs,
+  batchSize?: number
   ) => {
   const shaderEntry = `
     const EMBEDDED_SCALAR: Field = Field(
-      array<u32, 8>(${scalar[0]}, ${scalar[1]}, ${scalar[2]}, ${scalar[3]}, ${scalar[4]}, ${scalar[5]}, ${scalar[6]}, ${scalar[7]})
+      array<u32, 8>(${scalar.u32Inputs[0]}, ${scalar.u32Inputs[1]}, ${scalar.u32Inputs[2]}, ${scalar.u32Inputs[3]}, ${scalar.u32Inputs[4]}, ${scalar.u32Inputs[5]}, ${scalar.u32Inputs[6]}, ${scalar.u32Inputs[7]})
     );
 
     const EMBEDDED_ADDRESS_X: Field = Field(
-      array<u32, 8>(${address_x[0]}, ${address_x[1]}, ${address_x[2]}, ${address_x[3]}, ${address_x[4]}, ${address_x[5]}, ${address_x[6]}, ${address_x[7]})
+      array<u32, 8>(${address_x.u32Inputs[0]}, ${address_x.u32Inputs[1]}, ${address_x.u32Inputs[2]}, ${address_x.u32Inputs[3]}, ${address_x.u32Inputs[4]}, ${address_x.u32Inputs[5]}, ${address_x.u32Inputs[6]}, ${address_x.u32Inputs[7]})
     );
 
     @group(0) @binding(0)
@@ -33,7 +35,7 @@ export const is_owner = async (
     @group(0) @binding(3)
     var<storage, read> aleoRoundConstants: array<array<u256, 9>, 39>;
     @group(0) @binding(4)
-    var<storage, read_write> output: Fields;
+    var<storage, read_write> output: array<Field>;
 
     @compute @workgroup_size(64)
     fn main(
@@ -53,19 +55,21 @@ export const is_owner = async (
 
       var owner_to_compare = field_sub(owner_field_x[global_id.x], hash);
 
-      output.fields[global_id.x] = field_sub(owner_to_compare, EMBEDDED_ADDRESS_X);
+      output[global_id.x] = field_sub(owner_to_compare, EMBEDDED_ADDRESS_X);
     }
   `;
 
   const shaderModules = [
+    U256WGSL,
     AleoPoseidonConstantsWGSL,
-    U256WGSL, BLS12_377ParamsWGSL, FieldModulusWGSL,
+    BLS12_377ParamsWGSL,
+    FieldModulusWGSL,
     AleoPoseidonWGSL,
     CurveWGSL,
     shaderEntry
   ];
 
-  return await entry([cipherTextAffineCoords, encryptedOwnerXs, aleoMds, aleoRoundConstants], shaderModules, AFFINE_POINT_SIZE, FIELD_SIZE);
+  return await batchedEntry([cipherTextAffineCoords, encryptedOwnerXs, aleoMds, aleoRoundConstants], shaderModules, FIELD_SIZE, batchSize);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

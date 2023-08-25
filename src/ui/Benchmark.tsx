@@ -1,25 +1,28 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from 'react';
-import { u32ArrayToBigInts } from '../gpu/utils';
+import { gpuU32Inputs, u32ArrayToBigInts } from '../gpu/utils';
 import CSVExportButton from './CSVExportButton';
 
 interface BenchmarkProps {
   name: string;
   inputsGenerator: (inputSize: number) => any[][];
-  gpuFunc: (inputs: any[][]) => Promise<Uint32Array>;
-  gpuInputConverter: (inputs: any[][]) => number[][] | bigint[][];
+  gpuFunc: (inputs: any[], batchSize?: any) => Promise<Uint32Array>;
+  gpuInputConverter: (inputs: any[][]) => gpuU32Inputs[] | bigint[][];
   gpuResultConverter?: (results: bigint[]) => string[];
   wasmFunc: (inputs: any[][]) => Promise<string[]>;
   wasmInputConverter: (inputs: any[][]) => string[][];
   wasmResultConverter: (results: string[]) => string[];
+  batchable: boolean;
 }
 
 export const Benchmark: React.FC<BenchmarkProps> = (
-  {name, inputsGenerator, gpuFunc, gpuInputConverter, gpuResultConverter, wasmFunc, wasmInputConverter, wasmResultConverter}
+  {name, inputsGenerator, gpuFunc, gpuInputConverter, gpuResultConverter, wasmFunc, wasmInputConverter, wasmResultConverter, batchable=true}
   ) => {
   const initialDefaultInputSize = 1_000;
   const [inputSize, setInputSize] = useState(initialDefaultInputSize);
+  const initialBatchSize = 1_000_000;
+  const [batchSize, setBatchSize] = useState(initialBatchSize);
   const [gpuTime, setGpuTime] = useState(0);
   const [wasmTime, setWasmTime] = useState(0);
   const [gpuRunning, setGpuRunning] = useState(false);
@@ -45,11 +48,11 @@ export const Benchmark: React.FC<BenchmarkProps> = (
     if (gpuResults.length === 0 && wasmResults.length === 0) {
       setComparison('Run benchmarks to compare results.')
     } else if (gpuResults.length === 0) {
-      setComparison('Run GPU benchmark to compare results.')
+      setComparison('🎮 Run GPU')
     } else if (wasmResults.length === 0) {
-      setComparison('Run WASM benchmark to compare results.')
+      setComparison('👾 Run WASM')
     } else if (gpuResults.length !== wasmResults.length) {
-      setComparison('GPU and WASM results are different lengths');
+      setComparison('⛔️ Different length results');
     } else {
       let gpuResultsDiffIndex = -1;
       for (let i = 0; i < gpuResults.length; i++) {
@@ -59,9 +62,9 @@ export const Benchmark: React.FC<BenchmarkProps> = (
         }
       }
       if (gpuResultsDiffIndex !== -1) {
-        setComparison(`GPU and WASM results differ at index ${gpuResultsDiffIndex}`);
+        setComparison(`❌ different at index ${gpuResultsDiffIndex}`);
       } else {
-        setComparison('GPU and WASM results are the same');
+        setComparison('✅');
       }
     }
   }, [gpuResults, wasmResults]);
@@ -86,7 +89,7 @@ export const Benchmark: React.FC<BenchmarkProps> = (
     const gpuInputs = gpuInputConverter(inputs);
     setGpuRunning(true);
     const gpuStart = performance.now();
-    const result = await gpuFunc(gpuInputs);
+    const result = await gpuFunc(gpuInputs, batchSize);
     const gpuEnd = performance.now();
     const gpuPerformance = gpuEnd - gpuStart;
     setGpuTime(gpuPerformance);
@@ -103,23 +106,31 @@ export const Benchmark: React.FC<BenchmarkProps> = (
 
   return (
     <div className="flex items-center space-x-4 px-5">
-      <div className="text-gray-800 font-bold w-40 px-2">{name}</div> 
-      <div className="text-gray-800">Input Size:</div>
+      <div className="font-bold w-40 px-2">{name}</div> 
+      <div>Input Size:</div>
       <input
         type="text"
         className="w-24 border border-gray-300 rounded-md px-2 py-1"
         value={inputSize}
         onChange={(e) => setInputSize(parseInt(e.target.value))}
       />
+      <div>Batch Size:</div>
+      <input
+        type="text"
+        className="w-24 border border-gray-300 rounded-md px-2 py-1"
+        value={batchable ? batchSize : 'N/A'}
+        onChange={(e) => setBatchSize(parseInt(e.target.value))}
+        disabled={!batchable} />
+      
       <button className="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded-md"  onClick={async () => { await runGpu()}}>
         {gpuRunning ? spin() : 'GPU'}
       </button>
-      <div className="text-gray-800 w-36 truncate">{gpuTime > 0 ? gpuTime : 'GPU Time: 0ms'}</div>
+      <div className="w-36 truncate">{gpuTime > 0 ? gpuTime : 'GPU Time: 0ms'}</div>
       <button className="bg-green-500 hover:bg-green-700 text-white px-4 py-2 rounded-md" onClick={async () => { await runWasm()}}>
         {wasmRunning ? spin() : 'WASM'}
       </button>
-      <div className="text-gray-800 w-36 truncate">{wasmTime > 0 ? wasmTime : 'WASM Time: 0ms'}</div>
-      <div className="text-gray-800 w-48">{comparison}</div>
+      <div className="w-36 truncate">{wasmTime > 0 ? wasmTime : 'WASM Time: 0ms'}</div>
+      <div className="w-48">{comparison}</div>
       <CSVExportButton data={benchmarkResults} filename={name + '-benchmark'} />
     </div>
   );

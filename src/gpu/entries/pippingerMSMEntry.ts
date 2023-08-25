@@ -3,9 +3,10 @@ import { FieldModulusWGSL } from "../wgsl/FieldModulus";
 import { entry } from "./entryCreator"
 import { ExtPointType } from "@noble/curves/abstract/edwards";
 import { FieldMath } from "../../utils/BLS12_377FieldMath";
-import { bigIntToU32Array, bigIntsToU32Array, u32ArrayToBigInts } from "../utils";
+import { bigIntToU32Array, bigIntsToU32Array, gpuU32Inputs, u32ArrayToBigInts } from "../utils";
 import { BLS12_377ParamsWGSL } from "../wgsl/BLS12-377Params";
 import { U256WGSL } from "../wgsl/U256";
+import { EXT_POINT_SIZE, FIELD_SIZE } from "../U32Sizes";
 
 /// Pippinger Algorithm Summary:
 /// 
@@ -131,7 +132,7 @@ export const pippinger_msm = async (points: ExtPointType[], scalars: number[], f
     let pointMulCallTimes = 0
     for (let i = 0; i < chunkedPoints.length; i++) {
         const chunkCalculationStart = performance.now();
-        const bufferResult = await point_mul(Array.from(bigIntsToU32Array(chunkedPoints[i])), chunkedScalars[i]);
+        const bufferResult = await point_mul({ u32Inputs: bigIntsToU32Array(chunkedPoints[i]), individualInputSize: EXT_POINT_SIZE }, { u32Inputs: Uint32Array.from(chunkedScalars[i]), individualInputSize: FIELD_SIZE });
         pointMulCallTimes += 1;
         const chunkCalculationEnd = performance.now();
         avgGpuChunkCalculationTimes.push(chunkCalculationEnd - chunkCalculationStart);
@@ -207,7 +208,10 @@ export const pippinger_msm = async (points: ExtPointType[], scalars: number[], f
     return u32XCoord;
 }
 
-export const point_mul = async (input1: Array<number>, input2: Array<number>) => {
+const point_mul = async (
+    input1: gpuU32Inputs,
+    input2: gpuU32Inputs
+    ) => {
     const shaderEntry = `
       @group(0) @binding(0)
       var<storage, read> input1: array<Point>;
@@ -232,7 +236,7 @@ export const point_mul = async (input1: Array<number>, input2: Array<number>) =>
   
     const shaderModules = [U256WGSL, BLS12_377ParamsWGSL, FieldModulusWGSL, CurveWGSL, shaderEntry];
   
-    return await entry([input1, input2], shaderModules, 32, 32);
+    return await entry([input1, input2], shaderModules, EXT_POINT_SIZE);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

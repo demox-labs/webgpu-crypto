@@ -1,19 +1,43 @@
-export const entry = async(
-  inputsAsArrays: Array<number>[],
+import { chunkArray, gpuU32Inputs } from "../utils";
+
+export interface entryOptions {
+  u32SizePerOutput: number,
+  batchSize?: number
+}
+
+export const batchedEntry = async(
+  inputData: gpuU32Inputs[],
   shaderModules: string[],
-  u32SizePerFirstInput?: number,
-  u32SizePerOutput?: number
+  u32SizePerOutput: number,
+  batchSize?: number
   ) => {
-  const inputs = inputsAsArrays.map((input) => new Uint32Array(input));
-  const bytesPerFirstInput = u32SizePerFirstInput ?? 8;
-  const bytesPerOutput = u32SizePerOutput ?? 8;
-  const firstSetOfInputs = inputs[0];
-  
+  const u32SizePerFirstInput = inputData[0].individualInputSize;
+  const totalInputs = inputData[0].u32Inputs.length/ u32SizePerFirstInput;
+  const totalExpectedOutputs = totalInputs;
+  batchSize = batchSize ?? totalInputs;
+  let chunkedInputs = [ inputData ];
+  if (batchSize < totalInputs) {
+    chunkedInputs = chunkArray(inputData, batchSize);
+  }
+  const outputResult: Uint32Array = new Uint32Array(totalExpectedOutputs * u32SizePerOutput);
+  for (let i = 0; i < chunkedInputs.length; i++) {
+    const batchResult = await entry(chunkedInputs[i], shaderModules, u32SizePerOutput);
+    outputResult.set(batchResult, i * batchSize * u32SizePerOutput);
+  }
+
+  return outputResult;
+};
+
+export const entry = async(
+  inputData: gpuU32Inputs[],
+  shaderModules: string[],
+  u32SizePerOutput: number
+  ) => {
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const device = (await getDevice())!;
   const allBuffers: GPUBuffer[] = [];
   
-  const numInputs = firstSetOfInputs.length / bytesPerFirstInput;
+  const numInputs = inputData[0].u32Inputs.length / inputData[0].individualInputSize;
 
   let shaderCode = '';
   for (const shaderModule of shaderModules) {
@@ -24,10 +48,10 @@ export const entry = async(
     code: shaderCode
   });
 
-  const gpuBufferInputs = inputs.map((input) => createU32ArrayInputBuffer(device, input));
+  const gpuBufferInputs = inputData.map((data) => createU32ArrayInputBuffer(device, data.u32Inputs));
 
   // Result Matrix
-  const resultBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * bytesPerOutput;
+  const resultBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * u32SizePerOutput;
   const resultBuffer = device.createBuffer({
     size: resultBufferSize,
     usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC

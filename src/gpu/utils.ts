@@ -63,7 +63,41 @@ export const u32ArrayToBigInts = (u32Array: Uint32Array): bigint[] => {
     bigInts.push(bigInt);
   }
   return bigInts;
+};
+
+export interface gpuU32Inputs {
+  u32Inputs: Uint32Array;
+  individualInputSize: number;
 }
+
+export const gpuU32PuppeteerString = (gpuU32Input: gpuU32Inputs): string => {
+  let puppeteerString = `{ u32Inputs: Uint32Array.from([${gpuU32Input.u32Inputs}])`;
+  
+  puppeteerString += ', individualInputSize: ' + gpuU32Input.individualInputSize + '}';
+  return puppeteerString;
+};
+
+export const chunkArray = (inputsArray: gpuU32Inputs[], batchSize: number): gpuU32Inputs[][] => {
+  let index = 0;
+  const chunkedArray: gpuU32Inputs[][] = [];
+  const firstInputLength = inputsArray[0].u32Inputs.length / inputsArray[0].individualInputSize;
+
+  while (index < firstInputLength) {
+      const newIndex = index + batchSize;
+      const tempArray: gpuU32Inputs[] = [];
+      inputsArray.forEach(bufferData => {
+        const chunkedGpuU32Inputs = bufferData.u32Inputs.slice(index * bufferData.individualInputSize, newIndex * bufferData.individualInputSize);
+        tempArray.push({
+          u32Inputs: chunkedGpuU32Inputs,
+          individualInputSize: bufferData.individualInputSize
+        });
+      });
+      index = newIndex;
+      chunkedArray.push(tempArray);
+  }
+
+  return chunkedArray;
+};
 
 export const generateRandomFields = (inputSize: number): bigint[] => {
   const randomBigInts = [];

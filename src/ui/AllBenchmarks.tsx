@@ -1,21 +1,11 @@
 import React from 'react';
-import { field_double } from '../gpu/entries/field/fieldDoubleEntry';
 import { bulkAddFields, bulkDoubleFields, bulkInvertFields, bulkMulFields, bulkSubFields, bulkPowFields, bulkPowFields17, bulkSqrtFields, bulkGroupScalarMul, bulkPoseidon, bulkIsOwner, msm, bulkAddGroups } from '../utils/aleoWasmFunctions';
 import { Benchmark } from './Benchmark';
-import { PippingerBenchmark } from './PippingerBenchmark';
-import { bigIntToU32Array, bigIntsToU16Array, bigIntsToU32Array, generateRandomFields, stripFieldSuffix, stripGroupSuffix } from '../gpu/utils';
-import { field_add } from '../gpu/entries/field/fieldAddEntry';
-import { field_sub } from '../gpu/entries/field/fieldSubEntry';
-import { field_inverse } from '../gpu/entries/field/fieldInverseEntry';
-import { field_pow } from '../gpu/entries/field/fieldModulusExponentiationEntry';
-import { field_multiply } from '../gpu/entries/field/fieldModulusFieldMultiplyEntry';
-import { bulkKochanski } from '../algorithms/Kochanski';
+import { bigIntToU32Array, bigIntsToU16Array, bigIntsToU32Array, generateRandomFields, gpuU32Inputs, stripFieldSuffix, stripGroupSuffix } from '../gpu/utils';
 import { FIELD_MODULUS } from '../params/BLS12_377Constants';
-import { field_sqrt } from '../gpu/entries/field/fieldSqrtEntry';
 import { point_mul } from '../gpu/entries/curve/curveMulPointEntry';
 import { point_mul_multi } from '../gpu/entries/curve/curveMulPointMultiPassEntry';
 import { FieldMath } from '../utils/BLS12_377FieldMath';
-import { field_pow_by_17 } from '../gpu/entries/field/fieldPow17Entry';
 import { aleo_poseidon } from '../gpu/entries/bls12-377Algorithms/aleoPoseidonEntry';
 import { aleoMdStrings, aleoRoundConstantStrings } from '../params/AleoPoseidonParams';
 import { is_owner } from '../gpu/entries/bls12-377Algorithms/aleoIsOwnerEntry';
@@ -26,10 +16,13 @@ import { aleo_poseidon_multi } from '../gpu/entries/bls12-377Algorithms/aleoPose
 import { naive_msm } from '../gpu/entries/naiveMSMEntry';
 import { point_add } from '../gpu/entries/curve/curveAddPointsEntry';
 import { point_mul_windowed } from '../gpu/entries/curve/curveMulPointWindowedEntry';
-import { field_poseidon_reuse } from '../gpu/entries/poseidonMultiPassBufferReuse';
 import { point_mul_multi_reuse } from '../gpu/entries/pointScalarMultipassReuseBuffer';
 import { pippinger_msm } from '../gpu/entries/pippingerMSMEntry';
 import { ExtPointType } from '@noble/curves/abstract/edwards';
+import { field_entry } from '../gpu/entries/field/fieldEntry';
+import { CurveType } from '../gpu/params';
+import { AFFINE_POINT_SIZE, FIELD_SIZE } from '../gpu/U32Sizes';
+import { PippingerBenchmark } from './PippingerBenchmark';
 
 const singleInputGenerator = (inputSize: number): bigint[][] => {
   return [generateRandomFields(inputSize)];
@@ -70,7 +63,7 @@ const cipherTextsGenerator = (inputSize: number): string[][] => {
   return [cipherTextArr];
 };
 
-const gpuCipherTextInputConverter = (inputs: string[][]): number[][] => {
+const gpuCipherTextInputConverter = (inputs: string[][]): gpuU32Inputs[] => {
   const cipherTexts = inputs[0];
   const dataViews = cipherTexts.map((ct) => convertCiphertextToDataView(ct));
   const owner_fields = dataViews.map((dv) => BigInt(convertBytesToFieldElement(getPrivateOwnerBytes(dv))));
@@ -89,12 +82,12 @@ const gpuCipherTextInputConverter = (inputs: string[][]): number[][] => {
   const aleoRoundConstants = aleoRoundConstantStrings.map((arr) => arr.map((str) => BigInt(str))).flat();
 
   return [
-    Array.from(bigIntsToU32Array(point_inputs)),
-    Array.from(bigIntsToU32Array(owner_fields)),
-    Array.from(bigIntsToU32Array(aleoMds)),
-    Array.from(bigIntsToU32Array(aleoRoundConstants)),
-    Array.from(bigIntToU32Array(ownerViewKeyScalar)),
-    Array.from(bigIntToU32Array(ownerAddress_x))
+    { u32Inputs: bigIntsToU32Array(point_inputs), individualInputSize: AFFINE_POINT_SIZE },
+    { u32Inputs: bigIntsToU32Array(owner_fields), individualInputSize: FIELD_SIZE },
+    { u32Inputs: bigIntsToU32Array(aleoMds), individualInputSize: FIELD_SIZE },
+    { u32Inputs: bigIntsToU32Array(aleoRoundConstants), individualInputSize: FIELD_SIZE },
+    { u32Inputs: bigIntToU32Array(ownerViewKeyScalar), individualInputSize: FIELD_SIZE },
+    { u32Inputs: bigIntToU32Array(ownerAddress_x), individualInputSize: FIELD_SIZE }
   ];
 };
 
@@ -120,18 +113,11 @@ const doubleInputGenerator = (inputSize: number): bigint[][] => {
   return [firstInput, secondInput];
 };
 
-const seventeenGenerator = (inputSize: number): bigint[][] => { 
-  const arr = new Array(inputSize);
-  const firstInput = generateRandomFields(inputSize);
-  arr.fill(BigInt(17));
-  return [firstInput, arr];
-}
-
-const gpuBigIntInputConverter = (inputs: bigint[][]): number[][] => {
-  return inputs.map((input) => Array.from(bigIntsToU32Array(input)));
+const gpuFieldInputConverter = (inputs: bigint[][]): gpuU32Inputs[] => {
+  return inputs.map(input => { return { u32Inputs: bigIntsToU32Array(input), individualInputSize: FIELD_SIZE } });
 };
 
-const gpuPointScalarInputConverter = (inputs: bigint[][]): number[][] => {
+const gpuPointScalarInputConverter = (inputs: bigint[][]): gpuU32Inputs[] => {
   const x_coords = inputs[0];
   const fieldMath = new FieldMath();
   const y_coords_map = new Map<bigint, bigint>();
@@ -143,10 +129,13 @@ const gpuPointScalarInputConverter = (inputs: bigint[][]): number[][] => {
   });
   const point_inputs = x_coords.map((x, i) => [x, y_coords[i]]).flat();
 
-  return [Array.from(bigIntsToU32Array(point_inputs)), Array.from(bigIntsToU32Array(inputs[1]))];
+  return [
+    { u32Inputs: bigIntsToU32Array(point_inputs), individualInputSize: AFFINE_POINT_SIZE },
+    { u32Inputs: bigIntsToU32Array(inputs[1]), individualInputSize: FIELD_SIZE }
+  ];
 };
 
-const gpuPointsInputConverter = (inputs: bigint[][]): number[][] => {
+const gpuPointsInputConverter = (inputs: bigint[][]): gpuU32Inputs[] => {
   const fieldMath = new FieldMath();
   const y_coords_map = new Map<bigint, bigint>();
 
@@ -163,7 +152,7 @@ const gpuPointsInputConverter = (inputs: bigint[][]): number[][] => {
     pointInputs[i] = inputs[i].map(x_coord => [x_coord, y_coords_map.get(x_coord)!]).flat();
   }
 
-  return pointInputs.map((input) => Array.from(bigIntsToU32Array(input)));
+  return pointInputs.map((input) => { return { u32Inputs: bigIntsToU32Array(input), individualInputSize: AFFINE_POINT_SIZE }});
 }
 // After instantiating the FieldMath object here, it needs to be passed anywhere we need to 
 // use the field math library to do operations (like add or multiply) on these points. 
@@ -203,23 +192,25 @@ export const AllBenchmarks: React.FC = () => {
       <Benchmark
         name={'Is Ownership Single Pass'}
         inputsGenerator={cipherTextsGenerator}
-        gpuFunc={(inputs: number[][]) => is_owner(inputs[0], inputs[1], inputs[2], inputs[3], inputs[4], inputs[5])}
+        gpuFunc={(inputs: gpuU32Inputs[]) => is_owner(inputs[0], inputs[1], inputs[2], inputs[3], inputs[4], inputs[5])}
         gpuInputConverter={gpuCipherTextInputConverter}
         gpuResultConverter={(results: bigint[]) => { return results.map((result) => result === BigInt(0) ? 'true' : 'false')}}
         // gpuResultConverter={(results: bigint[]) => { return results.map((result) => result.toString())}}
         wasmFunc={(inputs: string[][]) => bulkIsOwner(inputs[0], ownerViewKey)}
         wasmInputConverter={(inputs: string[][]) => {return inputs}}
         wasmResultConverter={(results: string[]) => {return results}}
+        batchable={true}
       />
       <Benchmark
         name={'Is Ownership Multi Pass'}
         inputsGenerator={cipherTextsGenerator}
-        gpuFunc={(inputs: number[][]) => is_owner_multi(inputs[0], inputs[1], inputs[2], inputs[3], inputs[4], inputs[5])}
+        gpuFunc={(inputs: gpuU32Inputs[]) => is_owner_multi(inputs[0], inputs[1], inputs[2], inputs[3], inputs[4], inputs[5])}
         gpuInputConverter={gpuCipherTextInputConverter}
         gpuResultConverter={(results: bigint[]) => { return results.map((result) => result === BigInt(1) ? 'true' : 'false')}}
         wasmFunc={(inputs: string[][]) => bulkIsOwner(inputs[0], ownerViewKey)}
         wasmInputConverter={(inputs: string[][]) => {return inputs}}
         wasmResultConverter={(results: string[]) => {return results}}
+        batchable={false}
       />
       <Benchmark
         name={'Is Ownership Multi Pass Reuse Buffers'}
@@ -230,133 +221,128 @@ export const AllBenchmarks: React.FC = () => {
         wasmFunc={(inputs: string[][]) => bulkIsOwner(inputs[0], ownerViewKey)}
         wasmInputConverter={(inputs: string[][]) => {return inputs}}
         wasmResultConverter={(results: string[]) => {return results}}
+        batchable={false}
       />
       <Benchmark
         name={'Add Fields'}
         inputsGenerator={doubleInputGenerator}
-        gpuFunc={(inputs: number[][]) => field_add(inputs[0], inputs[1])}
-        gpuInputConverter={gpuBigIntInputConverter}
+        gpuFunc={(inputs: gpuU32Inputs[], batchSize: number) => field_entry('field_add', CurveType.BLS12_377, inputs, batchSize)}
+        gpuInputConverter={gpuFieldInputConverter}
         wasmFunc={(inputs: string[][]) => bulkAddFields(inputs[0], inputs[1])}
         wasmInputConverter={wasmBigIntToFieldConverter}
         wasmResultConverter={wasmFieldResultConverter}
+        batchable={true}
       />
       <Benchmark
         name={'Subtract Fields'}
         inputsGenerator={doubleInputGenerator}
-        gpuFunc={(inputs: number[][]) => field_sub(inputs[0], inputs[1])}
-        gpuInputConverter={gpuBigIntInputConverter}
+        gpuFunc={(inputs: gpuU32Inputs[], batchSize: number) => field_entry('field_sub', CurveType.BLS12_377, inputs, batchSize)}
+        gpuInputConverter={gpuFieldInputConverter}
         wasmFunc={(inputs: string[][]) => bulkSubFields(inputs[0], inputs[1])}
         wasmInputConverter={wasmBigIntToFieldConverter}
         wasmResultConverter={wasmFieldResultConverter}
+        batchable={true}
       />
       <Benchmark
         name={'Multiply Fields'}
         inputsGenerator={doubleInputGenerator}
-        gpuFunc={(inputs: number[][]) => field_multiply(inputs[0], inputs[1])}
-        gpuInputConverter={gpuBigIntInputConverter}
+        gpuFunc={(inputs: gpuU32Inputs[], batchSize: number) => field_entry('field_multiply', CurveType.BLS12_377, inputs, batchSize)}
+        gpuInputConverter={gpuFieldInputConverter}
         wasmFunc={(inputs: string[][]) => bulkMulFields(inputs[0], inputs[1])}
         wasmInputConverter={wasmBigIntToFieldConverter}
         wasmResultConverter={wasmFieldResultConverter}
-      />
-      <Benchmark
-        name={'Multiply Fields Kochanski ts impl'}
-        inputsGenerator={doubleInputGenerator}
-        gpuFunc={(inputs: number[][]) => bulkKochanski(inputs[0], inputs[1])}
-        gpuInputConverter={(result: bigint[][]) => result}
-        wasmFunc={(inputs: string[][]) => bulkMulFields(inputs[0], inputs[1])}
-        wasmInputConverter={wasmBigIntToFieldConverter}
-        wasmResultConverter={wasmFieldResultConverter}
+        batchable={true}
       />
       <Benchmark
         name={'Double Fields'}
         inputsGenerator={singleInputGenerator}
-        gpuFunc={(inputs: number[][]) => field_double(inputs[0])}
-        gpuInputConverter={gpuBigIntInputConverter}
+        gpuFunc={(inputs: gpuU32Inputs[], batchSize: number) => field_entry('field_double', CurveType.BLS12_377, inputs, batchSize)}
+        gpuInputConverter={gpuFieldInputConverter}
         wasmFunc={(inputs: string[][]) => bulkDoubleFields(inputs[0])}
         wasmInputConverter={wasmBigIntToFieldConverter}
         wasmResultConverter={wasmFieldResultConverter}
+        batchable={true}
       />
       <Benchmark
         name={'Invert Fields'}
         inputsGenerator={singleInputGenerator}
-        gpuFunc={(inputs: number[][]) => field_inverse(inputs[0])}
-        gpuInputConverter={gpuBigIntInputConverter}
+        gpuFunc={(inputs: gpuU32Inputs[], batchSize: number) => field_entry('field_inverse', CurveType.BLS12_377, inputs, batchSize)}
+        gpuInputConverter={gpuFieldInputConverter}
         wasmFunc={(inputs: string[][]) => bulkInvertFields(inputs[0])}
         wasmInputConverter={wasmBigIntToFieldConverter}
         wasmResultConverter={wasmFieldResultConverter}
+        batchable={true}
       />
       <Benchmark
-        name={'Pow Fields with 17'}
-        inputsGenerator={seventeenGenerator}
-        gpuFunc={(inputs: number[][]) => field_pow(inputs[0], inputs[1])}
-        gpuInputConverter={gpuBigIntInputConverter}
-        wasmFunc={(inputs: string[][]) => bulkPowFields(inputs[0], inputs[1])}
-        wasmInputConverter={wasmBigIntToFieldConverter}
-        wasmResultConverter={wasmFieldResultConverter}
-      />
-      <Benchmark
-        name={'Pow Fields with 17 dedicated func'}
+        name={'Field Pow 17'}
         inputsGenerator={singleInputGenerator}
-        gpuFunc={(inputs: number[][]) => field_pow_by_17(inputs[0])}
-        gpuInputConverter={gpuBigIntInputConverter}
+        gpuFunc={(inputs: gpuU32Inputs[], batchSize: number) => field_entry('field_pow_by_17', CurveType.BLS12_377, inputs, batchSize)}
+        gpuInputConverter={gpuFieldInputConverter}
         wasmFunc={(inputs: string[][]) => bulkPowFields17(inputs[0])}
         wasmInputConverter={wasmBigIntToFieldConverter}
         wasmResultConverter={wasmFieldResultConverter}
+        batchable={true}
       />
       <Benchmark
-        name={'Pow Fields with random'}
+        name={'Field Pow Random'}
         inputsGenerator={doubleInputGenerator}
-        gpuFunc={(inputs: number[][]) => field_pow(inputs[0], inputs[1])}
-        gpuInputConverter={gpuBigIntInputConverter}
+        gpuFunc={(inputs: gpuU32Inputs[], batchSize: number) => field_entry('field_pow', CurveType.BLS12_377, inputs, batchSize)}
+        gpuInputConverter={gpuFieldInputConverter}
         wasmFunc={(inputs: string[][]) => bulkPowFields(inputs[0], inputs[1])}
         wasmInputConverter={wasmBigIntToFieldConverter}
         wasmResultConverter={wasmFieldResultConverter}
+        batchable={true}
       />
       <Benchmark
         name={'Square Root Fields'}
         inputsGenerator={squaresGenerator}
-        gpuFunc={(inputs: number[][]) => field_sqrt(inputs[0])}
-        gpuInputConverter={gpuBigIntInputConverter}
+        gpuFunc={(inputs: gpuU32Inputs[], batchSize: number) => field_entry('field_sqrt', CurveType.BLS12_377, inputs, batchSize)}
+        gpuInputConverter={gpuFieldInputConverter}
         gpuResultConverter={gpuSquaresResultConverter}
         wasmFunc={(inputs: string[][]) => bulkSqrtFields(inputs[0])}
         wasmInputConverter={wasmBigIntToFieldConverter}
         wasmResultConverter={wasmSquaresResultConverter}
+        batchable={true}
       />
       <Benchmark
         name={'Point Add'}
         inputsGenerator={doublePointGenerator}
-        gpuFunc={(inputs: number[][]) => point_add(inputs[0], inputs[1])}
+        gpuFunc={(inputs: gpuU32Inputs[], batchSize: number) => point_add(inputs[0], inputs[1], batchSize)}
         gpuInputConverter={gpuPointsInputConverter}
         wasmFunc={(inputs: string[][]) => bulkAddGroups(inputs[0], inputs[1])}
         wasmInputConverter={wasmPointConverter}
         wasmResultConverter={(results: string[]) => { return results.map((result) => stripGroupSuffix(result))}}
+        batchable={true}
       />
       <Benchmark
         name={'Point Scalar Mul'}
         inputsGenerator={pointScalarGenerator}
-        gpuFunc={(inputs: number[][]) => point_mul(inputs[0], inputs[1])}
+        gpuFunc={(inputs: gpuU32Inputs[], batchSize: number) => point_mul(inputs[0], inputs[1], batchSize)}
         gpuInputConverter={gpuPointScalarInputConverter}
         wasmFunc={(inputs: string[][]) => bulkGroupScalarMul(inputs[0], inputs[1])}
         wasmInputConverter={wasmPointMulConverter}
         wasmResultConverter={(results: string[]) => { return results.map((result) => stripGroupSuffix(result))}}
+        batchable={true}
       />
       <Benchmark
         name={'Point Scalar Mul Windowed'}
         inputsGenerator={pointScalarGenerator}
-        gpuFunc={(inputs: number[][]) => point_mul_windowed(inputs[0], inputs[1])}
+        gpuFunc={(inputs: gpuU32Inputs[]) => point_mul_windowed(inputs[0], inputs[1])}
         gpuInputConverter={gpuPointScalarInputConverter}
         wasmFunc={(inputs: string[][]) => bulkGroupScalarMul(inputs[0], inputs[1])}
         wasmInputConverter={wasmPointMulConverter}
         wasmResultConverter={(results: string[]) => { return results.map((result) => stripGroupSuffix(result))}}
+        batchable={true}
       />
       <Benchmark
         name={'Point Scalar Mul multi pass'}
         inputsGenerator={pointScalarGenerator}
-        gpuFunc={(inputs: number[][]) => point_mul_multi(inputs[0], inputs[1])}
+        gpuFunc={(inputs: gpuU32Inputs[]) => point_mul_multi(inputs[0], inputs[1])}
         gpuInputConverter={gpuPointScalarInputConverter}
         wasmFunc={(inputs: string[][]) => bulkGroupScalarMul(inputs[0], inputs[1])}
         wasmInputConverter={wasmPointMulConverter}
         wasmResultConverter={(results: string[]) => { return results.map((result) => stripGroupSuffix(result))}}
+        batchable={false}
       />
       <Benchmark
         name={'Point Scalar Mul multi pass buffer reuse'}
@@ -366,43 +352,48 @@ export const AllBenchmarks: React.FC = () => {
         wasmFunc={(inputs: string[][]) => bulkGroupScalarMul(inputs[0], inputs[1])}
         wasmInputConverter={wasmPointMulConverter}
         wasmResultConverter={(results: string[]) => { return results.map((result) => stripGroupSuffix(result))}}
+        batchable={false}
       />
       <Benchmark
         name={'Aleo Poseidon Hash single pass'}
         inputsGenerator={poseidonGenerator}
-        gpuFunc={(inputs: number[][]) => aleo_poseidon(inputs[0], inputs[1], inputs[2])}
-        gpuInputConverter={gpuBigIntInputConverter}
+        gpuFunc={(inputs: gpuU32Inputs[], batchSize: number) => aleo_poseidon(inputs[0], inputs[1], inputs[2], batchSize)}
+        gpuInputConverter={gpuFieldInputConverter}
         wasmFunc={(inputs: string[][]) => bulkPoseidon(inputs[0])}
         wasmInputConverter={wasmBigIntToFieldConverter}
         wasmResultConverter={wasmFieldResultConverter}
+        batchable={true}
       />
       <Benchmark
         name={'Aleo Poseidon Hash multi pass'}
         inputsGenerator={poseidonGenerator}
-        gpuFunc={(inputs: number[][]) => aleo_poseidon_multi(inputs[0], inputs[1], inputs[2])}
-        gpuInputConverter={gpuBigIntInputConverter}
+        gpuFunc={(inputs: gpuU32Inputs[]) => aleo_poseidon_multi(inputs[0], inputs[1], inputs[2])}
+        gpuInputConverter={gpuFieldInputConverter}
         wasmFunc={(inputs: string[][]) => bulkPoseidon(inputs[0])}
         wasmInputConverter={wasmBigIntToFieldConverter}
         wasmResultConverter={wasmFieldResultConverter}
+        batchable={false}
       />
       <Benchmark
         name={'Aleo Poseidon Hash multi pass reuse'}
         inputsGenerator={poseidonGenerator}
-        gpuFunc={(inputs: number[][]) => field_poseidon_reuse(inputs[0], inputs[1], inputs[2])}
-        gpuInputConverter={gpuBigIntInputConverter}
+        gpuFunc={(inputs: gpuU32Inputs[]) => aleo_poseidon_multi(inputs[0], inputs[1], inputs[2])}
+        gpuInputConverter={gpuFieldInputConverter}
         wasmFunc={(inputs: string[][]) => bulkPoseidon(inputs[0])}
         wasmInputConverter={wasmBigIntToFieldConverter}
         wasmResultConverter={wasmFieldResultConverter}
+        batchable={false}
       />
       <Benchmark
         name={'Naive MSM'}
         inputsGenerator={pointScalarGenerator}
         // change to custom summation function using FieldMath.addPoints
-        gpuFunc={(inputs: number[][]) => naive_msm(inputs[0], inputs[1])}
+        gpuFunc={(inputs: gpuU32Inputs[]) => naive_msm(inputs[0], inputs[1])}
         gpuInputConverter={gpuPointScalarInputConverter}
         wasmFunc={(inputs: string[][]) => msm(inputs[0], inputs[1])}
         wasmInputConverter={wasmPointMulConverter}
         wasmResultConverter={(results: string[]) => { return results.map((result) => stripGroupSuffix(result))}}
+        batchable={false}
       />
       <PippingerBenchmark
         name={'Pippinger MSM V1'}

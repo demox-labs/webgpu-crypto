@@ -1,9 +1,12 @@
 import puppeteer from 'puppeteer';
 import { Browser } from 'puppeteer';
-import { bigIntToU32Array, u32ArrayToBigInts } from '../../utils';
+import { bigIntToU32Array, gpuU32Inputs, u32ArrayToBigInts } from '../../utils';
 import { FIELD_MODULUS } from '../../../params/BLS12_377Constants';
+import { fieldEntryEvaluationString } from './evalString';
+import { CurveType } from '../../params';
+import { FIELD_SIZE } from '../../U32Sizes';
 
-describe('u256Add', () => {
+describe('fieldModulusReduce', () => {
   let browser: Browser;
   beforeAll(async () => {
     browser = await puppeteer.launch({
@@ -29,8 +32,9 @@ describe('u256Add', () => {
     [BigInt('120398457102983457029138745023987'), BigInt('120398457102983457029138745023987')]
   ])('should add reduce big ints into field elements', async (input1: bigint, expected: bigint) => {
     // need to pass an untyped array here
-    const u32Input1 = Array.from(bigIntToU32Array(input1));
-    const result = await ((await browser.pages())[0]).evaluate(`(field_reduce)([${u32Input1}])`);
+    const u32Input1: gpuU32Inputs = { u32Inputs: bigIntToU32Array(input1), individualInputSize: FIELD_SIZE };
+    const evalString = fieldEntryEvaluationString('field_reduce', CurveType.BLS12_377, [u32Input1]);
+    const result = await ((await browser.pages())[0]).evaluate(evalString);
     const arr = Object.values(result as object);
     const uint32ArrayResult = new Uint32Array(arr);
     const bigIntResult = u32ArrayToBigInts(uint32ArrayResult)[0];

@@ -1,6 +1,8 @@
 import puppeteer from 'puppeteer';
 import { Browser } from 'puppeteer';
-import { bigIntToU32Array, u32ArrayToBigInts } from '../../utils';
+import { bigIntToU32Array, gpuU32Inputs, u32ArrayToBigInts } from '../../utils';
+import { u256EntryEvaluationString } from './evalString';
+import { U256_SIZE } from '../../U32Sizes';
 
 describe('u256Add', () => {
   let browser: Browser;
@@ -33,9 +35,10 @@ describe('u256Add', () => {
     [BigInt('18446744069414584321'), BigInt('4294967295'), BigInt('18446744073709551616')]
   ])('should add uint256 numbers', async (input1: bigint, input2: bigint, expected: bigint) => {
     // need to pass an untyped array here
-    const u32Input1 = Array.from(bigIntToU32Array(input1));
-    const u32Input2 = Array.from(bigIntToU32Array(input2));
-    const result = await ((await browser.pages())[0]).evaluate(`(u256_add)([${u32Input1}], [${u32Input2}])`);
+    const u32Input1: gpuU32Inputs = { u32Inputs: bigIntToU32Array(input1), individualInputSize: U256_SIZE };
+    const u32Input2: gpuU32Inputs = { u32Inputs: bigIntToU32Array(input2), individualInputSize: U256_SIZE };
+    const evalString = u256EntryEvaluationString('u256_add', [u32Input1, u32Input2]);
+    const result = await ((await browser.pages())[0]).evaluate(evalString);
     const arr = Object.values(result as object);
     const uint32ArrayResult = new Uint32Array(arr);
     const bigIntResult = u32ArrayToBigInts(uint32ArrayResult)[0];

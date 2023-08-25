@@ -5,21 +5,26 @@ import { multipassEntryCreator, GPUExecution, IShaderCode, IGPUInput, IGPUResult
 import { workgroupSize } from "../../params";
 import { U256WGSL } from "../../wgsl/U256";
 import { BLS12_377ParamsWGSL } from "../../wgsl/BLS12-377Params";
+import { gpuU32Inputs } from "../../utils";
 
-export const aleo_poseidon_multi = async (input1: Array<number>, input2: Array<number>, input3: Array<number>) => {
-  const [executionSteps, entryInfo] = poseidon_multipass_info(input1.length / 8, input1, input2, input3);
+export const aleo_poseidon_multi = async (
+  input1: gpuU32Inputs,
+  input2: gpuU32Inputs,
+  input3: gpuU32Inputs
+  ) => {
+  const [executionSteps, entryInfo] = poseidon_multipass_info(input1, input2, input3);
 
   return await multipassEntryCreator(executionSteps, entryInfo);
 };
 
 export const poseidon_multipass_info = (
-  numInputs: number,
-  input1: Array<number>,
-  aleoMds: Array<number>,
-  aleoRoundConstants: Array<number>,
+  input1: gpuU32Inputs,
+  aleoMds: gpuU32Inputs,
+  aleoRoundConstants: gpuU32Inputs,
   useInputs = true
   ): [GPUExecution[], IEntryInfo] => {
-  const baseModules = [AleoPoseidonConstantsWGSL, FieldModulusWGSL, U256WGSL, BLS12_377ParamsWGSL];
+  const baseModules = [U256WGSL, AleoPoseidonConstantsWGSL, BLS12_377ParamsWGSL, FieldModulusWGSL];
+  const numInputs = input1.u32Inputs.length / input1.individualInputSize;
   const nonArrayBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * 8;
   const arrayBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * 8 * 9; // Because 9 fields per array
   const aleoMdsBufferSize = Uint32Array.BYTES_PER_ELEMENT * 9 * 8 * 9;
@@ -27,7 +32,7 @@ export const poseidon_multipass_info = (
 
   const firstHashEntry = `
     @group(0) @binding(0)
-    var<storage, read> input1: u256s;
+    var<storage, read> input1: array<u256>;
     @group(0) @binding(1)
     var<storage, read_write> output: array<array<Field, 9>>;
 
@@ -35,7 +40,7 @@ export const poseidon_multipass_info = (
     fn main(
       @builtin(global_invocation_id) global_id : vec3<u32>
     ) {
-      var result = poseidon_first_hash_output(input1.u256s[global_id.x]);
+      var result = poseidon_first_hash_output(input1[global_id.x]);
       output[global_id.x] = result;
     }
   `;
@@ -104,7 +109,7 @@ export const poseidon_multipass_info = (
     inputBufferTypes: ["read-only-storage"],
     inputBufferSizes: [nonArrayBufferSize],
     inputBufferUsages: [GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST],
-    mappedInputs: useInputs ? new Map<number, Uint32Array>([[0, new Uint32Array(input1)]]) : undefined
+    mappedInputs: useInputs ? new Map<number, Uint32Array>([[0, input1.u32Inputs]]) : undefined
   }
   const firstHashResult: IGPUResult = { 
     resultBufferTypes: ["storage"],
@@ -128,7 +133,7 @@ export const poseidon_multipass_info = (
         GPUBufferUsage.STORAGE,
         GPUBufferUsage.STORAGE
       ],
-      mappedInputs: new Map<number, Uint32Array>([[1, new Uint32Array(aleoMds)], [2, new Uint32Array(aleoRoundConstants)]])
+      mappedInputs: new Map<number, Uint32Array>([[1, aleoMds.u32Inputs], [2, aleoRoundConstants.u32Inputs]])
     }
     const fullRoundResult: IGPUResult = { 
       resultBufferTypes: ["storage"],
@@ -153,7 +158,7 @@ export const poseidon_multipass_info = (
         GPUBufferUsage.STORAGE,
         GPUBufferUsage.STORAGE
       ],
-      mappedInputs: new Map<number, Uint32Array>([[1, new Uint32Array(aleoMds)], [2, new Uint32Array(aleoRoundConstants)]])
+      mappedInputs: new Map<number, Uint32Array>([[1, aleoMds.u32Inputs], [2, aleoRoundConstants.u32Inputs]])
     }
     const partialRoundResult: IGPUResult = { 
       resultBufferTypes: ["storage"],
@@ -178,7 +183,7 @@ export const poseidon_multipass_info = (
         GPUBufferUsage.STORAGE,
         GPUBufferUsage.STORAGE
       ],
-      mappedInputs: new Map<number, Uint32Array>([[1, new Uint32Array(aleoMds)], [2, new Uint32Array(aleoRoundConstants)]])
+      mappedInputs: new Map<number, Uint32Array>([[1, aleoMds.u32Inputs], [2, aleoRoundConstants.u32Inputs]])
     }
     const fullRoundResult: IGPUResult = { 
       resultBufferTypes: ["storage"],
@@ -216,4 +221,4 @@ export const poseidon_multipass_info = (
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-(window as any).aleo_poseidon_multi_2 = aleo_poseidon_multi;
+(window as any).aleo_poseidon_multi = aleo_poseidon_multi;

@@ -1,6 +1,9 @@
 import puppeteer from 'puppeteer';
 import { Browser } from 'puppeteer';
-import { bigIntToU32Array, u32ArrayToBigInts } from '../../utils';
+import { bigIntToU32Array, gpuU32Inputs, u32ArrayToBigInts } from '../../utils';
+import { CurveType } from '../../params';
+import { fieldEntryEvaluationString } from './evalString';
+import { FIELD_SIZE } from '../../U32Sizes';
 
 describe('fieldModulusExponentiation', () => {
   let browser: Browser;
@@ -28,9 +31,10 @@ describe('fieldModulusExponentiation', () => {
     [BigInt(25), BigInt('60001509534603559531609739528203892656505753216962260608619555'), BigInt('2162778637144600773838902968767688614233520848441049636087321895557933046729')],
     [BigInt(25), BigInt('30000754767301779765804869764101946328252876608481130304309778'), BigInt('2774790624473817237320672554055090979281590950368967309207911707712866578499')]
   ])('should do field exponentiation', async (input1: bigint, input2: bigint, expected: bigint) => {
-    const u32Input1 = Array.from(bigIntToU32Array(input1));
-    const u32Input2 = Array.from(bigIntToU32Array(input2));
-    const result = await ((await browser.pages())[0]).evaluate(`(field_pow)([${u32Input1}], [${u32Input2}])`);
+    const u32Input1: gpuU32Inputs = { u32Inputs: bigIntToU32Array(input1), individualInputSize: FIELD_SIZE };
+    const u32Input2: gpuU32Inputs = { u32Inputs: bigIntToU32Array(input2), individualInputSize: FIELD_SIZE };
+    const evalString = fieldEntryEvaluationString('field_pow', CurveType.BLS12_377, [u32Input1, u32Input2]);
+    const result = await ((await browser.pages())[0]).evaluate(evalString);
     const arr = Object.values(result as object);
     const uint32ArrayResult = new Uint32Array(arr);
     const bigIntResult = u32ArrayToBigInts(uint32ArrayResult)[0];

@@ -7,9 +7,9 @@
     "start-prod": "webpack serve --config webpack.prod.config.cjs",
     "lint": "eslint --ext .js,.ts .",
     "build": "webpack --config webpack.dev.config.cjs",
-    "test": "node --experimental-vm-modules $(yarn bin jest) --testPathIgnorePatterns='perf.test.ts'",
-    "test-no-gpu": "node --experimental-vm-modules $(yarn bin jest) --testPathIgnorePatterns='/perf.test.ts/|/gpu/'",
-    "perf-test": "node --experimental-vm-modules $(yarn bin jest) --runInBand --testPathPattern perf",
+    "test": "node --experimental-vm-modules $(yarn bin jest)",
+    "test-no-gpu": "node --experimental-vm-modules $(yarn bin jest) --testPathIgnorePatterns='/gpu/'",
+    "test-specific": "node --experimental-vm-modules $(yarn bin jest) --testPathPattern u256Add",
     "whosinmyswamp": "sudo lsof -i :4000"
   },
   "dependencies": {

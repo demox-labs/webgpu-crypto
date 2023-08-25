@@ -1,9 +1,12 @@
 import puppeteer from 'puppeteer';
 import { Browser } from 'puppeteer';
-import { bigIntToU32Array, u32ArrayToBigInts } from '../../utils';
+import { bigIntToU32Array, gpuU32Inputs, u32ArrayToBigInts } from '../../utils';
 import { FIELD_MODULUS } from '../../../params/BLS12_377Constants';
+import { CurveType } from '../../params';
+import { FIELD_SIZE } from '../../U32Sizes';
+import { fieldEntryEvaluationString } from './evalString';
 
-describe('fieldSubEntry', () => {
+describe('fieldSub', () => {
   let browser: Browser;
   beforeAll(async () => {
     browser = await puppeteer.launch({
@@ -34,10 +37,10 @@ describe('fieldSubEntry', () => {
     [BigInt(3458380512), BigInt(3458380512), BigInt(0)],
     [BigInt('28000000000000000000000000000000000000'), BigInt('14000000000000000000000000000000000000'), BigInt('14000000000000000000000000000000000000')],
   ])('should sub field numbers and wrap them if necessary', async (input1: bigint, input2: bigint, expected: bigint) => {
-    // need to pass an untyped array here
-    const u32Input1 = Array.from(bigIntToU32Array(input1));
-    const u32Input2 = Array.from(bigIntToU32Array(input2));
-    const result = await ((await browser.pages())[0]).evaluate(`(field_sub)([${u32Input1}], [${u32Input2}])`);
+    const u32Input1: gpuU32Inputs = { u32Inputs: bigIntToU32Array(input1), individualInputSize: FIELD_SIZE };
+    const u32Input2: gpuU32Inputs = { u32Inputs: bigIntToU32Array(input2), individualInputSize: FIELD_SIZE };
+    const evalString = fieldEntryEvaluationString('field_sub', CurveType.BLS12_377, [u32Input1, u32Input2]);
+    const result = await ((await browser.pages())[0]).evaluate(evalString);
     const arr = Object.values(result as object);
     const uint32ArrayResult = new Uint32Array(arr);
     const bigIntResult = u32ArrayToBigInts(uint32ArrayResult)[0];

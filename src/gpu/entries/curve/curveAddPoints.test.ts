@@ -1,6 +1,7 @@
 import puppeteer from 'puppeteer';
 import { Browser } from 'puppeteer';
-import { bigIntsToU32Array, u32ArrayToBigInts } from '../../utils';
+import { bigIntsToU32Array, gpuU32Inputs, gpuU32PuppeteerString, u32ArrayToBigInts } from '../../utils';
+import { AFFINE_POINT_SIZE } from '../../U32Sizes';
 
 describe('curveAddPoints', () => {
   let browser: Browser;
@@ -50,17 +51,14 @@ describe('curveAddPoints', () => {
     p2x: bigint,
     p2y: bigint,
     resultx: bigint,
-    // resulty: bigint
     ) => {
-    // need to pass an untyped array here
-    const u32Input1 = Array.from(bigIntsToU32Array([p1x, p1y]));
-    const u32Input2 = Array.from(bigIntsToU32Array([p2x, p2y]));
-    const result = await ((await browser.pages())[0]).evaluate(`(point_add)([${u32Input1}], [${u32Input2}])`);
+    const u32Input1: gpuU32Inputs = { u32Inputs: bigIntsToU32Array([p1x, p1y]), individualInputSize: AFFINE_POINT_SIZE };
+    const u32Input2: gpuU32Inputs = { u32Inputs: bigIntsToU32Array([p2x, p2y]), individualInputSize: AFFINE_POINT_SIZE };
+    const result = await ((await browser.pages())[0]).evaluate(`(point_add)(${gpuU32PuppeteerString(u32Input1)}, ${gpuU32PuppeteerString(u32Input2)})`);
     const arr = Object.values(result as object);
     const uint32ArrayResult = new Uint32Array(arr);
     const bigIntsResult = u32ArrayToBigInts(uint32ArrayResult);
 
     expect(bigIntsResult[0].toString()).toEqual(resultx.toString());
-    // expect(bigIntsResult[1].toString()).toEqual(resulty.toString());
   });
 });

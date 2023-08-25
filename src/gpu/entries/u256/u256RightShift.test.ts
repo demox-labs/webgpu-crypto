@@ -1,6 +1,7 @@
 import puppeteer from "puppeteer";
 import { Browser } from "puppeteer";
-import { bigIntToU32Array, u32ArrayToBigInts } from "../../utils";
+import { bigIntToU32Array, gpuU32Inputs, gpuU32PuppeteerString, u32ArrayToBigInts } from "../../utils";
+import { FIELD_SIZE } from "../../U32Sizes";
 
 describe("u256RightShift", () => {
   let browser: Browser;
@@ -65,9 +66,9 @@ describe("u256RightShift", () => {
     [BigInt('115792089237316195423570985008687907853269984665640564039457584007913129639935'), 225, BigInt('2147483647')],
     [BigInt('115792089237316195423570985008687907853269984665640564039457584007913129639935'), 193, BigInt('9223372036854775807')],
   ])('should right shift the uint256 by shift', async (input1: bigint, shift: number, expected: bigint) => {
-    const u32Input1 = Array.from(bigIntToU32Array(input1));
+    const u32Input1: gpuU32Inputs = { u32Inputs: bigIntToU32Array(input1), individualInputSize: FIELD_SIZE };
 
-    const result = await ((await browser.pages())[0]).evaluate(`(u256_right_shift)([${u32Input1}], ${shift})`);
+    const result = await ((await browser.pages())[0]).evaluate(`(u256_right_shift)(${gpuU32PuppeteerString(u32Input1)}, ${shift})`);
     const arr = Object.values(result as object);
     const uint32ArrayResult = new Uint32Array(arr);
     const bigIntResult = u32ArrayToBigInts(uint32ArrayResult)[0];

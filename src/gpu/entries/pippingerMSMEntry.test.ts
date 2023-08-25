@@ -3,6 +3,12 @@
 // import { bigIntsToU16Array, u32ArrayToBigInts } from '../utils';
 // import { FieldMath } from '../../utils/BLS12_377FieldMath';
 
+describe('dummyTest', () => {
+  it('should pass', () => {
+    expect(true).toBe(true);
+  });
+});
+
 // describe('pippingerMSM', () => {
 //   let browser: Browser;
 //   beforeAll(async () => {

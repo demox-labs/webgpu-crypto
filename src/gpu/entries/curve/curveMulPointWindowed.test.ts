@@ -1,6 +1,7 @@
 import puppeteer from 'puppeteer';
 import { Browser } from 'puppeteer';
-import { bigIntToU32Array, bigIntsToU32Array, u32ArrayToBigInts } from '../../utils';
+import { bigIntToU32Array, bigIntsToU32Array, gpuU32Inputs, gpuU32PuppeteerString, u32ArrayToBigInts } from '../../utils';
+import { AFFINE_POINT_SIZE, FIELD_SIZE } from '../../U32Sizes';
 
 describe('curveMulPointWindowed', () => {
   let browser: Browser;
@@ -44,17 +45,14 @@ describe('curveMulPointWindowed', () => {
     p1y: bigint,
     scalar: bigint,
     resultx: bigint,
-    // resulty: bigint
     ) => {
-    // need to pass an untyped array here
-    const u32Input1 = Array.from(bigIntsToU32Array([p1x, p1y]));
-    const u32Input2 = Array.from(bigIntToU32Array(scalar));
-    const result = await ((await browser.pages())[0]).evaluate(`(point_mul_windowed)([${u32Input1}], [${u32Input2}])`);
+    const u32Input1: gpuU32Inputs = { u32Inputs: bigIntsToU32Array([p1x, p1y]), individualInputSize: AFFINE_POINT_SIZE };
+    const u32Input2: gpuU32Inputs = { u32Inputs: bigIntToU32Array(scalar), individualInputSize: FIELD_SIZE };
+    const result = await ((await browser.pages())[0]).evaluate(`(point_mul_windowed)(${gpuU32PuppeteerString(u32Input1)}, ${gpuU32PuppeteerString(u32Input2)})`);
     const arr = Object.values(result as object);
     const uint32ArrayResult = new Uint32Array(arr);
     const bigIntsResult = u32ArrayToBigInts(uint32ArrayResult);
 
     expect(bigIntsResult[0].toString()).toEqual(resultx.toString());
-    // expect(bigIntsResult[1].toString()).toEqual(resulty.toString());
   });
 });

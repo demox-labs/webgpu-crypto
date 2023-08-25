@@ -1,6 +1,7 @@
 import puppeteer from 'puppeteer';
 import { Browser } from 'puppeteer';
-import { bigIntToU32Array, u32ArrayToBigInts } from '../../utils';
+import { bigIntToU32Array, gpuU32Inputs, gpuU32PuppeteerString, u32ArrayToBigInts } from '../../utils';
+import { FIELD_SIZE } from '../../U32Sizes';
 
 describe('u256GT', () => {
   let browser: Browser;
@@ -30,10 +31,9 @@ describe('u256GT', () => {
     [BigInt(4294967299), BigInt(4294967297), BigInt(1)],
     [BigInt(3458380512), BigInt(3458380512), BigInt(0)],
   ])('should compare greater than uint256 numbers', async (input1: bigint, input2: bigint, expected: bigint) => {
-    // need to pass an untyped array here
-    const u32Input1 = Array.from(bigIntToU32Array(input1));
-    const u32Input2 = Array.from(bigIntToU32Array(input2));
-    const result = await ((await browser.pages())[0]).evaluate(`(u256_gt)([${u32Input1}], [${u32Input2}])`);
+    const u32Input1: gpuU32Inputs = { u32Inputs: bigIntToU32Array(input1), individualInputSize: FIELD_SIZE };
+    const u32Input2: gpuU32Inputs = { u32Inputs: bigIntToU32Array(input2), individualInputSize: FIELD_SIZE };
+    const result = await ((await browser.pages())[0]).evaluate(`(u256_gt)(${gpuU32PuppeteerString(u32Input1)}, ${gpuU32PuppeteerString(u32Input2)})`);
     const arr = Object.values(result as object);
     const uint32ArrayResult = new Uint32Array(arr);
     const bigIntResult = u32ArrayToBigInts(uint32ArrayResult)[0];
