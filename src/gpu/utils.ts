@@ -44,6 +44,40 @@ export const u32ArrayToBigInts = (u32Array: Uint32Array): bigint[] => {
   return bigInts;
 }
 
+// Not u256 specific
+export function bigIntToUint32Array(value: bigint, isBigEndian: boolean): Uint32Array {
+  // Calculate the required size of the Uint32Array
+  const size = Math.ceil(Number(value.toString(2).length) / 32);
+  const result = new Uint32Array(size);
+
+  const loopStart = isBigEndian ? 0 : size - 1;
+  const loopEnd = isBigEndian ? size : -1;
+  const loopStep = isBigEndian ? 1 : -1;
+
+  let tempValue = value;
+  for (let i = loopStart; isBigEndian ? i < loopEnd : i > loopEnd; i += loopStep) {
+    result[i] = Number(tempValue & BigInt(0xFFFFFFFF));
+    tempValue >>= BigInt(32);
+  }
+
+  return result;
+}
+
+// Not u256 specific
+export function uint32ArrayToBigInt(arr: Uint32Array, isBigEndian: boolean): BigInt {
+  let result = BigInt(0);
+
+  const loopStart = isBigEndian ? 0 : arr.length - 1;
+  const loopEnd = isBigEndian ? arr.length : -1;
+  const loopStep = isBigEndian ? 1 : -1;
+
+  for (let i = loopStart; isBigEndian ? i < loopEnd : i > loopEnd; i += loopStep) {
+    result = (result << BigInt(32)) | BigInt(arr[i]);
+  }
+
+  return result;
+}
+
 export const generateRandomFields = (inputSize: number): bigint[] => {
   const randomBigInts = [];
   for (let i = 0; i < inputSize; i++) {
