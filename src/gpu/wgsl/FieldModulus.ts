@@ -212,28 +212,6 @@ fn gen_field_pow(base: Field, exponent: Field, field_order: u256) -> Field {
   return result;
 }
 
-// S-Tonelli computes different values given a big int n and a prime p. Because our prime is the
-// Aleo field modulus, we have precomputed some of the values in advance to optimize for the GPU.
-
-// 6924886788847882060123066508223519077232160750698452411071850219367055984476
-const c_initial: Field = Field (
-  array<u32, 8>(256858326, 3006847798, 1208683936, 2370827163, 3854692792, 1079629005, 1919445418, 2787346268)
-);
-
-const s: Field = Field (
-  array<u32, 8>(0, 0, 0, 0, 0, 0, 0, 47)
-);
-
-// 60001509534603559531609739528203892656505753216962260608619555
-const q: Field = Field (
-  array<u32, 8>(0, 9558, 3401397337, 1252835688, 2587670639, 1610789716, 3992821760, 136227)
-);
-
-// 30000754767301779765804869764101946328252876608481130304309778
-const r_initial_exponent: Field = Field (
-  array<u32, 8>(0, 4779, 1700698668, 2773901492, 1293835319, 2952878506, 1996410880, 68114)
-);
-
 // assumes that num is indeed a square root residue.
 // follows the Shanks Tonelli algorithm. View shankstonelli.ts for the non-shortened version.
 fn field_sqrt(num: Field) -> Field {

@@ -9,7 +9,7 @@
     "plugin:react/recommended",
     "plugin:@typescript-eslint/recommended"
   ],
-  "ignorePatterns": ["node_modules", "dist", "aleo_wasm**"],
+  "ignorePatterns": ["node_modules", "dist", "aleo_wasm**", "**/barretenberg-wasm-loader"],
   "rules": {
     "react-hooks/rules-of-hooks": "error",
     "react-hooks/exhaustive-deps": "warn",

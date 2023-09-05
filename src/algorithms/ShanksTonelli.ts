@@ -1,4 +1,4 @@
-import { FIELD_MODULUS } from "../params/BLS12_377Constants";
+import { CurveType, getModulus } from "../gpu/params";
 
 const pow_mod = (x: bigint, n: bigint, p: bigint): bigint => {
   if (n === BigInt(0)) return BigInt(1);
@@ -29,7 +29,8 @@ export const tonelli_shanks = (n: bigint, p: bigint): bigint => {
     z++;
   }
   let c = pow_mod(z, q, p);
-  let r = pow_mod(n, (q+BigInt(1))/BigInt(2), p);
+  const exp_next_calc = (q+BigInt(1))/BigInt(2);
+  let r = pow_mod(n, exp_next_calc, p);
   let t = pow_mod(n, q, p);
   let m = s;
   while (t !== BigInt(1)) {
@@ -52,12 +53,33 @@ export const tonelli_shanks = (n: bigint, p: bigint): bigint => {
   return BigInt(0);
 }
 
-export const preComputedTShanks = (n: bigint): bigint => {
-  const q = BigInt('60001509534603559531609739528203892656505753216962260608619555');
-  const s = BigInt(47);
-  const p = FIELD_MODULUS;
-  let c = BigInt('6924886788847882060123066508223519077232160750698452411071850219367055984476')
-  let r = pow_mod(n, BigInt('30000754767301779765804869764101946328252876608481130304309778'), p);
+export const preComputedTShanks = (n: bigint, curve: CurveType): bigint => {
+  let q = BigInt(0);
+  let s = BigInt(0);
+  let p = BigInt(1);
+  let c = BigInt(0);
+  let exp_next_calc = BigInt(0);
+  
+  switch (curve) {
+    case CurveType.BLS12_377:
+      q = BigInt('60001509534603559531609739528203892656505753216962260608619555');
+      s = BigInt(47);
+      p = getModulus(curve);
+      c = BigInt('6924886788847882060123066508223519077232160750698452411071850219367055984476');
+      exp_next_calc = BigInt('30000754767301779765804869764101946328252876608481130304309778');
+      break;
+    case CurveType.BN254:
+      q = BigInt('81540058820840996586704275553141814055101440848469862132140264610111');
+      s = BigInt(28);
+      p = getModulus(curve);
+      c = BigInt('19103219067921713944291392827692070036145651957329286315305642004821462161904');
+      exp_next_calc = BigInt('40770029410420498293352137776570907027550720424234931066070132305056');
+      break;
+    default:
+      throw new Error('Unsupported curve type for Shanks Tonelli');
+  }
+
+  let r = pow_mod(n, exp_next_calc, p);
   let t = pow_mod(n, q, p);
   let m = s;
   while (t !== BigInt(1)) {

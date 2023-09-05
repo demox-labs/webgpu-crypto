@@ -1,4 +1,6 @@
-import { FIELD_MODULUS } from "../params/BLS12_377Constants";
+import { FIELD_MODULUS as BLS12_377_MODULUS } from "../params/BLS12_377Constants";
+import { FIELD_MODULUS as BN254_MODULUS } from "../params/BN254Constants";
+import { CurveType } from "./params";
 
 export const bigIntsToU16Array = (beBigInts: bigint[]): Uint16Array => {
   const intsAs16s = beBigInts.map(bigInt => bigIntToU16Array(bigInt));
@@ -99,10 +101,10 @@ export const chunkArray = (inputsArray: gpuU32Inputs[], batchSize: number): gpuU
   return chunkedArray;
 };
 
-export const generateRandomFields = (inputSize: number): bigint[] => {
+export const generateRandomFields = (inputSize: number, curve: CurveType): bigint[] => {
   const randomBigInts = [];
   for (let i = 0; i < inputSize; i++) {
-    randomBigInts.push(createRandomAleoFieldInt());
+    randomBigInts.push(createRandomField(curve));
   }
 
   return randomBigInts;
@@ -112,12 +114,30 @@ export const convertBigIntsToWasmFields = (bigInts: bigint[]): string[] => {
   return bigInts.map(bigInt => bigInt.toString() + 'field');
 };
 
-const createRandomAleoFieldInt = () => {
+const createRandomField = (curve: CurveType) => {
   let bigIntString = '';
   for (let i = 0; i < 8; i++) {
     bigIntString += Math.floor(Math.random() * (2**32 - 1));
   }
-  return BigInt(bigIntString) % FIELD_MODULUS;
+  let fieldModulus = BigInt(0);
+  switch (curve) {
+    case CurveType.BN254:
+      fieldModulus = BN254_MODULUS;
+      break;
+    case CurveType.BLS12_377:
+      fieldModulus = BLS12_377_MODULUS;
+      break;
+    default:
+      throw new Error('Invalid curve type');
+  }
+
+  const modResult = BigInt(bigIntString) % fieldModulus;
+  if (modResult > fieldModulus) {
+    console.log('fucked up');
+    console.log(bigIntString);
+    console.log(modResult);
+  }
+  return modResult;
 }
 
 export const stripFieldSuffix = (field: string): string => {

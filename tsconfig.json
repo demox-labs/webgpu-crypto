@@ -18,7 +18,7 @@
     "outDir": "dist"
   },
   "include": ["src"],
-  "exclude": ["node_modules", "dist"],
+  "exclude": ["node_modules", "dist", "**/barretenberg-wasm-loader"],
   "ts-node": {
     // Tell ts-node CLI to install the --loader automatically, explained below
     "esm": true,

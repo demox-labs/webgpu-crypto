@@ -7,9 +7,9 @@
     "start-prod": "webpack serve --config webpack.prod.config.cjs",
     "lint": "eslint --ext .js,.ts .",
     "build": "webpack --config webpack.dev.config.cjs",
-    "test": "node --experimental-vm-modules $(yarn bin jest)",
-    "test-no-gpu": "node --experimental-vm-modules $(yarn bin jest) --testPathIgnorePatterns='/gpu/'",
-    "test-specific": "node --experimental-vm-modules $(yarn bin jest) --testPathPattern u256Add",
+    "test": "node --experimental-vm-modules $(yarn bin jest) --testPathIgnorePatterns='/barretenberg-wasm-loader/'",
+    "test-no-gpu": "node --experimental-vm-modules $(yarn bin jest) --testPathIgnorePatterns='/barretenberg-wasm-loader/|/gpu/'",
+    "test-specific": "node --experimental-vm-modules $(yarn bin jest) --testPathPattern gpu/utils",
     "whosinmyswamp": "sudo lsof -i :4000"
   },
   "dependencies": {
@@ -19,8 +19,10 @@
     "bn.js": "^5.2.1",
     "bs58": "^5.0.0",
     "buffer": "^6.0.3",
+    "comlink": "^4.4.1",
     "crypto-browserify": "^3.12.0",
     "html-webpack-plugin": "^5.5.0",
+    "idb-keyval": "^6.2.1",
     "path-browserify": "^1.0.1",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",

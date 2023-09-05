@@ -50,6 +50,7 @@ const config = {
     new HtmlWebpackPlugin({
       template: "src/index.html",
     }),
+    new webpack.ProvidePlugin({ Buffer: ['buffer', 'Buffer'] }),
     new webpack.HotModuleReplacementPlugin(),
     new ForkTsCheckerWebpackPlugin({
       async: false,
@@ -65,6 +66,9 @@ const config = {
     port: 4000,
     open: true,
     hot: true,
+    client: {
+      overlay: false
+    }
   },
 };
 
