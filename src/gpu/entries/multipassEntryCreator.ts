@@ -88,7 +88,7 @@ export const multipassEntryCreator = async (passes: IGPUExecution[], entryInfo: 
     const passEncoder = commandEncoder.beginComputePass();
     passEncoder.setPipeline(pipeline);
     passEncoder.setBindGroup(0, bindGroup);
-    passEncoder.dispatchWorkgroups(Math.ceil(entryInfo.numInputs / workgroupSize));
+    passEncoder.dispatchWorkgroups(Math.ceil((entryInfo.numInputsForWorkgroup ?? entryInfo.numInputs) / workgroupSize));
     passEncoder.end();
 
     previousResultBuffers = resultBuffers;
@@ -126,7 +126,6 @@ export const multipassEntryCreator = async (passes: IGPUExecution[], entryInfo: 
     buffer.destroy();
   }
   gpu.destroy();
-  console.log(result);
   return result;
 }
 
@@ -181,6 +180,7 @@ export class GPUExecution implements IGPUExecution {
 export interface IEntryInfo {
   numInputs: number;
   outputSize: number;
+  numInputsForWorkgroup?: number;
 }
 
 // Currently has the assumption that input buffers are in order of binding
@@ -242,7 +242,7 @@ const createBindGroup = (device: GPUDevice, bindGroupLayout: GPUBindGroupLayout,
   return bindGroup;
 };
 
-const getDevice = async () => {
+export const getDevice = async () => {
   if (!("gpu" in navigator)) {
     console.log("WebGPU is not supported on this device");
     return;

@@ -39,7 +39,6 @@ fn field_double(a: Field) -> Field {
 }
 
 fn field_multiply(a: Field, b: Field) -> Field {
-  // return a;
   var accumulator: Field = Field(
     array<u32, 8>(0, 0, 0, 0, 0, 0, 0, 0)
   );

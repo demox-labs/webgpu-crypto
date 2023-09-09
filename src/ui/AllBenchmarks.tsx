@@ -61,6 +61,7 @@ import {
   ownerViewKey
 } from '../utils/inputsGenerator';
 import { Accordion } from './Accordion';
+import { NTTBenchmark } from './NTTBenchmark';
 
 export const AllBenchmarks: React.FC = () => {
   return (
@@ -360,7 +361,10 @@ export const AllBenchmarks: React.FC = () => {
           wasmInputConverter={wasmPointMulConverter}
           wasmResultConverter={(results: string[]) => { return results.map((result) => stripGroupSuffix(result))}}
         />
-      </Accordion>      
+      </Accordion>
+      <Accordion title='NTT'>
+        <NTTBenchmark />
+      </Accordion>  
     </div>
   )
 };

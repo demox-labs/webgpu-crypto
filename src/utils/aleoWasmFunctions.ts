@@ -219,3 +219,16 @@ export const msm = async (groups: string[], scalars: string[]): Promise<string[]
   const aleo = await loadWasmModule();
   return [aleo.Address.msm(groups, scalars)];
 }
+
+export const ntt = async (polynomial_coeffs: string[]): Promise<string[]> => {
+  const aleo = await loadWasmModule();
+  return aleo.Address.ntt(polynomial_coeffs);
+}
+
+export const random_polynomial = async (degree: number): Promise<string[]> => {
+  const aleo = await loadWasmModule();
+  console.log(degree);
+  const pow = BigInt(2 ** degree);
+  console.log('pow ', pow);
+  return aleo.Address.get_random_dense_polynomial(pow);
+}
