@@ -5,12 +5,26 @@ import { FieldModulusWGSL } from "../../wgsl/FieldModulus";
 import { U256WGSL } from "../../wgsl/U256";
 import { IEntryInfo, IShaderCode, getDevice } from "../multipassEntryCreator";
 
+function modExp(base: bigint, exponent: bigint, modulus: bigint): bigint {
+  if (modulus === 1n) return 0n;
+  let result = 1n;
+  base = base % modulus;
+  while (exponent > 0n) {
+    if (exponent % 2n === 1n) {
+      result = (result * base) % modulus;
+    }
+    exponent = exponent / 2n;
+    base = (base * base) % modulus;
+  }
+  return result;
+}
 
 export const ntt_multipass_info = (
   numInputs: number,
   roots: { [index: number]: bigint; },
   fieldModulus: bigint,
-  fieldParams: string
+  fieldParams: string,
+  maxPrecomp: number,
 ): [IShaderCode[], IEntryInfo] => {
   const logNumInputs = Math.log2(numInputs);
   let wCurrent = roots[logNumInputs];
@@ -28,63 +42,101 @@ export const ntt_multipass_info = (
   // Steps 1 to log(n) - 1: Parallelized Cooley-Tukey FFT algorithm
   for (let i = 0; i < logNumInputs; i++) {
     const wN = wnPrecomputed[logNumInputs - i - 1];
-    const wNEntry = `
-      @group(0) @binding(0)
-      var<storage, read_write> wN: array<Field>;
+    const halfLen = 2**i;
 
-      @compute @workgroup_size(${workgroupSize})
-      fn main(
-          @builtin(global_invocation_id)
-          global_id : vec3<u32>
-      ) {
-          let field_modulus = Field(array<u32, 8>(${fieldModulusU32}));
-          let halfLen: u32 = ${2**i}u;
-          let j: u32 = global_id.x % halfLen;
-          let wn: Field = Field(array<u32, 8>(${bigIntToU32Array(wN).join('u, ')}u));
-          wN[j] = gen_field_pow(wn, Field(array<u32, 8>(0u, 0u, 0u, 0u, 0u, 0u, 0u, j)), field_modulus);
+    if (i < maxPrecomp) {
+      let wiPrecomp = `var wi_precomp: array<Field, ${halfLen}> = array<Field, ${halfLen}>(`;
+      for (let j = 0; j < halfLen; j++) {
+        const wI = modExp(wN, BigInt(j), fieldModulus);
+        wiPrecomp += `Field(array<u32, 8>(${bigIntToU32Array(wI).join('u, ')}u)), `;
       }
-    `;
+      wiPrecomp += ');';
 
-    const wNShader: IShaderCode = {
-      code: [...baseModules, wNEntry].join("\n"),
-      entryPoint: "main"
-    }
-    shaders.push(wNShader);
+      const logPassEntry = `
+        @group(0) @binding(0)
+        var<storage, read_write> coeffs: array<Field>;
 
-    const logPassEntry = `
-      @group(0) @binding(0)
-      var<storage, read_write> coeffs: array<Field>;
+        @compute @workgroup_size(${workgroupSize})
+        fn main(
+            @builtin(global_invocation_id)
+            global_id : vec3<u32>
+        ) {
+            let len: u32 = ${2 * halfLen}u;
+            let halfLen: u32 = ${halfLen}u;
+            let group_id: u32 = global_id.x / halfLen;
+            let field_modulus = Field(array<u32, 8>(${fieldModulusU32}));
+            ${wiPrecomp}
+            
+            let i: u32 = group_id * len;
+            let j: u32 = global_id.x % halfLen;
+            let w_i = wi_precomp[j];
+            let u: Field = coeffs[i + j];
+            let v: Field = gen_field_multiply(w_i, coeffs[i + j + halfLen], field_modulus);
+            coeffs[i + j] = gen_field_add(u, v, field_modulus);
+            coeffs[i + j + halfLen] = gen_field_sub(u, v, field_modulus);
+        }
+      `;
 
-      @group(0) @binding(1)
-      var<storage, read_write> wi_precomp: array<Field>;
-
-      @compute @workgroup_size(${workgroupSize})
-      fn main(
-          @builtin(global_invocation_id)
-          global_id : vec3<u32>
-      ) {
-          let len: u32 = ${2**(i + 1)}u;
-          let halfLen: u32 = ${2**i}u;
-          let group_id: u32 = global_id.x / halfLen;
-          let field_modulus = Field(array<u32, 8>(${fieldModulusU32}));
-
-          // let wn: Field = Field(array<u32, 8>(${bigIntToU32Array(wN).join('u, ')}u));
-          let i: u32 = group_id * len;
-          let j: u32 = global_id.x % halfLen;
-          // let w_i: Field = gen_field_pow(wn, Field(array<u32, 8>(0u, 0u, 0u, 0u, 0u, 0u, 0u, j)), field_modulus);
-          let w_i = wi_precomp[j];
-          let u: Field = coeffs[i + j];
-          let v: Field = gen_field_multiply(w_i, coeffs[i + j + halfLen], field_modulus);
-          coeffs[i + j] = gen_field_add(u, v, field_modulus);
-          coeffs[i + j + halfLen] = gen_field_sub(u, v, field_modulus);
+      const logPassShader: IShaderCode = {
+        code: [...baseModules, logPassEntry].join("\n"),
+        entryPoint: "main"
       }
-    `;
+      shaders.push(logPassShader);
+    } else {
+      const wNEntry = `
+        @group(0) @binding(0)
+        var<storage, read_write> wN: array<Field>;
 
-    const logPassShader: IShaderCode = {
-      code: [...baseModules, logPassEntry].join("\n"),
-      entryPoint: "main"
+        @compute @workgroup_size(${workgroupSize})
+        fn main(
+            @builtin(global_invocation_id)
+            global_id : vec3<u32>
+        ) {
+            let field_modulus = Field(array<u32, 8>(${fieldModulusU32}));
+            let halfLen: u32 = ${2**i}u;
+            let j: u32 = global_id.x % halfLen;
+            let wn: Field = Field(array<u32, 8>(${bigIntToU32Array(wN).join('u, ')}u));
+            wN[j] = gen_field_pow(wn, Field(array<u32, 8>(0u, 0u, 0u, 0u, 0u, 0u, 0u, j)), field_modulus);
+        }
+      `;
+      const wNShader: IShaderCode = {
+        code: [...baseModules, wNEntry].join("\n"),
+        entryPoint: "main"
+      }
+      shaders.push(wNShader);
+
+      const logPassEntry = `
+        @group(0) @binding(0)
+        var<storage, read_write> coeffs: array<Field>;
+
+        @group(0) @binding(1)
+        var<storage, read_write> wi_precomp: array<Field>;
+
+        @compute @workgroup_size(${workgroupSize})
+        fn main(
+            @builtin(global_invocation_id)
+            global_id : vec3<u32>
+        ) {
+            let len: u32 = ${2*halfLen}u;
+            let halfLen: u32 = ${halfLen}u;
+            let group_id: u32 = global_id.x / halfLen;
+            let field_modulus = Field(array<u32, 8>(${fieldModulusU32}));
+
+            let i: u32 = group_id * len;
+            let j: u32 = global_id.x % halfLen;
+            let w_i = wi_precomp[j];
+            let u: Field = coeffs[i + j];
+            let v: Field = gen_field_multiply(w_i, coeffs[i + j + halfLen], field_modulus);
+            coeffs[i + j] = gen_field_add(u, v, field_modulus);
+            coeffs[i + j + halfLen] = gen_field_sub(u, v, field_modulus);
+        }
+      `;
+      const logPassShader: IShaderCode = {
+        code: [...baseModules, logPassEntry].join("\n"),
+        entryPoint: "main"
+      }
+      shaders.push(logPassShader);
     }
-    shaders.push(logPassShader);
   }
 
   const entryInfo: IEntryInfo = {
@@ -100,7 +152,8 @@ export const ntt_multipass = async (
   polynomialCoefficients: gpuU32Inputs,
   roots: { [index: number]: bigint; },
   fieldModulus: bigint,
-  fieldParams: string
+  fieldParams: string,
+  maxPrecomp = 6,
   ) => {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const gpu = (await getDevice())!;
@@ -122,8 +175,45 @@ export const ntt_multipass = async (
     new Uint32Array(arrayBufferInput).set(polynomialCoefficients.u32Inputs);
     buffer.unmap();
 
-    const [shaders, entryInfo] = ntt_multipass_info(numInputs, roots, fieldModulus, fieldParams);
-    for (let i = 0; i < shaders.length; i += 2) {
+    const [shaders, entryInfo] = ntt_multipass_info(numInputs, roots, fieldModulus, fieldParams, maxPrecomp);
+    for (let i = 0; i < maxPrecomp; i++) {
+      const shader = shaders[i];
+      const shaderModule = gpu.createShaderModule({ code: shader.code });
+      const layoutEntry: GPUBindGroupLayoutEntry = {
+        binding: 0,
+        visibility: GPUShaderStage.COMPUTE,
+        buffer: {
+          type: 'storage'
+        }
+      };
+      const layout = { entries: [layoutEntry] };
+      const bindGroupLayout = gpu.createBindGroupLayout(layout);
+      const bindGroup = gpu.createBindGroup({
+        layout: bindGroupLayout,
+        entries: [{
+          binding: 0,
+          resource: {
+            buffer: buffer
+          }
+        }]
+      });
+  
+      // Create pipeline
+      const pipeline = gpu.createComputePipeline({
+        layout: gpu.createPipelineLayout({ bindGroupLayouts: [bindGroupLayout] }),
+        compute: {
+          module: shaderModule,
+          entryPoint: shader.entryPoint
+        }
+      });
+      // Run compute pass
+      const passEncoder = commandEncoder.beginComputePass();
+      passEncoder.setPipeline(pipeline);
+      passEncoder.setBindGroup(0, bindGroup);
+      passEncoder.dispatchWorkgroups(Math.ceil((entryInfo.numInputsForWorkgroup ?? entryInfo.numInputs) / workgroupSize));
+      passEncoder.end();
+    }
+    for (let i = maxPrecomp; i < shaders.length; i += 2) {
       const wnShader = shaders[i];
       const wnShaderModule = gpu.createShaderModule({ code: wnShader.code });
       const wnLayoutEntry: GPUBindGroupLayoutEntry = {

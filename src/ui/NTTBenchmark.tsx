@@ -26,6 +26,7 @@ function bit_reverse(a: bigint[]): bigint[] {
 export const NTTBenchmark: React.FC = () => {
   const initialDefaultInputSize = 16;
   const [inputSize, setInputSize] = useState(initialDefaultInputSize);
+  const [numEvaluations, setNumEvaluations] = useState(1);
   const [gpuTime, setGpuTime] = useState(0);
   const [wasmTime, setWasmTime] = useState(0);
   const [gpuRunning, setGpuRunning] = useState(false);
@@ -103,7 +104,15 @@ export const NTTBenchmark: React.FC = () => {
 
     const gpuStart = performance.now();
     const revInputs = bit_reverse(tempInputs);
-    console.log('time to rev: ', performance.now() - gpuStart);
+    console.log('time to perform bitwise permutation: ', performance.now() - gpuStart);
+    for (let i = 1; i < numEvaluations; i++) {
+      await ntt_multipass(
+        { u32Inputs:  bigIntsToU32Array(revInputs), individualInputSize: 8 },
+        ROOTS_OF_UNITY,
+        FIELD_MODULUS,
+        BLS12_377ParamsWGSL
+      );
+    }
     const result = await ntt_multipass(
       { u32Inputs:  bigIntsToU32Array(revInputs), individualInputSize: 8 },
       ROOTS_OF_UNITY,
@@ -113,7 +122,7 @@ export const NTTBenchmark: React.FC = () => {
     const gpuEnd = performance.now();
     const gpuPerformance = gpuEnd - gpuStart;
 
-    setGpuTime(gpuPerformance);
+    setGpuTime(gpuPerformance / numEvaluations);
 
     const bigIntResult = u32ArrayToBigInts(result || new Uint32Array(0));
     const results = bigIntResult.map(r => r.toString());
@@ -135,6 +144,13 @@ export const NTTBenchmark: React.FC = () => {
         className="w-24 border border-gray-300 rounded-md px-2 py-1"
         value={inputSize}
         onChange={(e) => setInputSize(parseInt(e.target.value))}
+      />
+      <div className="text-gray-800"># Evaluations</div>
+      <input
+        type="text"
+        className="w-24 border border-gray-300 rounded-md px-2 py-1"
+        value={numEvaluations}
+        onChange={(e) => setNumEvaluations(parseInt(e.target.value))}
       />
       <button className="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded-md"  onClick={async () => { await runGpu()}}>
         {gpuRunning ? spin() : 'GPU'}
