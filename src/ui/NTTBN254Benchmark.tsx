@@ -25,7 +25,7 @@ function bit_reverse(a: bigint[]): bigint[] {
 }
 
 export const NTTBN254Benchmark: React.FC = () => {
-  const initialDefaultInputSize = 12;
+  const initialDefaultInputSize = 10;
   const [inputSize, setInputSize] = useState(initialDefaultInputSize);
   const [gpuTime, setGpuTime] = useState(0);
   const [wasmTime, setWasmTime] = useState(0);
@@ -40,20 +40,17 @@ export const NTTBN254Benchmark: React.FC = () => {
   
   const polynomialGenerator = async (inputSize: number): Promise<string[]> => {
     const polynomial = await randomPolynomial(inputSize);
-    console.log(polynomial);
     return polynomial.map(i => i.value.toString());
   }
 
   useEffect(() => {
     polynomialGenerator(inputSize).then((polynomial) => {
-      console.log('polynomial: ', polynomial);
       setInputs([polynomial]);
     });
   }, []);
 
   useEffect(() => {
     polynomialGenerator(inputSize).then((polynomial) => {
-      console.log('polynomial: ', polynomial);
       setInputs([polynomial]);
     });
   }, [inputSize]);

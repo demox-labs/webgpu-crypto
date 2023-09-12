@@ -24,9 +24,9 @@ function bit_reverse(a: bigint[]): bigint[] {
 }
 
 export const NTTBenchmark: React.FC = () => {
-  const initialDefaultInputSize = 16;
+  const initialDefaultInputSize = 18;
   const [inputSize, setInputSize] = useState(initialDefaultInputSize);
-  const [numEvaluations, setNumEvaluations] = useState(1);
+  const [numEvaluations, setNumEvaluations] = useState(50);
   const [gpuTime, setGpuTime] = useState(0);
   const [wasmTime, setWasmTime] = useState(0);
   const [gpuRunning, setGpuRunning] = useState(false);
@@ -45,12 +45,14 @@ export const NTTBenchmark: React.FC = () => {
 
   useEffect(() => {
     polynomialGenerator(inputSize).then((polynomial) => {
+      // console.log('polynomial...', polynomial);
       setInputs([polynomial]);
     });
   }, []);
 
   useEffect(() => {
     polynomialGenerator(inputSize).then((polynomial) => {
+      // console.log('polynomial...', polynomial);
       setInputs([polynomial]);
     });
   }, [inputSize]);
@@ -103,22 +105,19 @@ export const NTTBenchmark: React.FC = () => {
     setGpuRunning(true);
 
     const gpuStart = performance.now();
-    const revInputs = bit_reverse(tempInputs);
-    console.log('time to perform bitwise permutation: ', performance.now() - gpuStart);
-    for (let i = 1; i < numEvaluations; i++) {
-      await ntt_multipass(
+    let result: Uint32Array | undefined;
+    for (let i = 0; i < numEvaluations; i++) {
+      const revInputs = bit_reverse(tempInputs);
+      const tmpResult = await ntt_multipass(
         { u32Inputs:  bigIntsToU32Array(revInputs), individualInputSize: 8 },
         ROOTS_OF_UNITY,
         FIELD_MODULUS,
         BLS12_377ParamsWGSL
       );
+      if (i === 0) {
+        result = tmpResult;
+      }
     }
-    const result = await ntt_multipass(
-      { u32Inputs:  bigIntsToU32Array(revInputs), individualInputSize: 8 },
-      ROOTS_OF_UNITY,
-      FIELD_MODULUS,
-      BLS12_377ParamsWGSL
-    );
     const gpuEnd = performance.now();
     const gpuPerformance = gpuEnd - gpuStart;
 
