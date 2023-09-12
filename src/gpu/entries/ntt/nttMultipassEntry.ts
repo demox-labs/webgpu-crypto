@@ -68,10 +68,8 @@ export const ntt_multipass_info = (
           let group_id: u32 = global_id.x / halfLen;
           let field_modulus = Field(array<u32, 8>(${fieldModulusU32}));
 
-          // let wn: Field = Field(array<u32, 8>(${bigIntToU32Array(wN).join('u, ')}u));
           let i: u32 = group_id * len;
           let j: u32 = global_id.x % halfLen;
-          // let w_i: Field = gen_field_pow(wn, Field(array<u32, 8>(0u, 0u, 0u, 0u, 0u, 0u, 0u, j)), field_modulus);
           let w_i = wi_precomp[j];
           let u: Field = coeffs[i + j];
           let v: Field = gen_field_multiply(w_i, coeffs[i + j + halfLen], field_modulus);
