@@ -25,7 +25,7 @@ function bit_reverse(a: bigint[]): bigint[] {
 }
 
 export const NTTBN254Benchmark: React.FC = () => {
-  const initialDefaultInputSize = 18;
+  const initialDefaultInputSize = 12;
   const [inputSize, setInputSize] = useState(initialDefaultInputSize);
   const [gpuTime, setGpuTime] = useState(0);
   const [wasmTime, setWasmTime] = useState(0);

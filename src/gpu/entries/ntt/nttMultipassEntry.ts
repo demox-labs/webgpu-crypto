@@ -28,9 +28,35 @@ export const ntt_multipass_info = (
   // Steps 1 to log(n) - 1: Parallelized Cooley-Tukey FFT algorithm
   for (let i = 0; i < logNumInputs; i++) {
     const wN = wnPrecomputed[logNumInputs - i - 1];
+    const wNEntry = `
+      @group(0) @binding(0)
+      var<storage, read_write> wN: array<Field>;
+
+      @compute @workgroup_size(${workgroupSize})
+      fn main(
+          @builtin(global_invocation_id)
+          global_id : vec3<u32>
+      ) {
+          let field_modulus = Field(array<u32, 8>(${fieldModulusU32}));
+          let halfLen: u32 = ${2**i}u;
+          let j: u32 = global_id.x % halfLen;
+          let wn: Field = Field(array<u32, 8>(${bigIntToU32Array(wN).join('u, ')}u));
+          wN[j] = gen_field_pow(wn, Field(array<u32, 8>(0u, 0u, 0u, 0u, 0u, 0u, 0u, j)), field_modulus);
+      }
+    `;
+
+    const wNShader: IShaderCode = {
+      code: [...baseModules, wNEntry].join("\n"),
+      entryPoint: "main"
+    }
+    shaders.push(wNShader);
+
     const logPassEntry = `
       @group(0) @binding(0)
       var<storage, read_write> coeffs: array<Field>;
+
+      @group(0) @binding(1)
+      var<storage, read_write> wi_precomp: array<Field>;
 
       @compute @workgroup_size(${workgroupSize})
       fn main(
@@ -42,10 +68,11 @@ export const ntt_multipass_info = (
           let group_id: u32 = global_id.x / halfLen;
           let field_modulus = Field(array<u32, 8>(${fieldModulusU32}));
 
-          let wn: Field = Field(array<u32, 8>(${bigIntToU32Array(wN).join('u, ')}u));
+          // let wn: Field = Field(array<u32, 8>(${bigIntToU32Array(wN).join('u, ')}u));
           let i: u32 = group_id * len;
           let j: u32 = global_id.x % halfLen;
-          let w_i: Field = gen_field_pow(wn, Field(array<u32, 8>(0u, 0u, 0u, 0u, 0u, 0u, 0u, j)), field_modulus);
+          // let w_i: Field = gen_field_pow(wn, Field(array<u32, 8>(0u, 0u, 0u, 0u, 0u, 0u, 0u, j)), field_modulus);
+          let w_i = wi_precomp[j];
           let u: Field = coeffs[i + j];
           let v: Field = gen_field_multiply(w_i, coeffs[i + j + halfLen], field_modulus);
           coeffs[i + j] = gen_field_add(u, v, field_modulus);
@@ -81,6 +108,10 @@ export const ntt_multipass = async (
     const numInputs = polynomialCoefficients.u32Inputs.length / polynomialCoefficients.individualInputSize;
     const inputOutputBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * FIELD_SIZE;
 
+    const wNBuffer = gpu.createBuffer({
+      size: inputOutputBufferSize / 2,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC
+    });
     const buffer = gpu.createBuffer({
       mappedAtCreation: true,
       size: inputOutputBufferSize,
@@ -92,8 +123,41 @@ export const ntt_multipass = async (
     buffer.unmap();
 
     const [shaders, entryInfo] = ntt_multipass_info(numInputs, roots, fieldModulus, fieldParams);
-    for (let i = 0; i < shaders.length; i++) {
-      const shader = shaders[i];
+    for (let i = 0; i < shaders.length; i += 2) {
+      const wnShader = shaders[i];
+      const wnShaderModule = gpu.createShaderModule({ code: wnShader.code });
+      const wnLayoutEntry: GPUBindGroupLayoutEntry = {
+        binding: 0,
+        visibility: GPUShaderStage.COMPUTE,
+        buffer: {
+          type: 'storage'
+        }
+      };
+      const wnLayout = { entries: [wnLayoutEntry] };
+      const wnBindGroupLayout = gpu.createBindGroupLayout(wnLayout);
+      const wnBindGroup = gpu.createBindGroup({
+        layout: wnBindGroupLayout,
+        entries: [{
+          binding: 0,
+          resource: {
+            buffer: wNBuffer
+          }
+        }]
+      });
+      const wnPipeline = gpu.createComputePipeline({
+        layout: gpu.createPipelineLayout({ bindGroupLayouts: [wnBindGroupLayout] }),
+        compute: {
+          module: wnShaderModule,
+          entryPoint: wnShader.entryPoint
+        }
+      });
+      const wnPassEncoder = commandEncoder.beginComputePass();
+      wnPassEncoder.setPipeline(wnPipeline);
+      wnPassEncoder.setBindGroup(0, wnBindGroup);
+      wnPassEncoder.dispatchWorkgroups(Math.ceil(2**(i / 2) / workgroupSize));
+      wnPassEncoder.end();
+
+      const shader = shaders[i + 1];
       const shaderModule = gpu.createShaderModule({ code: shader.code });
 
       const layoutEntry: GPUBindGroupLayoutEntry = {
@@ -103,7 +167,14 @@ export const ntt_multipass = async (
           type: 'storage'
         }
       };
-      const layout = { entries: [layoutEntry] };
+      const precompLayoutEntry: GPUBindGroupLayoutEntry = {
+        binding: 1,
+        visibility: GPUShaderStage.COMPUTE,
+        buffer: {
+          type: 'storage'
+        }
+      };
+      const layout = { entries: [layoutEntry, precompLayoutEntry] };
       const bindGroupLayout = gpu.createBindGroupLayout(layout);
       const bindGroup = gpu.createBindGroup({
         layout: bindGroupLayout,
@@ -111,7 +182,12 @@ export const ntt_multipass = async (
           binding: 0,
           resource: {
             buffer: buffer
-          }
+          },
+        }, {
+          binding: 1,
+          resource: {
+            buffer: wNBuffer
+          },
         }]
       });
   
@@ -155,6 +231,7 @@ export const ntt_multipass = async (
     gpuReadBuffer.unmap();
 
     gpuReadBuffer.destroy();
+    wNBuffer.destroy();
     buffer.destroy();
     gpu.destroy();
 
