@@ -17,6 +17,7 @@ export declare class Fr {
 }
 export declare class Fq {
     readonly value: bigint;
+    static ZERO: Fq;
     static MODULUS: bigint;
     static MAX_VALUE: bigint;
     static SIZE_IN_BYTES: number;

@@ -1,8 +1,6 @@
-import { FIELD_MODULUS, ROOTS_OF_UNITY } from "../../../params/BLS12_377Constants";
 import { FIELD_SIZE } from "../../U32Sizes";
 import { workgroupSize } from "../../params";
 import { bigIntToU32Array, gpuU32Inputs } from "../../utils";
-import { BLS12_377ParamsWGSL } from "../../wgsl/BLS12-377Params";
 import { FieldModulusWGSL } from "../../wgsl/FieldModulus";
 import { U256WGSL } from "../../wgsl/U256";
 import { IEntryInfo, IShaderCode, getDevice } from "../multipassEntryCreator";
@@ -10,22 +8,25 @@ import { IEntryInfo, IShaderCode, getDevice } from "../multipassEntryCreator";
 
 export const ntt_multipass_info = (
   numInputs: number,
-  maxIterations: number,
+  roots: { [index: number]: bigint; },
+  fieldModulus: bigint,
+  fieldParams: string
 ): [IShaderCode[], IEntryInfo] => {
   const logNumInputs = Math.log2(numInputs);
-  let wCurrent = ROOTS_OF_UNITY[logNumInputs];
+  let wCurrent = roots[logNumInputs];
   const wnPrecomputed: bigint[] = [wCurrent];
   for (let i = 0; i < logNumInputs; i++) {
-    wCurrent = (wCurrent * wCurrent) % FIELD_MODULUS;
+    wCurrent = (wCurrent * wCurrent) % fieldModulus;
     wnPrecomputed.push(wCurrent);
   }
-  const baseModules = [U256WGSL, BLS12_377ParamsWGSL, FieldModulusWGSL];  
+  const baseModules = [U256WGSL, fieldParams, FieldModulusWGSL];  
 
   const shaders: IShaderCode[] = [];
   const inputOutputBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * FIELD_SIZE;
+  const fieldModulusU32 = `${bigIntToU32Array(fieldModulus).join('u, ')}u`;
 
   // Steps 1 to log(n) - 1: Parallelized Cooley-Tukey FFT algorithm
-  for (let i = 0; i < Math.min(logNumInputs, maxIterations); i++) {
+  for (let i = 0; i < logNumInputs; i++) {
     const wN = wnPrecomputed[logNumInputs - i - 1];
     const logPassEntry = `
       @group(0) @binding(0)
@@ -39,15 +40,16 @@ export const ntt_multipass_info = (
           let len: u32 = ${2**(i + 1)}u;
           let halfLen: u32 = ${2**i}u;
           let group_id: u32 = global_id.x / halfLen;
+          let field_modulus = Field(array<u32, 8>(${fieldModulusU32}));
 
           let wn: Field = Field(array<u32, 8>(${bigIntToU32Array(wN).join('u, ')}u));
           let i: u32 = group_id * len;
           let j: u32 = global_id.x % halfLen;
-          let w_i: Field = field_pow(wn, Field(array<u32, 8>(0u, 0u, 0u, 0u, 0u, 0u, 0u, j)));
+          let w_i: Field = gen_field_pow(wn, Field(array<u32, 8>(0u, 0u, 0u, 0u, 0u, 0u, 0u, j)), field_modulus);
           let u: Field = coeffs[i + j];
-          let v: Field = field_multiply(w_i, coeffs[i + j + halfLen]);
-          coeffs[i + j] = field_add(u, v);
-          coeffs[i + j + halfLen] = field_sub(u, v);
+          let v: Field = gen_field_multiply(w_i, coeffs[i + j + halfLen], field_modulus);
+          coeffs[i + j] = gen_field_add(u, v, field_modulus);
+          coeffs[i + j + halfLen] = gen_field_sub(u, v, field_modulus);
       }
     `;
 
@@ -69,7 +71,9 @@ export const ntt_multipass_info = (
 
 export const ntt_multipass = async (
   polynomialCoefficients: gpuU32Inputs,
-  maxIterations: number
+  roots: { [index: number]: bigint; },
+  fieldModulus: bigint,
+  fieldParams: string
   ) => {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const gpu = (await getDevice())!;
@@ -87,7 +91,7 @@ export const ntt_multipass = async (
     new Uint32Array(arrayBufferInput).set(polynomialCoefficients.u32Inputs);
     buffer.unmap();
 
-    const [shaders, entryInfo] = ntt_multipass_info(numInputs, maxIterations);
+    const [shaders, entryInfo] = ntt_multipass_info(numInputs, roots, fieldModulus, fieldParams);
     for (let i = 0; i < shaders.length; i++) {
       const shader = shaders[i];
       const shaderModule = gpu.createShaderModule({ code: shader.code });

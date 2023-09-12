@@ -164,6 +164,24 @@ fn gen_field_reduce(a: u256, field_order: u256) -> Field {
   return reduction;
 }
 
+fn gen_field_add(a: Field, b: Field, field_order: Field) -> Field {
+  var sum = u256_add(a, b);
+  var result = gen_field_reduce(sum, field_order);
+  return result;
+}
+
+fn gen_field_sub(a: Field, b: Field, field_order: Field) -> Field {
+  var sub: Field;
+  if (gte(a, b)) {
+    sub = u256_sub(a, b);
+  } else {
+    var b_minus_a: Field = u256_sub(b, a);
+    sub = u256_sub(field_order, b_minus_a);
+  }
+
+  return sub;
+}
+
 fn gen_field_multiply(a: Field, b: Field, field_order: u256) -> Field {
   var accumulator: Field = Field(
     array<u32, 8>(0, 0, 0, 0, 0, 0, 0, 0)

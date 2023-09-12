@@ -62,6 +62,7 @@ import {
 } from '../utils/inputsGenerator';
 import { Accordion } from './Accordion';
 import { NTTBenchmark } from './NTTBenchmark';
+import { NTTBN254Benchmark } from './NTTBN254Benchmark';
 
 export const AllBenchmarks: React.FC = () => {
   return (
@@ -362,9 +363,10 @@ export const AllBenchmarks: React.FC = () => {
           wasmResultConverter={(results: string[]) => { return results.map((result) => stripGroupSuffix(result))}}
         />
       </Accordion>
-      <Accordion title='NTT'>
+      {/* <Accordion title='NTT'> */}
         <NTTBenchmark />
-      </Accordion>  
+        <NTTBN254Benchmark />
+      {/* </Accordion>   */}
     </div>
   )
 };

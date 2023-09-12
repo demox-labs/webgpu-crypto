@@ -2,11 +2,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from 'react';
 import CSVExportButton from './CSVExportButton';
-import { ntt, random_polynomial } from '../utils/aleoWasmFunctions';
 import { bigIntsToU32Array, u32ArrayToBigInts } from '../gpu/utils';
 import { ntt_multipass } from '../gpu/entries/ntt/nttMultipassEntry';
-import { FIELD_MODULUS, ROOTS_OF_UNITY } from '../params/BLS12_377Constants';
-import { BLS12_377ParamsWGSL } from '../gpu/wgsl/BLS12-377Params';
+import { ntt, randomPolynomial } from '../barretenberg-wasm-loader/wasm-functions';
+import { FIELD_MODULUS, ROOTS_OF_UNITY } from '../params/BN254Constants';
+import { Fr } from '../barretenberg-wasm-loader/dest/browser/types';
+import { BN254ParamsWGSL } from '../gpu/wgsl/BN254Params';
 
 
 function bit_reverse(a: bigint[]): bigint[] {
@@ -23,8 +24,8 @@ function bit_reverse(a: bigint[]): bigint[] {
   return a;
 }
 
-export const NTTBenchmark: React.FC = () => {
-  const initialDefaultInputSize = 16;
+export const NTTBN254Benchmark: React.FC = () => {
+  const initialDefaultInputSize = 18;
   const [inputSize, setInputSize] = useState(initialDefaultInputSize);
   const [gpuTime, setGpuTime] = useState(0);
   const [wasmTime, setWasmTime] = useState(0);
@@ -38,18 +39,21 @@ export const NTTBenchmark: React.FC = () => {
   const [benchmarkResults, setBenchmarkResults] = useState<any[][]>([["InputSize", "GPUorWASM", "Time"]]);
   
   const polynomialGenerator = async (inputSize: number): Promise<string[]> => {
-    const polynomial = await random_polynomial(inputSize);
-    return polynomial;
+    const polynomial = await randomPolynomial(inputSize);
+    console.log(polynomial);
+    return polynomial.map(i => i.value.toString());
   }
 
   useEffect(() => {
     polynomialGenerator(inputSize).then((polynomial) => {
+      console.log('polynomial: ', polynomial);
       setInputs([polynomial]);
     });
   }, []);
 
   useEffect(() => {
     polynomialGenerator(inputSize).then((polynomial) => {
+      console.log('polynomial: ', polynomial);
       setInputs([polynomial]);
     });
   }, [inputSize]);
@@ -83,7 +87,7 @@ export const NTTBenchmark: React.FC = () => {
     const wasmInputs = inputs;
     setWasmRunning(true);
     const wasmStart = performance.now();
-    const results: string[] = await ntt(wasmInputs[0]);
+    const results: string[] = (await ntt(wasmInputs[0])).map((fr: Fr) => fr.value.toString());
     const wasmEnd = performance.now();
     const wasmPerformance = wasmEnd - wasmStart;
     setWasmTime(wasmPerformance);
@@ -105,10 +109,11 @@ export const NTTBenchmark: React.FC = () => {
     const revInputs = bit_reverse(tempInputs);
     console.log('time to rev: ', performance.now() - gpuStart);
     const result = await ntt_multipass(
-      { u32Inputs:  bigIntsToU32Array(revInputs), individualInputSize: 8 },
-      ROOTS_OF_UNITY,
-      FIELD_MODULUS,
-      BLS12_377ParamsWGSL
+      { u32Inputs:  bigIntsToU32Array(revInputs),
+        individualInputSize: 8 },
+        ROOTS_OF_UNITY,
+        FIELD_MODULUS,
+        BN254ParamsWGSL
     );
     const gpuEnd = performance.now();
     const gpuPerformance = gpuEnd - gpuStart;
@@ -128,7 +133,7 @@ export const NTTBenchmark: React.FC = () => {
 
   return (
     <div className="flex items-center space-x-4 px-5">
-      <div className="text-gray-800 font-bold w-40 px-2">NTT BLS12-377 Multipass</div> 
+      <div className="text-gray-800 font-bold w-40 px-2">NTT BN254 Multipass</div> 
       <div className="text-gray-800">Input Size (2^):</div>
       <input
         type="text"
