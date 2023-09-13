@@ -30,16 +30,20 @@ interface NTTBenchmarkProps {
   name: string;
   fieldParamsWGSL: string;
   wasmNTT: (polynomial_coeffs: string[]) => Promise<string[]>;
+  rootsOfUnity: { [index: number]: bigint; };
+  fieldModulus: bigint;
 }
 
 export const NTTBenchmark: React.FC<NTTBenchmarkProps> = ({
   name,
   fieldParamsWGSL,
-  wasmNTT
+  wasmNTT,
+  rootsOfUnity,
+  fieldModulus
 }) => {
   const initialDefaultInputSize = 18;
   const [inputSize, setInputSize] = useState(initialDefaultInputSize);
-  const [numEvaluations, setNumEvaluations] = useState(1);
+  const [numEvaluations, setNumEvaluations] = useState(10);
   const [gpuTime, setGpuTime] = useState(0);
   const [wasmTime, setWasmTime] = useState(0);
   const [gpuRunning, setGpuRunning] = useState(false);
@@ -105,8 +109,6 @@ export const NTTBenchmark: React.FC<NTTBenchmarkProps> = ({
     const wasmPerformance = wasmEnd - wasmStart;
     setWasmTime(wasmPerformance);
     const comparableWasmResults = results;
-    console.log('results...');
-    console.log(comparableWasmResults);
     setWasmResults(comparableWasmResults);
     const benchMarkResult = [inputSize, "WASM", wasmPerformance];
     setBenchmarkResults([...benchmarkResults, benchMarkResult]);
@@ -124,8 +126,8 @@ export const NTTBenchmark: React.FC<NTTBenchmarkProps> = ({
       const revInputs = bit_reverse(tempInputs);
       const tmpResult = await ntt_multipass(
         { u32Inputs:  bigIntsToU32Array(revInputs), individualInputSize: 8 },
-        ROOTS_OF_UNITY,
-        FIELD_MODULUS,
+        rootsOfUnity,
+        fieldModulus,
         WnModules,
         ButterflyModules
       );
@@ -140,8 +142,6 @@ export const NTTBenchmark: React.FC<NTTBenchmarkProps> = ({
 
     const bigIntResult = u32ArrayToBigInts(result || new Uint32Array(0));
     const results = bigIntResult.map(r => r.toString());
-    console.log('gpu results...');
-    console.log(results);
 
     setGpuResults(results);
     setGpuRunning(false);

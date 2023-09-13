@@ -66,9 +66,10 @@ import {
 } from '../utils/inputsGenerator';
 import { Accordion } from './Accordion';
 import { NTTBenchmark } from './NTTBenchmark';
-import { NTTBN254Benchmark } from './NTTBN254Benchmark';
 import { BLS12_377ParamsWGSL } from '../gpu/wgsl/BLS12-377Params';
 import { BN254ParamsWGSL } from '../gpu/wgsl/BN254Params';
+import { ROOTS_OF_UNITY as BLS12_377_ROOTS, FIELD_MODULUS as BLS12_377_MODULUS } from '../params/BLS12_377Constants';
+import { FIELD_MODULUS as BN254_FIELD_MODULUS, ROOTS_OF_UNITY as BN254_ROOTS } from '../params/BN254Constants';
 
 export const AllBenchmarks: React.FC = () => {
   return (
@@ -374,14 +375,17 @@ export const AllBenchmarks: React.FC = () => {
           name={'NTT BLS12-377'}
           fieldParamsWGSL={BLS12_377ParamsWGSL}
           wasmNTT={bls12_377NTT}
+          rootsOfUnity={BLS12_377_ROOTS}
+          fieldModulus={BLS12_377_MODULUS}
         />
+        {/* This should include the polynomial generator but it's very slow for bn-254 */}
         <NTTBenchmark
           name={'NTT BN-254'}
           fieldParamsWGSL={BN254ParamsWGSL}
           wasmNTT={bn254NTT}
-          {/* This should include the polynomial generator but it's very slow for bn-254 */}
+          rootsOfUnity={BN254_ROOTS}
+          fieldModulus={BN254_FIELD_MODULUS}
         />
-        <NTTBN254Benchmark />
       {/* </Accordion>   */}
     </div>
   )
