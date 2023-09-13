@@ -4,12 +4,13 @@ export declare class BarretenbergApi {
     binder: BarretenbergBinder;
     constructor(binder: BarretenbergBinder);
     destroy(): Promise<void>;
-    addFields(left: Fr, right: Fr): Promise<Fr>;
-    subFields(left: Fr, right: Fr): Promise<Fr>;
-    mulFields(left: Fr, right: Fr): Promise<Fr>;
-    invertField(input: Fr): Promise<Fr>;
-    expField(base: Fr, exp: Fr): Promise<Fr>;
-    sqrtField(base: Fr): Promise<Fr>;
+    randomPoint(): Promise<Point>;
+    addFields(left: Fq, right: Fq): Promise<Fq>;
+    subFields(left: Fq, right: Fq): Promise<Fq>;
+    mulFields(left: Fq, right: Fq): Promise<Fq>;
+    invertField(input: Fq): Promise<Fq>;
+    expField(base: Fq, exp: Fq): Promise<Fq>;
+    sqrtField(base: Fq): Promise<Fq>;
     pedersenInit(): Promise<void>;
     pedersenCompressFields(left: Fr, right: Fr): Promise<Fr>;
     pedersenPlookupCompressFields(left: Fr, right: Fr): Promise<Fr>;
@@ -55,17 +56,23 @@ export declare class BarretenbergApi {
     acirGetSolidityVerifier(acirComposerPtr: Ptr): Promise<string>;
     acirSerializeProofIntoFields(acirComposerPtr: Ptr, proofBuf: Uint8Array, numInnerPublicInputs: number): Promise<Fr[]>;
     acirSerializeVerificationKeyIntoFields(acirComposerPtr: Ptr): Promise<[Fr[], Fr]>;
+    fft(coeff: Fr[], evaulation_domain: Ptr): Promise<Fr[]>;
+    randomPolynomial(degree: number): Promise<Fr[]>;
+    newEvaluationDomain(degree: number): Promise<Ptr>;
 }
 export declare class BarretenbergApiSync {
     binder: BarretenbergBinderSync;
     constructor(binder: BarretenbergBinderSync);
     destroy(): Promise<void>;
-    addFields(left: Fr, right: Fr): Fr;
-    subFields(left: Fr, right: Fr): Promise<Fr>;
-    mulFields(left: Fr, right: Fr): Promise<Fr>;
-    invertField(input: Fr): Promise<Fr>;
-    expField(base: Fr, exp: Fr): Promise<Fr>;
-    sqrtField(base: Fr): Promise<Fr>;
+    randomPoint(): Point;
+    addPoints(p1X: Fq, p1Y: Fq, p2X: Fq, p2Y: Fq): Fq;
+    doublePoint(pX: Fq, pY: Fq): [Fq, Fq];
+    addFields(left: Fq, right: Fq): Fq;
+    subFields(left: Fq, right: Fq): Fq;
+    mulFields(left: Fq, right: Fq): Fq;
+    invertField(input: Fq): Fq;
+    expField(base: Fq, exp: Fq): Fq;
+    sqrtField(base: Fq): Fq;
     pedersenInit(): void;
     pedersenCompressFields(left: Fr, right: Fr): Fr;
     pedersenPlookupCompressFields(left: Fr, right: Fr): Fr;
@@ -111,5 +118,8 @@ export declare class BarretenbergApiSync {
     acirGetSolidityVerifier(acirComposerPtr: Ptr): string;
     acirSerializeProofIntoFields(acirComposerPtr: Ptr, proofBuf: Uint8Array, numInnerPublicInputs: number): Fr[];
     acirSerializeVerificationKeyIntoFields(acirComposerPtr: Ptr): [Fr[], Fr];
+    fft(coeff: Fr[], evaulation_domain: Ptr): Fr[];
+    randomPolynomial(degree: number): Fr[];
+    newEvaluationDomain(degree: number): Ptr;
 }
 //# sourceMappingURL=index.d.ts.map

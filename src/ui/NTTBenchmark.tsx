@@ -2,9 +2,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from 'react';
 import CSVExportButton from './CSVExportButton';
-import { ntt, random_polynomial } from '../utils/aleoWasmFunctions';
+import { random_polynomial } from '../utils/aleoWasmFunctions';
 import { bigIntsToU32Array, u32ArrayToBigInts } from '../gpu/utils';
 import { ntt_multipass } from '../gpu/entries/ntt/nttMultipassEntry';
+import { U256WGSL } from '../gpu/wgsl/U256';
+import { FieldModulusWGSL } from '../gpu/wgsl/FieldModulus';
+import { prune } from '../gpu/prune';
 
 
 function bit_reverse(a: bigint[]): bigint[] {
@@ -21,9 +24,24 @@ function bit_reverse(a: bigint[]): bigint[] {
   return a;
 }
 
-export const NTTBenchmark: React.FC = () => {
-  const initialDefaultInputSize = 16;
+interface NTTBenchmarkProps {
+  name: string;
+  fieldParamsWGSL: string;
+  wasmNTT: (polynomial_coeffs: string[]) => Promise<string[]>;
+  rootsOfUnity: { [index: number]: bigint; };
+  fieldModulus: bigint;
+}
+
+export const NTTBenchmark: React.FC<NTTBenchmarkProps> = ({
+  name,
+  fieldParamsWGSL,
+  wasmNTT,
+  rootsOfUnity,
+  fieldModulus
+}) => {
+  const initialDefaultInputSize = 18;
   const [inputSize, setInputSize] = useState(initialDefaultInputSize);
+  const [numEvaluations, setNumEvaluations] = useState(10);
   const [gpuTime, setGpuTime] = useState(0);
   const [wasmTime, setWasmTime] = useState(0);
   const [gpuRunning, setGpuRunning] = useState(false);
@@ -34,6 +52,9 @@ export const NTTBenchmark: React.FC = () => {
   const [inputs, setInputs] = useState<any[][]>([]);
   const [comparison, setComparison] = useState('Run both GPU and WASM to compare results');
   const [benchmarkResults, setBenchmarkResults] = useState<any[][]>([["InputSize", "GPUorWASM", "Time"]]);
+  const BaseModules = [U256WGSL, fieldParamsWGSL, FieldModulusWGSL];
+  const WnModules = prune(BaseModules.join("\n"), ['gen_field_pow']);
+  const ButterflyModules = prune(BaseModules.join("\n"), ['gen_field_add', 'gen_field_sub', 'gen_field_multiply']);
   
   const polynomialGenerator = async (inputSize: number): Promise<string[]> => {
     const polynomial = await random_polynomial(inputSize);
@@ -81,13 +102,11 @@ export const NTTBenchmark: React.FC = () => {
     const wasmInputs = inputs;
     setWasmRunning(true);
     const wasmStart = performance.now();
-    const results: string[] = await ntt(wasmInputs[0]);
+    const results: string[] = await wasmNTT(wasmInputs[0]);
     const wasmEnd = performance.now();
     const wasmPerformance = wasmEnd - wasmStart;
     setWasmTime(wasmPerformance);
     const comparableWasmResults = results;
-    console.log('results...');
-    console.log(comparableWasmResults);
     setWasmResults(comparableWasmResults);
     const benchMarkResult = [inputSize, "WASM", wasmPerformance];
     setBenchmarkResults([...benchmarkResults, benchMarkResult]);
@@ -100,18 +119,27 @@ export const NTTBenchmark: React.FC = () => {
     setGpuRunning(true);
 
     const gpuStart = performance.now();
-    const revInputs = bit_reverse(tempInputs);
-    console.log('time to rev: ', performance.now() - gpuStart);
-    const result = await ntt_multipass({ u32Inputs:  bigIntsToU32Array(revInputs), individualInputSize: 8 }, inputSize);
+    let result: Uint32Array | undefined;
+    for (let i = 0; i < numEvaluations; i++) {
+      const revInputs = bit_reverse(tempInputs);
+      const tmpResult = await ntt_multipass(
+        { u32Inputs:  bigIntsToU32Array(revInputs), individualInputSize: 8 },
+        rootsOfUnity,
+        fieldModulus,
+        WnModules,
+        ButterflyModules
+      );
+      if (i === 0) {
+        result = tmpResult;
+      }
+    }
     const gpuEnd = performance.now();
     const gpuPerformance = gpuEnd - gpuStart;
 
-    setGpuTime(gpuPerformance);
+    setGpuTime(gpuPerformance / numEvaluations);
 
     const bigIntResult = u32ArrayToBigInts(result || new Uint32Array(0));
     const results = bigIntResult.map(r => r.toString());
-    console.log('gpu results...');
-    console.log(results);
 
     setGpuResults(results);
     setGpuRunning(false);
@@ -121,13 +149,20 @@ export const NTTBenchmark: React.FC = () => {
 
   return (
     <div className="flex items-center space-x-4 px-5">
-      <div className="text-gray-800 font-bold w-40 px-2">NTT Multipass</div> 
+      <div className="text-gray-800 font-bold w-40 px-2">{name}</div> 
       <div className="text-gray-800">Input Size (2^):</div>
       <input
         type="text"
         className="w-24 border border-gray-300 rounded-md px-2 py-1"
         value={inputSize}
         onChange={(e) => setInputSize(parseInt(e.target.value))}
+      />
+      <div className="text-gray-800">Evaluations</div>
+      <input
+        type="text"
+        className="w-24 border border-gray-300 rounded-md px-2 py-1"
+        value={numEvaluations}
+        onChange={(e) => setNumEvaluations(parseInt(e.target.value))}
       />
       <button className="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded-md"  onClick={async () => { await runGpu()}}>
         {gpuRunning ? spin() : 'GPU'}

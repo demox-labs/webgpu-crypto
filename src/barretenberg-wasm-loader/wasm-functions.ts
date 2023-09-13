@@ -105,3 +105,20 @@ export const bulkSqrtFields = async(fields: string[]) => {
   await api.destroy();
   return results;
 };
+
+export const randomPolynomial = async (degree: number) => {
+  const api = await newBarretenbergApiSync();
+  const result = api.randomPolynomial(2 ** degree);
+  await api.destroy();
+  return result;
+}
+
+export const ntt = async (polynomialCoefficients: string[]) => {
+  const api = await newBarretenbergApiSync();
+  const evaluationDomain = api.newEvaluationDomain(polynomialCoefficients.length);
+  const polyCoeffs = polynomialCoefficients.map((c) => new Fr(BigInt(c)));
+  const result = api.fft(polyCoeffs, evaluationDomain);
+
+  await api.destroy();
+  return result.map((r) => r.value.toString());
+}
