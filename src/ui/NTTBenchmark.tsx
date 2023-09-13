@@ -2,11 +2,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from 'react';
 import CSVExportButton from './CSVExportButton';
-import { ntt, random_polynomial } from '../utils/aleoWasmFunctions';
+import { random_polynomial } from '../utils/aleoWasmFunctions';
 import { bigIntsToU32Array, u32ArrayToBigInts } from '../gpu/utils';
 import { ntt_multipass } from '../gpu/entries/ntt/nttMultipassEntry';
-import { FIELD_MODULUS, ROOTS_OF_UNITY } from '../params/BLS12_377Constants';
-import { BLS12_377ParamsWGSL } from '../gpu/wgsl/BLS12-377Params';
 import { U256WGSL } from '../gpu/wgsl/U256';
 import { FieldModulusWGSL } from '../gpu/wgsl/FieldModulus';
 import { prune } from '../gpu/prune';

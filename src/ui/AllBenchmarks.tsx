@@ -370,7 +370,7 @@ export const AllBenchmarks: React.FC = () => {
           wasmResultConverter={(results: string[]) => { return results.map((result) => stripGroupSuffix(result))}}
         />
       </Accordion>
-      {/* <Accordion title='NTT'> */}
+      <Accordion title='NTT'>
         <NTTBenchmark
           name={'NTT BLS12-377'}
           fieldParamsWGSL={BLS12_377ParamsWGSL}
@@ -386,7 +386,7 @@ export const AllBenchmarks: React.FC = () => {
           rootsOfUnity={BN254_ROOTS}
           fieldModulus={BN254_FIELD_MODULUS}
         />
-      {/* </Accordion>   */}
+      </Accordion>  
     </div>
   )
 };
