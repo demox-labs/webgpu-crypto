@@ -52,9 +52,8 @@ export const NTTBenchmark: React.FC<NTTBenchmarkProps> = ({
   const [inputs, setInputs] = useState<any[][]>([]);
   const [comparison, setComparison] = useState('Run both GPU and WASM to compare results');
   const [benchmarkResults, setBenchmarkResults] = useState<any[][]>([["InputSize", "GPUorWASM", "Time"]]);
-  const BaseModules = [U256WGSL, fieldParamsWGSL, FieldModulusWGSL];
-  const WnModules = prune(BaseModules.join("\n"), ['gen_field_pow']);
-  const ButterflyModules = prune(BaseModules.join("\n"), ['gen_field_add', 'gen_field_sub', 'gen_field_multiply']);
+  const [WnModules, setWnModules] = useState<string>('');
+  const [ButterflyModules, setButterflyModules] = useState<string>('');
   
   const polynomialGenerator = async (inputSize: number): Promise<string[]> => {
     const polynomial = await random_polynomial(inputSize);
@@ -65,6 +64,9 @@ export const NTTBenchmark: React.FC<NTTBenchmarkProps> = ({
     polynomialGenerator(inputSize).then((polynomial) => {
       setInputs([polynomial]);
     });
+    const BaseModules = [U256WGSL, fieldParamsWGSL, FieldModulusWGSL];
+    setWnModules(prune(BaseModules.join("\n"), ['gen_field_pow']));
+    setButterflyModules(prune(BaseModules.join("\n"), ['gen_field_add', 'gen_field_sub', 'gen_field_multiply']));
   }, []);
 
   useEffect(() => {

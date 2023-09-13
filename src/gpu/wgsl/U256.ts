@@ -138,12 +138,8 @@ fn equal(a: u256, b: u256) -> bool {
 // returns whether a > b
 fn gt(a: u256, b: u256) -> bool {
   for (var i = 0u; i < 8u; i++) {
-    if (a.components[i] < b.components[i]) {
-      return false;
-    }
-
-    if (a.components[i] > b.components[i]) {
-      return true;
+    if (a.components[i] != b.components[i]) {
+      return a.components[i] > b.components[i];
     }
   }
   // if a's components are never greater, than a is equal to b
@@ -152,9 +148,13 @@ fn gt(a: u256, b: u256) -> bool {
 
 // returns whether a >= b
 fn gte(a: u256, b: u256) -> bool {
-  var agtb = gt(a, b);
-  var aeqb = equal(a, b);
-  return agtb || aeqb;
+  for (var i = 0u; i < 8u; i++) {
+    if (a.components[i] != b.components[i]) {
+      return a.components[i] > b.components[i];
+    }
+  }
+  // if none of the components are greater or smaller, a is equal to b
+  return true;
 }
 
 fn component_double(a: u32, carry: u32) -> vec2<u32> {

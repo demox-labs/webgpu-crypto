@@ -196,7 +196,9 @@ fn gen_field_multiply(a: Field, b: Field, field_order: u256) -> Field {
       }
     }
     newA = u256_double(newA);
-    newA = gen_field_reduce(newA, field_order);
+    if (gte(newA, field_order)) {
+      newA = u256_sub(newA, field_order);
+    }
     newB = u256_rs1(newB);
   }
 
