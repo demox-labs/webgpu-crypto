@@ -118,6 +118,7 @@ export const ntt = async (polynomialCoefficients: string[]) => {
   const evaluationDomain = api.newEvaluationDomain(polynomialCoefficients.length);
   const polyCoeffs = polynomialCoefficients.map((c) => new Fr(BigInt(c)));
   const result = api.fft(polyCoeffs, evaluationDomain);
+
   await api.destroy();
-  return result;
+  return result.map((r) => r.value.toString());
 }

@@ -102,7 +102,7 @@ export const NTTBN254Benchmark: React.FC = () => {
     const wasmInputs = inputs;
     setWasmRunning(true);
     const wasmStart = performance.now();
-    const results: string[] = (await ntt(wasmInputs[0])).map((fr: Fr) => fr.value.toString());
+    const results: string[] = await ntt(wasmInputs[0]);
     const wasmEnd = performance.now();
     const wasmPerformance = wasmEnd - wasmStart;
     setWasmTime(wasmPerformance);

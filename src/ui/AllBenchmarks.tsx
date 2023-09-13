@@ -11,7 +11,9 @@ import { bulkAddFields,
   bulkPoseidon,
   bulkIsOwner,
   msm,
-  bulkAddGroups } from '../utils/aleoWasmFunctions';
+  bulkAddGroups,
+  ntt as bls12_377NTT,
+} from '../utils/aleoWasmFunctions';
 import { Benchmark } from './Benchmark';
 import { gpuU32Inputs, stripGroupSuffix } from '../gpu/utils';
 import { point_mul } from '../gpu/entries/curve/curveMulPointEntry';
@@ -37,7 +39,9 @@ import { bulkAddFields as bn254BulkAddFields,
   bulkInvertFields as bn254BulkInvertFields,
   bulkPowFields as bn254BulkPowFields,
   bulkPowFields17 as bn254BulkPowFields17,
-  bulkSqrtFields as bn254BulkSqrtFields } from '../barretenberg-wasm-loader/wasm-functions';
+  bulkSqrtFields as bn254BulkSqrtFields, 
+  ntt as bn254NTT,
+} from '../barretenberg-wasm-loader/wasm-functions';
 import {
   cipherTextsGenerator,
   gpuCipherTextInputConverter,
@@ -63,6 +67,8 @@ import {
 import { Accordion } from './Accordion';
 import { NTTBenchmark } from './NTTBenchmark';
 import { NTTBN254Benchmark } from './NTTBN254Benchmark';
+import { BLS12_377ParamsWGSL } from '../gpu/wgsl/BLS12-377Params';
+import { BN254ParamsWGSL } from '../gpu/wgsl/BN254Params';
 
 export const AllBenchmarks: React.FC = () => {
   return (
@@ -364,7 +370,17 @@ export const AllBenchmarks: React.FC = () => {
         />
       </Accordion>
       {/* <Accordion title='NTT'> */}
-        <NTTBenchmark />
+        <NTTBenchmark
+          name={'NTT BLS12-377'}
+          fieldParamsWGSL={BLS12_377ParamsWGSL}
+          wasmNTT={bls12_377NTT}
+        />
+        <NTTBenchmark
+          name={'NTT BN-254'}
+          fieldParamsWGSL={BN254ParamsWGSL}
+          wasmNTT={bn254NTT}
+          {/* This should include the polynomial generator but it's very slow for bn-254 */}
+        />
         <NTTBN254Benchmark />
       {/* </Accordion>   */}
     </div>

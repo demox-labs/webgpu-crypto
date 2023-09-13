@@ -26,12 +26,18 @@ function bit_reverse(a: bigint[]): bigint[] {
   return a;
 }
 
-const BaseModules = [U256WGSL, BLS12_377ParamsWGSL, FieldModulusWGSL];
-const WnModules = prune(BaseModules.join("\n"), ['gen_field_pow']);
-const ButterflyModules = prune(BaseModules.join("\n"), ['gen_field_add', 'gen_field_sub', 'gen_field_multiply']);
+interface NTTBenchmarkProps {
+  name: string;
+  fieldParamsWGSL: string;
+  wasmNTT: (polynomial_coeffs: string[]) => Promise<string[]>;
+}
 
-export const NTTBenchmark: React.FC = () => {
-  const initialDefaultInputSize = 20;
+export const NTTBenchmark: React.FC<NTTBenchmarkProps> = ({
+  name,
+  fieldParamsWGSL,
+  wasmNTT
+}) => {
+  const initialDefaultInputSize = 18;
   const [inputSize, setInputSize] = useState(initialDefaultInputSize);
   const [numEvaluations, setNumEvaluations] = useState(1);
   const [gpuTime, setGpuTime] = useState(0);
@@ -44,6 +50,9 @@ export const NTTBenchmark: React.FC = () => {
   const [inputs, setInputs] = useState<any[][]>([]);
   const [comparison, setComparison] = useState('Run both GPU and WASM to compare results');
   const [benchmarkResults, setBenchmarkResults] = useState<any[][]>([["InputSize", "GPUorWASM", "Time"]]);
+  const BaseModules = [U256WGSL, fieldParamsWGSL, FieldModulusWGSL];
+  const WnModules = prune(BaseModules.join("\n"), ['gen_field_pow']);
+  const ButterflyModules = prune(BaseModules.join("\n"), ['gen_field_add', 'gen_field_sub', 'gen_field_multiply']);
   
   const polynomialGenerator = async (inputSize: number): Promise<string[]> => {
     const polynomial = await random_polynomial(inputSize);
@@ -91,7 +100,7 @@ export const NTTBenchmark: React.FC = () => {
     const wasmInputs = inputs;
     setWasmRunning(true);
     const wasmStart = performance.now();
-    const results: string[] = await ntt(wasmInputs[0]);
+    const results: string[] = await wasmNTT(wasmInputs[0]);
     const wasmEnd = performance.now();
     const wasmPerformance = wasmEnd - wasmStart;
     setWasmTime(wasmPerformance);
@@ -142,7 +151,7 @@ export const NTTBenchmark: React.FC = () => {
 
   return (
     <div className="flex items-center space-x-4 px-5">
-      <div className="text-gray-800 font-bold w-40 px-2">NTT BLS12-377 Multipass</div> 
+      <div className="text-gray-800 font-bold w-40 px-2">{name}</div> 
       <div className="text-gray-800">Input Size (2^):</div>
       <input
         type="text"
