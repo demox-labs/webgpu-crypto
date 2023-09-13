@@ -8,6 +8,9 @@ import { ntt, randomPolynomial } from '../barretenberg-wasm-loader/wasm-function
 import { FIELD_MODULUS, ROOTS_OF_UNITY } from '../params/BN254Constants';
 import { Fr } from '../barretenberg-wasm-loader/dest/browser/types';
 import { BN254ParamsWGSL } from '../gpu/wgsl/BN254Params';
+import { U256WGSL } from '../gpu/wgsl/U256';
+import { FieldModulusWGSL } from '../gpu/wgsl/FieldModulus';
+import { prune } from '../gpu/prune';
 
 
 function bit_reverse(a: bigint[]): bigint[] {
@@ -24,8 +27,12 @@ function bit_reverse(a: bigint[]): bigint[] {
   return a;
 }
 
+const BaseModules = [U256WGSL, BN254ParamsWGSL, FieldModulusWGSL];
+const WnModules = prune(BaseModules.join("\n"), ['gen_field_pow']);
+const ButterflyModules = prune(BaseModules.join("\n"), ['gen_field_add', 'gen_field_sub', 'gen_field_multiply']);
+
 export const NTTBN254Benchmark: React.FC = () => {
-  const initialDefaultInputSize = 12;
+  const initialDefaultInputSize = 2;
   const [inputSize, setInputSize] = useState(initialDefaultInputSize);
   const [gpuTime, setGpuTime] = useState(0);
   const [wasmTime, setWasmTime] = useState(0);
@@ -39,21 +46,29 @@ export const NTTBN254Benchmark: React.FC = () => {
   const [benchmarkResults, setBenchmarkResults] = useState<any[][]>([["InputSize", "GPUorWASM", "Time"]]);
   
   const polynomialGenerator = async (inputSize: number): Promise<string[]> => {
-    const polynomial = await randomPolynomial(inputSize);
-    console.log(polynomial);
+    const maxChunkSize = 12;
+    let polynomial: any[] = [];
+
+    if (inputSize > maxChunkSize) {
+      const tmp = await randomPolynomial(maxChunkSize);
+      for (let i = 0; i < 2**(inputSize - maxChunkSize); i++) {
+        polynomial = polynomial.concat(tmp);
+      }
+    } else {
+      polynomial = await randomPolynomial(inputSize);
+    }
+
     return polynomial.map(i => i.value.toString());
   }
 
   useEffect(() => {
     polynomialGenerator(inputSize).then((polynomial) => {
-      console.log('polynomial: ', polynomial);
       setInputs([polynomial]);
     });
   }, []);
 
   useEffect(() => {
     polynomialGenerator(inputSize).then((polynomial) => {
-      console.log('polynomial: ', polynomial);
       setInputs([polynomial]);
     });
   }, [inputSize]);
@@ -113,7 +128,8 @@ export const NTTBN254Benchmark: React.FC = () => {
         individualInputSize: 8 },
         ROOTS_OF_UNITY,
         FIELD_MODULUS,
-        BN254ParamsWGSL
+        WnModules,
+        ButterflyModules
     );
     const gpuEnd = performance.now();
     const gpuPerformance = gpuEnd - gpuStart;

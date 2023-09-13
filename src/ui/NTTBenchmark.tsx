@@ -7,6 +7,9 @@ import { bigIntsToU32Array, u32ArrayToBigInts } from '../gpu/utils';
 import { ntt_multipass } from '../gpu/entries/ntt/nttMultipassEntry';
 import { FIELD_MODULUS, ROOTS_OF_UNITY } from '../params/BLS12_377Constants';
 import { BLS12_377ParamsWGSL } from '../gpu/wgsl/BLS12-377Params';
+import { U256WGSL } from '../gpu/wgsl/U256';
+import { FieldModulusWGSL } from '../gpu/wgsl/FieldModulus';
+import { prune } from '../gpu/prune';
 
 
 function bit_reverse(a: bigint[]): bigint[] {
@@ -23,10 +26,14 @@ function bit_reverse(a: bigint[]): bigint[] {
   return a;
 }
 
+const BaseModules = [U256WGSL, BLS12_377ParamsWGSL, FieldModulusWGSL];
+const WnModules = prune(BaseModules.join("\n"), ['gen_field_pow']);
+const ButterflyModules = prune(BaseModules.join("\n"), ['gen_field_add', 'gen_field_sub', 'gen_field_multiply']);
+
 export const NTTBenchmark: React.FC = () => {
-  const initialDefaultInputSize = 18;
+  const initialDefaultInputSize = 20;
   const [inputSize, setInputSize] = useState(initialDefaultInputSize);
-  const [numEvaluations, setNumEvaluations] = useState(50);
+  const [numEvaluations, setNumEvaluations] = useState(1);
   const [gpuTime, setGpuTime] = useState(0);
   const [wasmTime, setWasmTime] = useState(0);
   const [gpuRunning, setGpuRunning] = useState(false);
@@ -110,7 +117,8 @@ export const NTTBenchmark: React.FC = () => {
         { u32Inputs:  bigIntsToU32Array(revInputs), individualInputSize: 8 },
         ROOTS_OF_UNITY,
         FIELD_MODULUS,
-        BLS12_377ParamsWGSL
+        WnModules,
+        ButterflyModules
       );
       if (i === 0) {
         result = tmpResult;

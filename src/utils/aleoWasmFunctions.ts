@@ -227,7 +227,6 @@ export const ntt = async (polynomial_coeffs: string[]): Promise<string[]> => {
 
 export const random_polynomial = async (degree: number): Promise<string[]> => {
   const aleo = await loadWasmModule();
-  console.log(degree);
   const pow = BigInt(2 ** degree);
   return aleo.Address.get_random_dense_polynomial(pow);
 }

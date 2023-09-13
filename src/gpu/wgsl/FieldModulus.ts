@@ -192,7 +192,7 @@ fn gen_field_multiply(a: Field, b: Field, field_order: u256) -> Field {
     if ((newB.components[7] & 1u) == 1u) {
       accumulator = u256_add(accumulator, newA);
       if (gte(accumulator, field_order)) {
-        accumulator = u256_subw(accumulator, field_order);
+        accumulator = u256_sub(accumulator, field_order);
       }
     }
     newA = u256_double(newA);
