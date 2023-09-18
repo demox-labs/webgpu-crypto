@@ -62,7 +62,6 @@ export const entry = async(
   const bindGroup = createBindGroup(device, bindGroupLayout, gpuBufferInputs, resultBuffer);
 
   // Pipeline setup
-
   const computePipeline = device.createComputePipeline({
     layout: device.createPipelineLayout({
       bindGroupLayouts: [bindGroupLayout]

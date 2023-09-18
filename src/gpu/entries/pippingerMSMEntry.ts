@@ -4,9 +4,9 @@ import { entry } from "./entryCreator"
 import { ExtPointType } from "@noble/curves/abstract/edwards";
 import { FieldMath } from "../../utils/BLS12_377FieldMath";
 import { bigIntToU32Array, bigIntsToU32Array, gpuU32Inputs, u32ArrayToBigInts } from "../utils";
-import { BLS12_377ParamsWGSL } from "../wgsl/BLS12-377Params";
 import { U256WGSL } from "../wgsl/U256";
 import { EXT_POINT_SIZE, FIELD_SIZE } from "../U32Sizes";
+import { CurveType, getCurveBaseFunctionsWGSL, getCurveParamsWGSL } from "../curveSpecific";
 
 /// Pippinger Algorithm Summary:
 /// 
@@ -60,7 +60,7 @@ function chunkArray<T>(inputArray: T[], chunkSize = 20000): T[][] {
     return tempArray;
 } 
 
-export const pippinger_msm = async (points: ExtPointType[], scalars: number[], fieldMath: FieldMath) => {
+export const pippinger_msm = async (curve: CurveType, points: ExtPointType[], scalars: number[], fieldMath: FieldMath) => {
     const C = 16;
 
     ///
@@ -132,7 +132,7 @@ export const pippinger_msm = async (points: ExtPointType[], scalars: number[], f
     let pointMulCallTimes = 0
     for (let i = 0; i < chunkedPoints.length; i++) {
         const chunkCalculationStart = performance.now();
-        const bufferResult = await point_mul({ u32Inputs: bigIntsToU32Array(chunkedPoints[i]), individualInputSize: EXT_POINT_SIZE }, { u32Inputs: Uint32Array.from(chunkedScalars[i]), individualInputSize: FIELD_SIZE });
+        const bufferResult = await point_mul(curve, { u32Inputs: bigIntsToU32Array(chunkedPoints[i]), individualInputSize: EXT_POINT_SIZE }, { u32Inputs: Uint32Array.from(chunkedScalars[i]), individualInputSize: FIELD_SIZE });
         pointMulCallTimes += 1;
         const chunkCalculationEnd = performance.now();
         avgGpuChunkCalculationTimes.push(chunkCalculationEnd - chunkCalculationStart);
@@ -209,6 +209,7 @@ export const pippinger_msm = async (points: ExtPointType[], scalars: number[], f
 }
 
 const point_mul = async (
+    curve: CurveType,
     input1: gpuU32Inputs,
     input2: gpuU32Inputs
     ) => {
@@ -234,7 +235,14 @@ const point_mul = async (
       }
       `;
   
-    const shaderModules = [U256WGSL, BLS12_377ParamsWGSL, FieldModulusWGSL, CurveWGSL, shaderEntry];
+    const shaderModules = [
+      U256WGSL,
+      getCurveParamsWGSL(curve),
+      FieldModulusWGSL,
+      getCurveBaseFunctionsWGSL(curve),
+      CurveWGSL,
+      shaderEntry
+    ];
   
     return await entry([input1, input2], shaderModules, EXT_POINT_SIZE);
 }

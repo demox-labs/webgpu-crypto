@@ -230,36 +230,4 @@ fn gen_field_pow(base: Field, exponent: Field, field_order: u256) -> Field {
 
   return result;
 }
-
-// assumes that num is indeed a square root residue.
-// follows the Shanks Tonelli algorithm. View shankstonelli.ts for the non-shortened version.
-fn field_sqrt(num: Field) -> Field {
-  var c: Field = c_initial;
-  var r: Field = gen_field_pow(num, r_initial_exponent, FIELD_ORDER);
-  var t: Field = gen_field_pow(num, q, FIELD_ORDER);
-  var m: Field = s;
-
-  while (!equal(t, U256_ONE)) {
-    var tt: Field = t;
-    var i: Field = U256_ZERO;
-    while (!equal(tt, U256_ONE)) {
-      tt = field_multiply(tt, tt);
-      i = u256_add(i, U256_ONE);
-      if (equal(i, m)) {
-        return U256_ZERO;
-      }
-    }
-
-    var b_exp_exp: Field = u256_sub(m, u256_add(i, U256_ONE));
-    var b_exp: Field = gen_field_pow(U256_TWO, b_exp_exp, FIELD_ORDER_MINUS_ONE);
-    var b: Field = gen_field_pow(c, b_exp, FIELD_ORDER);
-    var b2: Field = field_multiply(b, b);
-    r = field_multiply(r, b);
-    t = field_multiply(t, b2);
-    c = b2;
-    m = i;
-  }
-
-  return r;
-}
 `

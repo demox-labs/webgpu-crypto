@@ -1,6 +1,6 @@
 import { FIELD_MODULUS as BLS12_377_MODULUS } from "../params/BLS12_377Constants";
-import { FIELD_MODULUS as BN254_MODULUS } from "../params/BN254Constants";
-import { CurveType } from "./params";
+import { FQ_FIELD_MODULUS as BN254_MODULUS } from "../params/BN254Constants";
+import { CurveType } from "./curveSpecific";
 
 export const bigIntsToU16Array = (beBigInts: bigint[]): Uint16Array => {
   const intsAs16s = beBigInts.map(bigInt => bigIntToU16Array(bigInt));

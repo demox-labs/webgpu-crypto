@@ -4,8 +4,9 @@ import { U256WGSL } from "../wgsl/U256";
 import { BLS12_377ParamsWGSL } from "../wgsl/BLS12-377Params";
 import { AleoPoseidonConstantsWGSL } from "../wgsl/AleoPoseidonConstants";
 import { poseidon_multipass_info_buffers } from "./poseidonMultiPassBufferReuse";
-import { workgroupSize } from "../params";
+import { CurveType, getCurveBaseFunctionsWGSL, getCurveParamsWGSL, workgroupSize } from "../curveSpecific";
 import { GPUExecution, IShaderCode, IGPUInput, IGPUResult, IEntryInfo, multipassEntryCreatorReuseBuffers } from "./multipassEntryCreatorBufferReuse";
+import { AFFINE_POINT_SIZE, EXT_POINT_SIZE, FIELD_SIZE } from "../U32Sizes";
 
 export const is_owner_multi_reuse_buffers = async (
   cipherTextAffineCoords: Array<number>,
@@ -30,11 +31,13 @@ export const is_owner_multi_reuse_buffers = async (
   // Maps size to buffers of that size. Needed to reuse buffers.
   const buffersMap = new Map<number, GPUBuffer[]>();
 
+  const curve = CurveType.BLS12_377
   const baseModules = [
     AleoPoseidonConstantsWGSL,
     FieldModulusWGSL,
     U256WGSL,
-    BLS12_377ParamsWGSL,
+    getCurveParamsWGSL(curve),
+    getCurveBaseFunctionsWGSL(curve),
     CurveWGSL,
     embededConstantsWGSL
   ];
@@ -114,9 +117,9 @@ const point_mul_multipass = (
   let baseModules = [FieldModulusWGSL, U256WGSL, BLS12_377ParamsWGSL, CurveWGSL];
   baseModules = baseModules.concat(extraBaseShaders);
 
-  const affinePointsBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * 8 * 2; // 2 fields per affine point
-  const scalarsBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * 8;
-  const pointsBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * 8 * 4; // 4 fields per point
+  const affinePointsBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * AFFINE_POINT_SIZE;
+  const scalarsBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * FIELD_SIZE;
+  const pointsBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * EXT_POINT_SIZE;
 
   // Create all of the buffers needed for the passes
   addNeededBuffers(gpu, affinePointsBufferSize, 1, buffersToReuse);

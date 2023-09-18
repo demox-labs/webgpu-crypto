@@ -8,7 +8,7 @@
       "name": "Debug Jest Tests",
       "type": "node",
       "request": "launch",
-      "runtimeArgs": ["--experimental-vm-modules", "--inspect-brk", "${workspaceRoot}/node_modules/.bin/jest", "--runInBand"],
+      "runtimeArgs": ["--experimental-vm-modules", "--inspect-brk", "${workspaceRoot}/node_modules/.bin/jest", "--runInBand", "--testPathIgnorePatterns='/barretenberg-wasm-loader/|/gpu/'"],
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen"
     }

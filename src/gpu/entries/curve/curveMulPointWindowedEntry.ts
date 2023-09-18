@@ -1,12 +1,13 @@
 import { FIELD_SIZE } from "../../U32Sizes";
+import { CurveType, getCurveBaseFunctionsWGSL, getCurveParamsWGSL } from "../../curveSpecific";
 import { gpuU32Inputs } from "../../utils";
-import { BLS12_377ParamsWGSL } from "../../wgsl/BLS12-377Params";
 import { CurveWGSL } from "../../wgsl/Curve";
 import { FieldModulusWGSL } from "../../wgsl/FieldModulus";
 import { U256WGSL } from "../../wgsl/U256";
 import { batchedEntry } from "../entryCreator"
 
 export const point_mul_windowed = async (
+  curve: CurveType,
   input1: gpuU32Inputs,
   input2: gpuU32Inputs,
   batchSize?: number
@@ -39,7 +40,14 @@ export const point_mul_windowed = async (
     }
     `;
 
-  const shaderModules = [U256WGSL, BLS12_377ParamsWGSL, FieldModulusWGSL, CurveWGSL, shaderEntry];
+  const shaderModules = [
+    U256WGSL,
+    getCurveParamsWGSL(curve),
+    FieldModulusWGSL,
+    getCurveBaseFunctionsWGSL(curve),
+    CurveWGSL,
+    shaderEntry
+  ];
 
   return await batchedEntry([input1, input2], shaderModules, FIELD_SIZE, batchSize);
 }

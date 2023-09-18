@@ -1,11 +1,11 @@
 import { newBarretenbergApiSync } from "./dest/browser";
-import { Fr } from "./dest/browser/types";
+import { Fq, Fr } from "./dest/browser/types";
 
 export const addFields = async (f1: string, f2: string) => {
   const api = await newBarretenbergApiSync();
-  const fr1: Fr = new Fr(BigInt(f1));
-  const fr2: Fr = new Fr(BigInt(f2));
-  const result = await api.addFields(fr1, fr2);
+  const fr1: Fq = new Fq(BigInt(f1));
+  const fr2: Fq = new Fq(BigInt(f2));
+  const result = api.addFields(fr1, fr2);
   await api.destroy();
   return [result.toString()];
 };
@@ -14,9 +14,9 @@ export const bulkAddFields = async (fields1: string[], fields2: string[]) => {
   const api = await newBarretenbergApiSync();
   const results: string[] = [];
   for (let i = 0; i < fields1.length; i++) {
-    const fr1: Fr = new Fr(BigInt(fields1[i]));
-    const fr2: Fr = new Fr(BigInt(fields2[i]));
-    const result = await api.addFields(fr1, fr2);
+    const fr1: Fq = new Fq(BigInt(fields1[i]));
+    const fr2: Fq = new Fq(BigInt(fields2[i]));
+    const result = api.addFields(fr1, fr2);
     results.push(result.value.toString(10));
   }
   
@@ -28,9 +28,9 @@ export const bulkSubFields = async(fields1: string[], fields2: string[]) => {
   const api = await newBarretenbergApiSync();
   const results: string[] = [];
   for (let i = 0; i < fields1.length; i++) {
-    const fr1: Fr = new Fr(BigInt(fields1[i]));
-    const fr2: Fr = new Fr(BigInt(fields2[i]));
-    const result = await api.subFields(fr1, fr2);
+    const fr1: Fq = new Fq(BigInt(fields1[i]));
+    const fr2: Fq = new Fq(BigInt(fields2[i]));
+    const result = api.subFields(fr1, fr2);
     results.push(result.value.toString(10));
   }
   
@@ -42,9 +42,9 @@ export const bulkMulFields = async(fields1: string[], fields2: string[]) => {
   const api = await newBarretenbergApiSync();
   const results: string[] = [];
   for (let i = 0; i < fields1.length; i++) {
-    const fr1: Fr = new Fr(BigInt(fields1[i]));
-    const fr2: Fr = new Fr(BigInt(fields2[i]));
-    const result = await api.mulFields(fr1, fr2);
+    const fr1: Fq = new Fq(BigInt(fields1[i]));
+    const fr2: Fq = new Fq(BigInt(fields2[i]));
+    const result = api.mulFields(fr1, fr2);
     results.push(result.value.toString(10));
   }
   
@@ -56,8 +56,8 @@ export const bulkInvertFields = async(fields: string[]) => {
   const api = await newBarretenbergApiSync();
   const results: string[] = [];
   for (let i = 0; i < fields.length; i++) {
-    const fr: Fr = new Fr(BigInt(fields[i]));
-    const result = await api.invertField(fr);
+    const fr: Fq = new Fq(BigInt(fields[i]));
+    const result = api.invertField(fr);
     results.push(result.value.toString(10));
   }
   
@@ -69,9 +69,9 @@ export const bulkPowFields = async(fieldBases: string[], fieldExps: string[]) =>
   const api = await newBarretenbergApiSync();
   const results: string[] = [];
   for (let i = 0; i < fieldBases.length; i++) {
-    const frBase: Fr = new Fr(BigInt(fieldBases[i]));
-    const frExp: Fr = new Fr(BigInt(fieldExps[i]));
-    const result = await api.expField(frBase, frExp);
+    const frBase: Fq = new Fq(BigInt(fieldBases[i]));
+    const frExp: Fq = new Fq(BigInt(fieldExps[i]));
+    const result = api.expField(frBase, frExp);
     results.push(result.value.toString(10));
   }
   
@@ -81,10 +81,10 @@ export const bulkPowFields = async(fieldBases: string[], fieldExps: string[]) =>
 
 export const bulkPowFields17 = async(fieldBases: string[]) => {
   const api = await newBarretenbergApiSync();
-  const fr17 = new Fr(BigInt(17));
+  const fr17 = new Fq(BigInt(17));
   const results: string[] = [];
   for (let i = 0; i < fieldBases.length; i++) {
-    const frBase: Fr = new Fr(BigInt(fieldBases[i]));
+    const frBase: Fq = new Fq(BigInt(fieldBases[i]));
     const result = await api.expField(frBase, fr17);
     results.push(result.value.toString(10));
   }
@@ -97,7 +97,7 @@ export const bulkSqrtFields = async(fields: string[]) => {
   const api = await newBarretenbergApiSync();
   const results: string[] = [];
   for (let i = 0; i < fields.length; i++) {
-    const fr: Fr = new Fr(BigInt(fields[i]));
+    const fr: Fq = new Fq(BigInt(fields[i]));
     const result = await api.sqrtField(fr);
     results.push(result.value.toString(10));
   }
@@ -122,3 +122,52 @@ export const ntt = async (polynomialCoefficients: string[]) => {
   await api.destroy();
   return result.map((r) => r.value.toString());
 }
+
+export interface bbPoint {
+  x: string,
+  y: string,
+}
+
+export const bulkGenerateRandomPoints = async (numPoints: number) => {
+  const api = await newBarretenbergApiSync();
+  const points: bbPoint[] = [];
+  for (let i = 0; i < numPoints; i++) {
+    const point = await api.randomPoint();
+    points.push({ x: point.x.value.toString(10), y: point.y.value.toString(10) });
+  }
+
+  return points;
+};
+
+export const bulkAddPoints = async (points1: bbPoint[], points2: bbPoint[]) => {
+  const api = await newBarretenbergApiSync();
+  const results: string[] = [];
+  for (let i = 0; i < points1.length; i++) {
+    const point1X = new Fq(BigInt(points1[i].x));
+    const point1Y = new Fq(BigInt(points1[i].y));
+    const point2X = new Fq(BigInt(points2[i].x));
+    const point2Y = new Fq(BigInt(points2[i].y));
+    const [resultX, resultY] = await api.addPoints(point1X, point1Y, point2X, point2Y);
+    results.push(resultX.value.toString(10));
+  }
+
+  await api.destroy();
+
+  return results;
+};
+
+export const bulkDoublePoints = async (points1: bbPoint[]): Promise<string[]> => {
+  const api = await newBarretenbergApiSync();
+  const results: string[] = [];
+  const allResults: any[] = [];
+  for (let i = 0; i < points1.length; i++) {
+    const point1X = new Fq(BigInt(points1[i].x));
+    const point1Y = new Fq(BigInt(points1[i].y));
+    const [resultX, resultY] = await api.doublePoint(point1X, point1Y);
+    results.push(resultX.value.toString(10));
+  }
+
+  await api.destroy();
+
+  return results;
+};

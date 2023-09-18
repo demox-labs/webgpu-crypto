@@ -1,4 +1,4 @@
-import { CurveType, getModulus } from "../gpu/params";
+import { CurveType, getModulus } from "../gpu/curveSpecific";
 
 const pow_mod = (x: bigint, n: bigint, p: bigint): bigint => {
   if (n === BigInt(0)) return BigInt(1);
@@ -18,7 +18,8 @@ export const tonelli_shanks = (n: bigint, p: bigint): bigint => {
     s++;
   }
   if (s === BigInt(1)) {
-    const r = pow_mod(n, (p+BigInt(1))/BigInt(4), p);
+    const exp_to_calc = (p+BigInt(1))/BigInt(4);
+    const r = pow_mod(n, exp_to_calc, p);
     if ((r * r) % p === n)
       return r;
     return BigInt(0);
@@ -32,6 +33,11 @@ export const tonelli_shanks = (n: bigint, p: bigint): bigint => {
   const exp_next_calc = (q+BigInt(1))/BigInt(2);
   let r = pow_mod(n, exp_next_calc, p);
   let t = pow_mod(n, q, p);
+  console.log('q: ', q);
+  console.log('s: ', s);
+  console.log('p: ', p);
+  console.log('c: ', c);
+
   let m = s;
   while (t !== BigInt(1)) {
     let tt = t;
@@ -68,13 +74,7 @@ export const preComputedTShanks = (n: bigint, curve: CurveType): bigint => {
       c = BigInt('6924886788847882060123066508223519077232160750698452411071850219367055984476');
       exp_next_calc = BigInt('30000754767301779765804869764101946328252876608481130304309778');
       break;
-    case CurveType.BN254:
-      q = BigInt('81540058820840996586704275553141814055101440848469862132140264610111');
-      s = BigInt(28);
-      p = getModulus(curve);
-      c = BigInt('19103219067921713944291392827692070036145651957329286315305642004821462161904');
-      exp_next_calc = BigInt('40770029410420498293352137776570907027550720424234931066070132305056');
-      break;
+    
     default:
       throw new Error('Unsupported curve type for Shanks Tonelli');
   }

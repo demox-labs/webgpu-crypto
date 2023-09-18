@@ -8,7 +8,7 @@ import { FieldMath } from '../utils/BLS12_377FieldMath';
 
 interface PippingerBenchmarkProps {
   name: string;
-  inputsGenerator: (inputSize: number) => any[][];
+  inputsGenerator: (inputSize: number) => Promise<any[][]>;
   gpuFunc: (points: ExtPointType[], scalars: number[], fieldMath: FieldMath) => Promise<Uint32Array>;
   gpuInputConverter: (scalars: bigint[]) => [ExtPointType[], number[], FieldMath];
   gpuResultConverter?: (results: bigint[]) => string[];
@@ -34,13 +34,19 @@ export const PippingerBenchmark: React.FC<PippingerBenchmarkProps> = (
   const [benchmarkResults, setBenchmarkResults] = useState<any[][]>([["InputSize", "GPUorWASM", "Time"]]);
 
   useEffect(() => {
-    const generatedInputs = inputsGenerator(inputSize);
-    setInputs(generatedInputs);
+    const fetchInputs = async () => {
+      const generatedInputs = await inputsGenerator(inputSize);
+      setInputs(generatedInputs);
+    };
+    fetchInputs();
   }, []);
 
   useEffect(() => {
-    const newInputs = inputsGenerator(inputSize);
-    setInputs(newInputs);
+    const setNewInputs = async () => {
+      const newInputs = await inputsGenerator(inputSize);
+      setInputs(newInputs);
+    };
+    setNewInputs();
   }, [inputSize]);
 
   useEffect(() => {

@@ -65,7 +65,7 @@ export declare class BarretenbergApiSync {
     constructor(binder: BarretenbergBinderSync);
     destroy(): Promise<void>;
     randomPoint(): Point;
-    addPoints(p1X: Fq, p1Y: Fq, p2X: Fq, p2Y: Fq): Fq;
+    addPoints(p1X: Fq, p1Y: Fq, p2X: Fq, p2Y: Fq): [Fq, Fq];
     doublePoint(pX: Fq, pY: Fq): [Fq, Fq];
     addFields(left: Fq, right: Fq): Fq;
     subFields(left: Fq, right: Fq): Fq;

@@ -4,7 +4,7 @@ import { AleoPoseidonConstantsWGSL } from "../wgsl/AleoPoseidonConstants";
 import { U256WGSL } from "../wgsl/U256";
 import { BLS12_377ParamsWGSL } from "../wgsl/BLS12-377Params";
 import { GPUExecution, IShaderCode, IGPUInput, IGPUResult, IEntryInfo, multipassEntryCreatorReuseBuffers } from "./multipassEntryCreatorBufferReuse";
-import { workgroupSize } from "../params";
+import { workgroupSize } from "../curveSpecific";
 
 export const field_poseidon_reuse = async (input1: Array<number>, input2: Array<number>, input3: Array<number>) => {
   const gpu = (await getDevice())!;

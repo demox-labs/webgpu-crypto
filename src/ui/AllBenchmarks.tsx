@@ -31,7 +31,7 @@ import { point_mul_multi_reuse } from '../gpu/entries/pointScalarMultipassReuseB
 import { pippinger_msm } from '../gpu/entries/pippingerMSMEntry';
 import { ExtPointType } from '@noble/curves/abstract/edwards';
 import { field_entry } from '../gpu/entries/field/fieldEntry';
-import { CurveType } from '../gpu/params';
+import { CurveType } from '../gpu/curveSpecific';
 import { PippingerBenchmark } from './PippingerBenchmark';
 import { bulkAddFields as bn254BulkAddFields,
   bulkSubFields as bn254BulkSubFields,
@@ -41,6 +41,9 @@ import { bulkAddFields as bn254BulkAddFields,
   bulkPowFields17 as bn254BulkPowFields17,
   bulkSqrtFields as bn254BulkSqrtFields, 
   ntt as bn254NTT,
+  bulkAddPoints as bn254BulkAddPoints, 
+  bulkDoublePoints as bn254BulkDoublePoints,
+  bbPoint
 } from '../barretenberg-wasm-loader/wasm-functions';
 import {
   cipherTextsGenerator,
@@ -62,14 +65,17 @@ import {
   wasmPointMulConverter,
   poseidonGenerator,
   pippingerGpuInputConverter,
-  ownerViewKey
+  ownerViewKey,
+  bn254PointsGPUInputConverter,
+  singlePointGenerator,
 } from '../utils/inputsGenerator';
 import { Accordion } from './Accordion';
 import { NTTBenchmark } from './NTTBenchmark';
 import { BLS12_377ParamsWGSL } from '../gpu/wgsl/BLS12-377Params';
 import { BN254ParamsWGSL } from '../gpu/wgsl/BN254Params';
 import { ROOTS_OF_UNITY as BLS12_377_ROOTS, FIELD_MODULUS as BLS12_377_MODULUS } from '../params/BLS12_377Constants';
-import { FIELD_MODULUS as BN254_FIELD_MODULUS, ROOTS_OF_UNITY as BN254_ROOTS } from '../params/BN254Constants';
+import { FR_FIELD_MODULUS as BN254_FR, FQ_FIELD_MODULUS as BN254_FQ, ROOTS_OF_UNITY as BN254_ROOTS } from '../params/BN254Constants';
+import { point_double } from '../gpu/entries/curve/curveDoublePointEntry';
 
 export const AllBenchmarks: React.FC = () => {
   return (
@@ -81,7 +87,6 @@ export const AllBenchmarks: React.FC = () => {
           gpuFunc={(inputs: gpuU32Inputs[]) => is_owner(inputs[0], inputs[1], inputs[2], inputs[3], inputs[4], inputs[5])}
           gpuInputConverter={gpuCipherTextInputConverter}
           gpuResultConverter={(results: bigint[]) => { return results.map((result) => result === BigInt(0) ? 'true' : 'false')}}
-          // gpuResultConverter={(results: bigint[]) => { return results.map((result) => result.toString())}}
           wasmFunc={(inputs: string[][]) => bulkIsOwner(inputs[0], ownerViewKey)}
           wasmInputConverter={(inputs: string[][]) => {return inputs}}
           wasmResultConverter={(results: string[]) => {return results}}
@@ -266,9 +271,19 @@ export const AllBenchmarks: React.FC = () => {
       </Accordion>
       <Accordion title={'Curve Operations'}>
         <Benchmark
-          name={'Point Add'}
-          inputsGenerator={doublePointGenerator}
-          gpuFunc={(inputs: gpuU32Inputs[], batchSize: number) => point_add(inputs[0], inputs[1], batchSize)}
+          name={'BN254 Point Double'}
+          inputsGenerator={(inputSize: number) => singlePointGenerator(inputSize, CurveType.BN254)}
+          gpuFunc={(inputs: gpuU32Inputs[], batchSize: number) => point_double(CurveType.BN254, inputs[0], batchSize)}
+          gpuInputConverter={bn254PointsGPUInputConverter}
+          wasmFunc={(inputs: bbPoint[][]) => bn254BulkDoublePoints(inputs[0])}
+          wasmInputConverter={(inputs: bbPoint[][]) => inputs}
+          wasmResultConverter={(results: string[]) => results}
+          batchable={true}
+        />
+        <Benchmark
+          name={'BLS12-377 Point Add'}
+          inputsGenerator={(inputSize: number) => doublePointGenerator(inputSize, CurveType.BLS12_377)}
+          gpuFunc={(inputs: gpuU32Inputs[], batchSize: number) => point_add(CurveType.BLS12_377, inputs[0], inputs[1], batchSize)}
           gpuInputConverter={gpuPointsInputConverter}
           wasmFunc={(inputs: string[][]) => bulkAddGroups(inputs[0], inputs[1])}
           wasmInputConverter={wasmPointConverter}
@@ -276,20 +291,40 @@ export const AllBenchmarks: React.FC = () => {
           batchable={true}
         />
         <Benchmark
-          name={'Point Scalar Mul'}
+          name={'BN254 Point Add'}
+          inputsGenerator={(inputSize: number) => doublePointGenerator(inputSize, CurveType.BN254)}
+          gpuFunc={(inputs: gpuU32Inputs[], batchSize: number) => point_add(CurveType.BN254, inputs[0], inputs[1], batchSize)}
+          gpuInputConverter={bn254PointsGPUInputConverter}
+          wasmFunc={(inputs: bbPoint[][]) => bn254BulkAddPoints(inputs[0], inputs[1])}
+          wasmInputConverter={(inputs: bbPoint[][]) => inputs}
+          wasmResultConverter={(results: string[]) => results}
+          batchable={true}
+        />
+        <Benchmark
+          name={'BLS12-377 Point Scalar'}
           inputsGenerator={(inputSize: number) => pointScalarGenerator(inputSize, CurveType.BLS12_377)}
-          gpuFunc={(inputs: gpuU32Inputs[], batchSize: number) => point_mul(inputs[0], inputs[1], batchSize)}
-          gpuInputConverter={gpuPointScalarInputConverter}
+          gpuFunc={(inputs: gpuU32Inputs[], batchSize: number) => point_mul(CurveType.BLS12_377, inputs[0], inputs[1], batchSize)}
+          gpuInputConverter={(inputs: any[][]) => gpuPointScalarInputConverter(inputs, CurveType.BLS12_377)}
           wasmFunc={(inputs: string[][]) => bulkGroupScalarMul(inputs[0], inputs[1])}
           wasmInputConverter={wasmPointMulConverter}
           wasmResultConverter={(results: string[]) => { return results.map((result) => stripGroupSuffix(result))}}
           batchable={true}
         />
         <Benchmark
-          name={'Point Scalar Mul Windowed'}
+          name={'BN-254 Point Scalar'}
+          inputsGenerator={(inputSize: number) => pointScalarGenerator(inputSize, CurveType.BN254)}
+          gpuFunc={(inputs: gpuU32Inputs[], batchSize: number) => point_mul(CurveType.BN254, inputs[0], inputs[1], batchSize)}
+          gpuInputConverter={(inputs: any[][]) => gpuPointScalarInputConverter(inputs, CurveType.BN254)}
+          wasmFunc={(inputs: string[][]) => bulkGroupScalarMul(inputs[0], inputs[1])}
+          wasmInputConverter={wasmPointMulConverter}
+          wasmResultConverter={(results: string[]) => { return results.map((result) => stripGroupSuffix(result))}}
+          batchable={true}
+        />
+        <Benchmark
+          name={'BLS12-377 Point Scalar Windowed'}
           inputsGenerator={(inputSize: number) => pointScalarGenerator(inputSize, CurveType.BLS12_377)}
-          gpuFunc={(inputs: gpuU32Inputs[]) => point_mul_windowed(inputs[0], inputs[1])}
-          gpuInputConverter={gpuPointScalarInputConverter}
+          gpuFunc={(inputs: gpuU32Inputs[]) => point_mul_windowed(CurveType.BLS12_377, inputs[0], inputs[1])}
+          gpuInputConverter={(inputs: any[][]) => gpuPointScalarInputConverter(inputs, CurveType.BLS12_377)}
           wasmFunc={(inputs: string[][]) => bulkGroupScalarMul(inputs[0], inputs[1])}
           wasmInputConverter={wasmPointMulConverter}
           wasmResultConverter={(results: string[]) => { return results.map((result) => stripGroupSuffix(result))}}
@@ -299,7 +334,7 @@ export const AllBenchmarks: React.FC = () => {
           name={'Point Scalar Mul multi pass'}
           inputsGenerator={(inputSize: number) => pointScalarGenerator(inputSize, CurveType.BLS12_377)}
           gpuFunc={(inputs: gpuU32Inputs[]) => point_mul_multi(inputs[0], inputs[1])}
-          gpuInputConverter={gpuPointScalarInputConverter}
+          gpuInputConverter={(inputs: any[][]) => gpuPointScalarInputConverter(inputs, CurveType.BLS12_377)}
           wasmFunc={(inputs: string[][]) => bulkGroupScalarMul(inputs[0], inputs[1])}
           wasmInputConverter={wasmPointMulConverter}
           wasmResultConverter={(results: string[]) => { return results.map((result) => stripGroupSuffix(result))}}
@@ -309,7 +344,7 @@ export const AllBenchmarks: React.FC = () => {
           name={'Point Scalar Mul multi pass buffer reuse'}
           inputsGenerator={(inputSize: number) => pointScalarGenerator(inputSize, CurveType.BLS12_377)}
           gpuFunc={(inputs: number[][]) => point_mul_multi_reuse(inputs[0], inputs[1])}
-          gpuInputConverter={gpuPointScalarInputConverter}
+          gpuInputConverter={(inputs: any[][]) => gpuPointScalarInputConverter(inputs, CurveType.BLS12_377)}
           wasmFunc={(inputs: string[][]) => bulkGroupScalarMul(inputs[0], inputs[1])}
           wasmInputConverter={wasmPointMulConverter}
           wasmResultConverter={(results: string[]) => { return results.map((result) => stripGroupSuffix(result))}}
@@ -354,7 +389,7 @@ export const AllBenchmarks: React.FC = () => {
           inputsGenerator={(inputSize: number) => pointScalarGenerator(inputSize, CurveType.BLS12_377)}
           // change to custom summation function using FieldMath.addPoints
           gpuFunc={(inputs: gpuU32Inputs[]) => naive_msm(inputs[0], inputs[1])}
-          gpuInputConverter={gpuPointScalarInputConverter}
+          gpuInputConverter={(inputs: any[][]) => gpuPointScalarInputConverter(inputs, CurveType.BLS12_377)}
           wasmFunc={(inputs: string[][]) => msm(inputs[0], inputs[1])}
           wasmInputConverter={wasmPointMulConverter}
           wasmResultConverter={(results: string[]) => { return results.map((result) => stripGroupSuffix(result))}}
@@ -363,7 +398,7 @@ export const AllBenchmarks: React.FC = () => {
         <PippingerBenchmark
           name={'Pippinger MSM V1'}
           inputsGenerator={(inputSize: number) => pointScalarGenerator(inputSize, CurveType.BLS12_377)}
-          gpuFunc={(points: ExtPointType[], scalars: number[], fieldMath: FieldMath) => pippinger_msm(points, scalars, fieldMath)}
+          gpuFunc={(points: ExtPointType[], scalars: number[], fieldMath: FieldMath) => pippinger_msm(CurveType.BLS12_377, points, scalars, fieldMath)}
           gpuInputConverter={pippingerGpuInputConverter}
           wasmFunc={(inputs: string[][]) => msm(inputs[0], inputs[1])}
           wasmInputConverter={wasmPointMulConverter}
@@ -384,7 +419,7 @@ export const AllBenchmarks: React.FC = () => {
           fieldParamsWGSL={BN254ParamsWGSL}
           wasmNTT={bn254NTT}
           rootsOfUnity={BN254_ROOTS}
-          fieldModulus={BN254_FIELD_MODULUS}
+          fieldModulus={BN254_FR}
         />
       </Accordion>  
     </div>

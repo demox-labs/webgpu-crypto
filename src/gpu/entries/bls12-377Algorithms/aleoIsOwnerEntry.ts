@@ -1,4 +1,3 @@
-import { BLS12_377ParamsWGSL } from "../../wgsl/BLS12-377Params";
 import { CurveWGSL } from "../../wgsl/Curve";
 import { FieldModulusWGSL } from "../../wgsl/FieldModulus";
 import { AleoPoseidonWGSL } from "../../wgsl/AleoPoseidon";
@@ -7,6 +6,7 @@ import { U256WGSL } from "../../wgsl/U256";
 import { batchedEntry } from "../entryCreator"
 import { FIELD_SIZE } from "../../U32Sizes";
 import { gpuU32Inputs } from "../../utils";
+import { CurveType, getCurveBaseFunctionsWGSL, getCurveParamsWGSL } from "../../curveSpecific";
 
 export const is_owner = async (
   cipherTextAffineCoords: gpuU32Inputs,
@@ -59,12 +59,15 @@ export const is_owner = async (
     }
   `;
 
+  const curve = CurveType.BLS12_377;
+
   const shaderModules = [
     U256WGSL,
     AleoPoseidonConstantsWGSL,
-    BLS12_377ParamsWGSL,
+    getCurveParamsWGSL(curve),
     FieldModulusWGSL,
     AleoPoseidonWGSL,
+    getCurveBaseFunctionsWGSL(curve),
     CurveWGSL,
     shaderEntry
   ];

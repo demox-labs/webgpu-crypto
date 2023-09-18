@@ -1,4 +1,4 @@
-import { CurveType } from "../../params";
+import { CurveType } from "../../curveSpecific";
 import { gpuU32Inputs, gpuU32PuppeteerString } from "../../utils";
 
 // used for evaluating in the puppeteer context

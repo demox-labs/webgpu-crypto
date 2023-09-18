@@ -2,7 +2,7 @@ import puppeteer from 'puppeteer';
 import { Browser } from 'puppeteer';
 import { bigIntToU32Array, gpuU32Inputs, u32ArrayToBigInts } from '../../utils';
 import { fieldEntryEvaluationString } from './evalString';
-import { CurveType } from '../../params';
+import { CurveType } from '../../curveSpecific';
 import { FIELD_SIZE } from '../../U32Sizes';
 
 describe('fieldSqrt', () => {

@@ -1,5 +1,5 @@
 import { FIELD_SIZE } from "../../U32Sizes";
-import { workgroupSize } from "../../params";
+import { workgroupSize } from "../../curveSpecific";
 import { bigIntToU32Array, gpuU32Inputs } from "../../utils";
 import { IEntryInfo, IShaderCode, getDevice } from "../multipassEntryCreator";
 

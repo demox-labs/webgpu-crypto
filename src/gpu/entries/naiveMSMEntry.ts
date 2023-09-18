@@ -2,12 +2,11 @@ import { ExtPointType } from "@noble/curves/abstract/edwards";
 import { FieldMath } from "../../utils/BLS12_377FieldMath";
 import { CurveWGSL } from "../wgsl/Curve";
 import { FieldModulusWGSL } from "../wgsl/FieldModulus";
-import { workgroupSize } from "../params";
+import { CurveType, getCurveBaseFunctionsWGSL, getCurveParamsWGSL, workgroupSize } from "../curveSpecific";
 import { bigIntToU32Array, gpuU32Inputs, u32ArrayToBigInts } from "../utils";
 import { IEntryInfo, IGPUInput, IGPUResult, IShaderCode, multipassEntryCreator } from "./multipassEntryCreator";
 import { GPUExecution } from "./multipassEntryCreator";
 import { U256WGSL } from "../wgsl/U256";
-import { BLS12_377ParamsWGSL } from "../wgsl/BLS12-377Params";
 import { AFFINE_POINT_SIZE, EXT_POINT_SIZE, FIELD_SIZE } from "../U32Sizes";
 
 export const naive_msm = async (
@@ -43,7 +42,15 @@ export const point_mul_multipass_info = (
   scalars: gpuU32Inputs,
   useInputs = true
 ): [GPUExecution[], IEntryInfo] => {
-  const baseModules = [U256WGSL, BLS12_377ParamsWGSL, FieldModulusWGSL, CurveWGSL];
+  // TODO: make this curve paramaterizable
+  const curve = CurveType.BLS12_377;
+  const baseModules = [
+    U256WGSL,
+    getCurveParamsWGSL(curve),
+    FieldModulusWGSL,
+    getCurveBaseFunctionsWGSL(curve),
+    CurveWGSL
+  ];
   const affinePointsBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * AFFINE_POINT_SIZE; // 2 fields per affine point
   const scalarsBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * FIELD_SIZE;
   const pointsBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * EXT_POINT_SIZE; // 4 fields per point

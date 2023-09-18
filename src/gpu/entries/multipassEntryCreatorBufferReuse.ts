@@ -1,4 +1,4 @@
-import { workgroupSize } from "../params";
+import { workgroupSize } from "../curveSpecific";
 
 /**
  * Creates and executes multipass pipeline. 

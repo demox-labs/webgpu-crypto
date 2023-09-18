@@ -2,7 +2,7 @@ import { CurveWGSL } from "../../wgsl/Curve";
 import { FieldModulusWGSL } from "../../wgsl/FieldModulus";
 import { AleoPoseidonConstantsWGSL } from "../../wgsl/AleoPoseidonConstants";
 import { poseidon_multipass_info } from "./aleoPoseidonMultiPass";
-import { workgroupSize } from "../../params";
+import { CurveType, getCurveBaseFunctionsWGSL, getCurveParamsWGSL, workgroupSize } from "../../curveSpecific";
 import { GPUExecution, IShaderCode, IGPUInput, IGPUResult, IEntryInfo, multipassEntryCreator } from "../multipassEntryCreator";
 import { U256WGSL } from "../../wgsl/U256";
 import { BLS12_377ParamsWGSL } from "../../wgsl/BLS12-377Params";
@@ -27,14 +27,19 @@ export const is_owner_multi = async (
     );
   `;
 
+  const curve = CurveType.BLS12_377;
+
   const baseModules = [
     AleoPoseidonConstantsWGSL,
-    U256WGSL, BLS12_377ParamsWGSL, FieldModulusWGSL,
+    U256WGSL,
+    getCurveParamsWGSL(curve),
+    FieldModulusWGSL,
+    getCurveBaseFunctionsWGSL(curve),
     CurveWGSL,
     embededConstantsWGSL
   ];
   const numInputs = cipherTextAffineCoords.u32Inputs.length / cipherTextAffineCoords.individualInputSize;
-  const fieldArraySize = Uint32Array.BYTES_PER_ELEMENT * numInputs * 8;
+  const fieldArraySize = Uint32Array.BYTES_PER_ELEMENT * numInputs * FIELD_SIZE;
 
   const postHashEntry = `
     @group(0) @binding(0)

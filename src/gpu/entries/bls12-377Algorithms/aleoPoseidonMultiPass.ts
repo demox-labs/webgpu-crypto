@@ -2,7 +2,7 @@ import { FieldModulusWGSL } from "../../wgsl/FieldModulus";
 import { PoseidonFirstHashOutputWGSL, PoseidonRoundFullWGSL, PoseidonRoundPartialWGSL } from "../../wgsl/AleoPoseidon";
 import { AleoPoseidonConstantsWGSL } from "../../wgsl/AleoPoseidonConstants";
 import { multipassEntryCreator, GPUExecution, IShaderCode, IGPUInput, IGPUResult, IEntryInfo } from "../multipassEntryCreator";
-import { workgroupSize } from "../../params";
+import { workgroupSize } from "../../curveSpecific";
 import { U256WGSL } from "../../wgsl/U256";
 import { BLS12_377ParamsWGSL } from "../../wgsl/BLS12-377Params";
 import { gpuU32Inputs } from "../../utils";

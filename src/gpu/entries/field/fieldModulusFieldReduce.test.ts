@@ -3,7 +3,7 @@ import { Browser } from 'puppeteer';
 import { bigIntToU32Array, gpuU32Inputs, u32ArrayToBigInts } from '../../utils';
 import { FIELD_MODULUS } from '../../../params/BLS12_377Constants';
 import { fieldEntryEvaluationString } from './evalString';
-import { CurveType } from '../../params';
+import { CurveType } from '../../curveSpecific';
 import { FIELD_SIZE } from '../../U32Sizes';
 
 describe('fieldModulusReduce', () => {

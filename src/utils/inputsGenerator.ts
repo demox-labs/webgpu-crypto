@@ -4,7 +4,8 @@ import { bigIntToU32Array, bigIntsToU16Array, bigIntsToU32Array, generateRandomF
 import { aleoMdStrings, aleoRoundConstantStrings } from "../params/AleoPoseidonParams";
 import { convertCiphertextToDataView, convertBytesToFieldElement, getPrivateOwnerBytes, getNonce } from "../parsers/aleo/RecordParser";
 import { FieldMath } from "./BLS12_377FieldMath";
-import { CurveType, getModulus } from "../gpu/params";
+import { CurveType, getModulus } from "../gpu/curveSpecific";
+import { bbPoint, bulkGenerateRandomPoints } from "../barretenberg-wasm-loader/wasm-functions";
 
 export const singleInputGenerator = (inputSize: number, curve: CurveType): bigint[][] => {
   return [generateRandomFields(inputSize, curve)];
@@ -19,19 +20,36 @@ export const squaresGenerator = (inputSize: number, curve: CurveType): bigint[][
 
 // Note: For now this will generate random scalars, but generate the same point
 // for the inputs. This point is a known point on the curve.
-export const pointScalarGenerator = (inputSize: number, curve: CurveType): bigint[][] => {
-  const groupArr = new Array(inputSize);
-  groupArr.fill(BigInt('2796670805570508460920584878396618987767121022598342527208237783066948667246'));
-  const scalarArr = generateRandomFields(inputSize, curve);
-  return [groupArr, scalarArr];
+export const pointScalarGenerator = async (inputSize: number, curve: CurveType): Promise<any[][]> => {
+  switch (curve) {
+    case CurveType.BLS12_377:
+      const groupArr = new Array(inputSize);
+      groupArr.fill(BigInt('2796670805570508460920584878396618987767121022598342527208237783066948667246'));
+      const scalarArr = generateRandomFields(inputSize, curve);
+      return [groupArr, scalarArr];
+    case CurveType.BN254:
+      return [(await singlePointGenerator(inputSize, curve))[0], generateRandomFields(inputSize, curve)];
+    default:
+      throw new Error('Invalid curve type');
+  }
 };
 
-export const doublePointGenerator = (inputSize: number): bigint[][] => {
-  const groupArr1 = new Array(inputSize);
-  groupArr1.fill(BigInt('2796670805570508460920584878396618987767121022598342527208237783066948667246'));
-  const groupArr2 = new Array(inputSize);
-  groupArr2.fill(BigInt('2796670805570508460920584878396618987767121022598342527208237783066948667246'));
-  return [groupArr1, groupArr2];
+export const doublePointGenerator = async (inputSize: number, curve: CurveType): Promise<any[][]> => {
+  return [(await singlePointGenerator(inputSize, curve))[0], (await singlePointGenerator(inputSize, curve))[0]];
+};
+
+export const singlePointGenerator = async (inputSize: number, curve: CurveType): Promise<any[][]> => {
+  switch (curve) {
+    case CurveType.BLS12_377:
+      const groupArr1 = new Array(inputSize);
+      groupArr1.fill(BigInt('2796670805570508460920584878396618987767121022598342527208237783066948667246'));
+      return [groupArr1];
+    case CurveType.BN254:
+      return [await bulkGenerateRandomPoints(inputSize)];
+    default:
+      throw new Error('Invalid curve type');
+      break;
+  }
 };
 
 export const ownerViewKey = "AViewKey1dS9uE4XrARX3m5QUDWSrqmUwxY3PFKVdMvPwzbtbYrUh";
@@ -104,22 +122,43 @@ export const gpuFieldInputConverter = (inputs: bigint[][]): gpuU32Inputs[] => {
   return inputs.map(input => { return { u32Inputs: bigIntsToU32Array(input), individualInputSize: FIELD_SIZE } });
 };
 
-export const gpuPointScalarInputConverter = (inputs: bigint[][]): gpuU32Inputs[] => {
-  const x_coords = inputs[0];
-  const fieldMath = new FieldMath();
-  const y_coords_map = new Map<bigint, bigint>();
-  const y_coords = x_coords.map((x) => {
-    const known_y = y_coords_map.get(x);
-    const y = known_y ?? fieldMath.getPointFromX(x).y;
-    y_coords_map.set(x, y);
-    return y;
-  });
-  const point_inputs = x_coords.map((x, i) => [x, y_coords[i]]).flat();
+export const gpuPointScalarInputConverter = (inputs: any[][], curve: CurveType): gpuU32Inputs[] => {
+  switch (curve) {
+    case CurveType.BLS12_377:
+      const x_coords = inputs[0];
+      const fieldMath = new FieldMath();
+      const y_coords_map = new Map<bigint, bigint>();
+      const y_coords = x_coords.map((x) => {
+        const known_y = y_coords_map.get(x);
+        const y = known_y ?? fieldMath.getPointFromX(x).y;
+        y_coords_map.set(x, y);
+        return y;
+      });
+      const point_inputs = x_coords.map((x, i) => [x, y_coords[i]]).flat();
 
-  return [
-    { u32Inputs: bigIntsToU32Array(point_inputs), individualInputSize: AFFINE_POINT_SIZE },
-    { u32Inputs: bigIntsToU32Array(inputs[1]), individualInputSize: FIELD_SIZE }
-  ];
+      return [
+        { u32Inputs: bigIntsToU32Array(point_inputs), individualInputSize: AFFINE_POINT_SIZE },
+        { u32Inputs: bigIntsToU32Array(inputs[1]), individualInputSize: FIELD_SIZE }
+      ];
+    case CurveType.BN254:
+      return [
+        bn254PointsGPUInputConverter([inputs[0] as bbPoint[]])[0],
+        { u32Inputs: bigIntsToU32Array(inputs[1]), individualInputSize: FIELD_SIZE }
+      ];
+    default:
+      throw new Error('Invalid curve type');
+    }
+};
+
+export const bn254PointsGPUInputConverter = (inputs: bbPoint[][]): gpuU32Inputs[] => {
+  const gpuInputs: gpuU32Inputs[] = [];
+  for (let i = 0; i < inputs.length; i++) {
+    const pointsArray = inputs[i];
+    const flatBigInts = pointsArray.map((point) => [BigInt(point.x), BigInt(point.y)]).flat();
+    gpuInputs.push({ u32Inputs: bigIntsToU32Array(flatBigInts), individualInputSize: AFFINE_POINT_SIZE });
+  }
+
+  return gpuInputs;
 };
 
 export const gpuPointsInputConverter = (inputs: bigint[][]): gpuU32Inputs[] => {
@@ -173,3 +212,4 @@ export const wasmPointMulConverter = (inputs: bigint[][]): string[][] => {
 export const wasmPointConverter = (inputs: bigint[][]): string[][] => {
   return inputs.map((input) => input.map((group) => `${group}group`));
 };
+

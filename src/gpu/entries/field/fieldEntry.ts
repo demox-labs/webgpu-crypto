@@ -1,5 +1,5 @@
 import { FIELD_SIZE } from "../../U32Sizes";
-import { CurveType, getCurveParamsWGSL } from "../../params";
+import { CurveType, getCurveParamsWGSL } from "../../curveSpecific";
 import { gpuU32Inputs } from "../../utils";
 import { FieldModulusWGSL } from "../../wgsl/FieldModulus";
 import { U256WGSL } from "../../wgsl/U256";

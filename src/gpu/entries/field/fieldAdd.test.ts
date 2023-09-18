@@ -1,7 +1,7 @@
 import puppeteer from 'puppeteer';
 import { Browser } from 'puppeteer';
 import { bigIntToU32Array, gpuU32Inputs, u32ArrayToBigInts } from '../../utils';
-import { CurveType } from '../../params';
+import { CurveType } from '../../curveSpecific';
 import { fieldEntryEvaluationString } from './evalString';
 import { FIELD_SIZE } from '../../U32Sizes';
 

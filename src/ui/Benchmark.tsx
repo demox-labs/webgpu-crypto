@@ -6,12 +6,12 @@ import CSVExportButton from './CSVExportButton';
 
 interface BenchmarkProps {
   name: string;
-  inputsGenerator: (inputSize: number) => any[][];
+  inputsGenerator: (inputSize: number) => any[][] | Promise<any[][]>;
   gpuFunc: (inputs: any[], batchSize?: any) => Promise<Uint32Array>;
   gpuInputConverter: (inputs: any[][]) => gpuU32Inputs[] | bigint[][];
   gpuResultConverter?: (results: bigint[]) => string[];
   wasmFunc: (inputs: any[][]) => Promise<string[]>;
-  wasmInputConverter: (inputs: any[][]) => string[][];
+  wasmInputConverter: (inputs: any[][]) => any[][];
   wasmResultConverter: (results: string[]) => string[];
   batchable: boolean;
 }
@@ -35,13 +35,19 @@ export const Benchmark: React.FC<BenchmarkProps> = (
   const [benchmarkResults, setBenchmarkResults] = useState<any[][]>([["InputSize", "GPUorWASM", "Time"]]);
 
   useEffect(() => {
-    const generatedInputs = inputsGenerator(inputSize);
-    setInputs(generatedInputs);
+    const fetchInputs = async () => {
+      const generatedInputs = await inputsGenerator(inputSize);
+      setInputs(generatedInputs);
+    };
+    fetchInputs();
   }, []);
 
   useEffect(() => {
-    const newInputs = inputsGenerator(inputSize);
-    setInputs(newInputs);
+    const setNewInputs = async () => {
+      const newInputs = await inputsGenerator(inputSize);
+      setInputs(newInputs);
+    };
+    setNewInputs();
   }, [inputSize]);
 
   useEffect(() => {
