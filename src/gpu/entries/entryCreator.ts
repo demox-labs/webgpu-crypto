@@ -7,7 +7,7 @@ export interface entryOptions {
 
 export const batchedEntry = async(
   inputData: gpuU32Inputs[],
-  shaderModules: string[],
+  shaderCode: string,
   u32SizePerOutput: number,
   batchSize?: number
   ) => {
@@ -21,7 +21,7 @@ export const batchedEntry = async(
   }
   const outputResult: Uint32Array = new Uint32Array(totalExpectedOutputs * u32SizePerOutput);
   for (let i = 0; i < chunkedInputs.length; i++) {
-    const batchResult = await entry(chunkedInputs[i], shaderModules, u32SizePerOutput);
+    const batchResult = await entry(chunkedInputs[i], shaderCode, u32SizePerOutput);
     outputResult.set(batchResult, i * batchSize * u32SizePerOutput);
   }
 
@@ -30,7 +30,7 @@ export const batchedEntry = async(
 
 export const entry = async(
   inputData: gpuU32Inputs[],
-  shaderModules: string[],
+  shaderCode: string,
   u32SizePerOutput: number
   ) => {
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -38,11 +38,6 @@ export const entry = async(
   const allBuffers: GPUBuffer[] = [];
   
   const numInputs = inputData[0].u32Inputs.length / inputData[0].individualInputSize;
-
-  let shaderCode = '';
-  for (const shaderModule of shaderModules) {
-    shaderCode += shaderModule;
-  }
   
   const module = device.createShaderModule({
     code: shaderCode

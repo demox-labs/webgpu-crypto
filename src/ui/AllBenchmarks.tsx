@@ -396,7 +396,7 @@ export const AllBenchmarks: React.FC = () => {
           batchable={false}
         />
         <PippingerBenchmark
-          name={'Pippinger MSM V1'}
+          name={'Pippinger MSM'}
           inputsGenerator={(inputSize: number) => pointScalarGenerator(inputSize, CurveType.BLS12_377)}
           gpuFunc={(points: ExtPointType[], scalars: number[], fieldMath: FieldMath) => pippinger_msm(CurveType.BLS12_377, points, scalars, fieldMath)}
           gpuInputConverter={pippingerGpuInputConverter}

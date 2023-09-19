@@ -14,15 +14,12 @@ export const bigIntToU16Array = (beBigInt: bigint): Uint16Array => {
   const bitsPerElement = 16;
   const numElements = numBits / bitsPerElement;
   const u16Array = new Uint16Array(numElements);
-  const nonZeroBitString = beBigInt.toString(2);
-  const paddedZeros = '0'.repeat(numBits - nonZeroBitString.length);
-  const bitString = paddedZeros + nonZeroBitString;
-  for (let i = 0; i < numElements; i++) {
-    const startIndex = i * bitsPerElement;
-    const endIndex = startIndex + bitsPerElement;
-    const bitStringSlice = bitString.slice(startIndex, endIndex);
-    const u16 = parseInt(bitStringSlice, 2);
-    u16Array[i] = u16;
+  const mask = (BigInt(1) << BigInt(bitsPerElement)) - BigInt(1); // Create a mask for the lower 32 bits
+
+  let tempBigInt = beBigInt;
+  for (let i = numElements - 1; i >= 0; i--) {
+    u16Array[i] = Number(tempBigInt & mask); // Extract the lower 32 bits
+    tempBigInt >>= BigInt(bitsPerElement); // Right-shift the remaining bits
   }
 
   return u16Array;
@@ -41,15 +38,12 @@ export const bigIntToU32Array = (beBigInt: bigint): Uint32Array => {
   const bitsPerElement = 32;
   const numElements = numBits / bitsPerElement;
   const u32Array = new Uint32Array(numElements);
-  const nonZeroBitString = beBigInt.toString(2);
-  const paddedZeros = '0'.repeat(numBits - nonZeroBitString.length);
-  const bitString = paddedZeros + nonZeroBitString;
-  for (let i = 0; i < numElements; i++) {
-    const startIndex = i * bitsPerElement;
-    const endIndex = startIndex + bitsPerElement;
-    const bitStringSlice = bitString.slice(startIndex, endIndex);
-    const u32 = parseInt(bitStringSlice, 2);
-    u32Array[i] = u32;
+  const mask = (BigInt(1) << BigInt(bitsPerElement)) - BigInt(1); // Create a mask for the lower 32 bits
+
+  let tempBigInt = beBigInt;
+  for (let i = numElements - 1; i >= 0; i--) {
+    u32Array[i] = Number(tempBigInt & mask); // Extract the lower 32 bits
+    tempBigInt >>= BigInt(bitsPerElement); // Right-shift the remaining bits
   }
 
   return u32Array;

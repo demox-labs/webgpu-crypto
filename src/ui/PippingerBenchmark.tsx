@@ -5,6 +5,7 @@ import { u32ArrayToBigInts } from '../gpu/utils';
 import CSVExportButton from './CSVExportButton';
 import { ExtPointType } from '@noble/curves/abstract/edwards';
 import { FieldMath } from '../utils/BLS12_377FieldMath';
+import { CurveType } from '../gpu/curveSpecific';
 
 interface PippingerBenchmarkProps {
   name: string;

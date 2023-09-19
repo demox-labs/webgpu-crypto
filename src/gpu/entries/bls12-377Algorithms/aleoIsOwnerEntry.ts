@@ -7,6 +7,7 @@ import { batchedEntry } from "../entryCreator"
 import { FIELD_SIZE } from "../../U32Sizes";
 import { gpuU32Inputs } from "../../utils";
 import { CurveType, getCurveBaseFunctionsWGSL, getCurveParamsWGSL } from "../../curveSpecific";
+import { prune } from "../../prune";
 
 export const is_owner = async (
   cipherTextAffineCoords: gpuU32Inputs,
@@ -71,8 +72,12 @@ export const is_owner = async (
     CurveWGSL,
     shaderEntry
   ];
+  const shaderCode = prune(
+    shaderModules.join(''),
+    ['field_multiply', 'mul_point_windowed', 'field_inverse', 'aleo_poseidon', 'field_sub']
+  ) + shaderEntry;
 
-  return await batchedEntry([cipherTextAffineCoords, encryptedOwnerXs, aleoMds, aleoRoundConstants], shaderModules, FIELD_SIZE, batchSize);
+  return await batchedEntry([cipherTextAffineCoords, encryptedOwnerXs, aleoMds, aleoRoundConstants], shaderCode, FIELD_SIZE, batchSize);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
