@@ -127,7 +127,6 @@ const createRandomField = (curve: CurveType) => {
 
   const modResult = BigInt(bigIntString) % fieldModulus;
   if (modResult > fieldModulus) {
-    console.log('fucked up');
     console.log(bigIntString);
     console.log(modResult);
   }

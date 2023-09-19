@@ -34,7 +34,7 @@ export const aleo_poseidon = async (
 
   const shaderModules = [AleoPoseidonConstantsWGSL, U256WGSL, BLS12_377ParamsWGSL, FieldModulusWGSL, AleoPoseidonWGSL, shaderEntry];
 
-  return await batchedEntry([fields, aleoMds, roundConstants], shaderModules, FIELD_SIZE, batchSize);
+  return await batchedEntry([fields, aleoMds, roundConstants], shaderModules.join(''), FIELD_SIZE, batchSize);
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

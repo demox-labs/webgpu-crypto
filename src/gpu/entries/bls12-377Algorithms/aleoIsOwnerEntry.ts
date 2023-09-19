@@ -72,10 +72,11 @@ export const is_owner = async (
     CurveWGSL,
     shaderEntry
   ];
-  const shaderCode = prune(
-    shaderModules.join(''),
-    ['field_multiply', 'mul_point_windowed', 'field_inverse', 'aleo_poseidon', 'field_sub']
-  ) + shaderEntry;
+  // const shaderCode = prune(
+  //   shaderModules.join(''),
+  //   ['field_multiply', 'mul_point_windowed', 'field_inverse', 'aleo_poseidon', 'field_sub']
+  // ) + shaderEntry;
+  const shaderCode = shaderModules.join('');
 
   return await batchedEntry([cipherTextAffineCoords, encryptedOwnerXs, aleoMds, aleoRoundConstants], shaderCode, FIELD_SIZE, batchSize);
 }

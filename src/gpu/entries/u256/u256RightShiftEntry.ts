@@ -26,7 +26,7 @@ export const u256_right_shift = async (
 
   const shaderModules = [U256WGSL, shaderEntry];
 
-  return await batchedEntry([input1], shaderModules, U256_SIZE, batchSize);
+  return await batchedEntry([input1], shaderModules.join(''), U256_SIZE, batchSize);
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

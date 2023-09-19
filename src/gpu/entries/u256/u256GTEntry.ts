@@ -32,7 +32,7 @@ export const u256_gt = async (
 
   const shaderModules = [U256WGSL, shaderEntry];
 
-  return await batchedEntry([input1, input2], shaderModules, U256_SIZE, batchSize);
+  return await batchedEntry([input1, input2], shaderModules.join(''), U256_SIZE, batchSize);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

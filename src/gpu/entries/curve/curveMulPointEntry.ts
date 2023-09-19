@@ -49,7 +49,7 @@ export const point_mul = async (
     shaderEntry
   ];
 
-  return await batchedEntry([points, scalars], shaderModules, FIELD_SIZE, batchSize);
+  return await batchedEntry([points, scalars], shaderModules.join(''), FIELD_SIZE, batchSize);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

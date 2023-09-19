@@ -49,7 +49,7 @@ export const point_mul_windowed = async (
     shaderEntry
   ];
 
-  return await batchedEntry([input1, input2], shaderModules, FIELD_SIZE, batchSize);
+  return await batchedEntry([input1, input2], shaderModules.join(''), FIELD_SIZE, batchSize);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

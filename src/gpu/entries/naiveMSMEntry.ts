@@ -20,7 +20,6 @@ export const naive_msm = async (
 
   const fieldMath = new FieldMath();
   const pointArray: ExtPointType[] = [];
-  console.log('point x: ' + bigIntResult[0].toString());
 
   // convert big int result to extended points
   for (let i = 0; i < bigIntResult.length; i += 4) {

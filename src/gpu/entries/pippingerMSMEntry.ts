@@ -1,5 +1,7 @@
 import { CurveWGSL } from "../wgsl/Curve";
 import { FieldModulusWGSL } from "../wgsl/FieldModulus";
+import { BLS12_377CurveBaseWGSL } from "../wgsl/BLS12-377CurveBaseWGSL";
+import { BLS12_377ParamsWGSL } from "../wgsl/BLS12-377Params";
 import { entry } from "./entryCreator"
 import { ExtPointType } from "@noble/curves/abstract/edwards";
 import { CurveType } from '../curveSpecific';
@@ -200,7 +202,7 @@ const point_mul = async (
       `;
   
     const shaderCode = prune(
-      [U256WGSL, FieldModulusWGSL, CurveWGSL].join(''),
+      [U256WGSL, FieldModulusWGSL, CurveWGSL, BLS12_377CurveBaseWGSL, BLS12_377ParamsWGSL].join(''),
       ['mul_point_32_bit_scalar']
     );
   
