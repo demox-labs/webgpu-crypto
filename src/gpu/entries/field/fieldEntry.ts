@@ -41,7 +41,7 @@ export const field_entry = async (
 
   const shaderModules = [U256WGSL, curveParamsWGSL, FieldModulusWGSL, shaderEntry];
 
-  return await batchedEntry(inputs, shaderModules, FIELD_SIZE, batchSize);
+  return await batchedEntry(inputs, shaderModules.join(''), FIELD_SIZE, batchSize);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

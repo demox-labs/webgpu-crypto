@@ -43,7 +43,7 @@ export const point_double = async (
     shaderEntry
   ];
 
-  return await batchedEntry([points], shaderModules, FIELD_SIZE, batchSize);
+  return await batchedEntry([points], shaderModules.join(''), FIELD_SIZE, batchSize);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

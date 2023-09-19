@@ -53,11 +53,11 @@ export const PippingerBenchmark: React.FC<PippingerBenchmarkProps> = (
     if (gpuResults.length === 0 && wasmResults.length === 0) {
       setComparison('Run benchmarks to compare results.')
     } else if (gpuResults.length === 0) {
-      setComparison('Run GPU benchmark to compare results.')
+      setComparison('🎮 Run GPU')
     } else if (wasmResults.length === 0) {
-      setComparison('Run WASM benchmark to compare results.')
+      setComparison('👾 Run WASM')
     } else if (gpuResults.length !== wasmResults.length) {
-      setComparison('GPU and WASM results are different lengths');
+      setComparison('⛔️ Different length results');
     } else {
       let gpuResultsDiffIndex = -1;
       for (let i = 0; i < gpuResults.length; i++) {
@@ -67,9 +67,9 @@ export const PippingerBenchmark: React.FC<PippingerBenchmarkProps> = (
         }
       }
       if (gpuResultsDiffIndex !== -1) {
-        setComparison(`GPU and WASM results differ at index ${gpuResultsDiffIndex}`);
+        setComparison(`❌ different at index ${gpuResultsDiffIndex}`);
       } else {
-        setComparison('GPU and WASM results are the same');
+        setComparison('✅');
       }
     }
   }, [gpuResults, wasmResults]);
@@ -119,6 +119,13 @@ export const PippingerBenchmark: React.FC<PippingerBenchmarkProps> = (
         value={inputSize}
         onChange={(e) => setInputSize(parseInt(e.target.value))}
       />
+      <div>Batch Size:</div>
+      <input
+        type="text"
+        className="w-24 border border-gray-300 rounded-md px-2 py-1"
+        value={'N/A'}
+        disabled={true} />
+
       <button className="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded-md"  onClick={async () => { await runGpu()}}>
         {gpuRunning ? spin() : 'GPU'}
       </button>

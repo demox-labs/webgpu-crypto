@@ -45,7 +45,7 @@ export const point_add = async (
 
   const shaderModules = [U256WGSL, curveParams, FieldModulusWGSL, curveBaseFunctions, CurveWGSL, shaderEntry];
 
-  return await batchedEntry([points_a, points_b], shaderModules, FIELD_SIZE, batchSize);
+  return await batchedEntry([points_a, points_b], shaderModules.join(''), FIELD_SIZE, batchSize);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
