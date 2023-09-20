@@ -38,6 +38,7 @@ export const multipassEntryCreator = async (passes: IGPUExecution[], entryInfo: 
         inputBuffer.unmap();
         inputBuffers.push(inputBuffer);
       } else {
+        console.log('input data: ', execution,  inputData);
         const inputBuffer = gpu.createBuffer({
           size: inputData.inputBufferSizes[i],
           usage: inputData.inputBufferUsages[i]

@@ -2,6 +2,7 @@ import { CurveWGSL } from "../../wgsl/Curve";
 import { FieldModulusWGSL } from "../../wgsl/FieldModulus";
 import { AleoPoseidonConstantsWGSL } from "../../wgsl/AleoPoseidonConstants";
 import { poseidon_multipass_info } from "./aleoPoseidonMultiPass";
+import { BLS12_377CurveBaseWGSL } from "../../wgsl/BLS12-377CurveBaseWGSL";
 import { CurveType, getCurveBaseFunctionsWGSL, getCurveParamsWGSL, workgroupSize } from "../../curveSpecific";
 import { GPUExecution, IShaderCode, IGPUInput, IGPUResult, IEntryInfo, multipassEntryCreator } from "../multipassEntryCreator";
 import { U256WGSL } from "../../wgsl/U256";
@@ -64,7 +65,7 @@ export const is_owner_multi = async (
   `;
 
   let executionSteps: GPUExecution[] = [];
-  const pointScalarPasses = point_mul_multipass(numInputs, cipherTextAffineCoords, [embededConstantsWGSL]);
+  const pointScalarPasses = point_mul_multipass(numInputs, cipherTextAffineCoords, [embededConstantsWGSL], curve);
   executionSteps = executionSteps.concat(pointScalarPasses[0]);
 
   // Add poseidon rounds
@@ -103,9 +104,10 @@ export const is_owner_multi = async (
 const point_mul_multipass = (
   numInputs: number,
   affinePoints: gpuU32Inputs,
-  extraBaseShaders: string[]
+  extraBaseShaders: string[],
+  curve: CurveType
 ): [GPUExecution[], IEntryInfo] => {
-  let baseModules = [U256WGSL, BLS12_377ParamsWGSL, FieldModulusWGSL, CurveWGSL];
+  let baseModules = [U256WGSL, FieldModulusWGSL, CurveWGSL, getCurveParamsWGSL(curve), getCurveBaseFunctionsWGSL(curve)];
   baseModules = baseModules.concat(extraBaseShaders);
   const affinePointsBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * AFFINE_POINT_SIZE; // 2 fields per affine point
   const scalarsBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * FIELD_SIZE;
