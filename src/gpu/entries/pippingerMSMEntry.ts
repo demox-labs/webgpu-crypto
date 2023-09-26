@@ -229,7 +229,6 @@ export const pippinger_msm = async (
         }
         break;
     }
-    
 
     ///
     /// CONVERT TO AFFINE POINT FOR FINAL RESULT

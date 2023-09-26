@@ -9,6 +9,7 @@ import { FieldMath } from "../utils/BLS12_377FieldMath";
 import { bigIntToU32Array } from "./utils";
 import { bn254 } from '@noble/curves/bn';
 import { ProjPointType } from "@noble/curves/abstract/weierstrass";
+import { bbPoint } from "../barretenberg-wasm-loader/wasm-functions";
 
 export const workgroupSize = 64;
 
@@ -100,6 +101,18 @@ const sumExtPointsBN254 = (flattenedPoints: bigint[]) => {
   return u32XCoord;
 };
 
+export const bn254BulkTSMulPoints = (points1: bbPoint[], scalars: string[]) => {
+  const results: string[] = [];
+  for (let i = 0; i < points1.length; i++) {
+    const point = new bn254.ProjectivePoint(BigInt(points1[i].x), BigInt(points1[i].y), BigInt(1));
+    const scalar = BigInt(scalars[i]);
+    const result = bn254PointScalar(point, scalar);
+    const affineX = bn254NormalizePointX(result);
+    results.push(affineX.toString());
+  }
+  return results;
+};
+
 export const bn254AddPoints = (p1: ProjPointType<bigint>, p2: ProjPointType<bigint>) => {
   const fp = bn254.CURVE.Fp;
   if (p1.px === BigInt(0) && p1.py === BigInt(1) && p1.pz === BigInt(0)) {
@@ -154,6 +167,15 @@ export const bn254PointScalar = (p: ProjPointType<bigint>, scalar: bigint) => {
     temp = bn254DoublePoint(temp);
     scalar_iter = scalar_iter >> 1n;
   }
+
+  return result;
+};
+
+export const bn254NormalizePointX = (p: ProjPointType<bigint>) => {
+  const z = p.pz;
+  const iz = bn254.CURVE.Fp.inv(z);
+  const iz2 = bn254.CURVE.Fp.sqr(iz);
+  return bn254.CURVE.Fp.mul(p.px, iz2);
 };
 
 const bn254DoublePoint = (p: ProjPointType<bigint>) => {

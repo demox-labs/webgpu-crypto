@@ -31,7 +31,7 @@ import { point_mul_multi_reuse } from '../gpu/entries/pointScalarMultipassReuseB
 import { pippinger_msm } from '../gpu/entries/pippingerMSMEntry';
 import { ExtPointType } from '@noble/curves/abstract/edwards';
 import { field_entry } from '../gpu/entries/field/fieldEntry';
-import { CurveType } from '../gpu/curveSpecific';
+import { CurveType, bn254BulkTSMulPoints } from '../gpu/curveSpecific';
 import { PippingerBenchmark } from './PippingerBenchmark';
 import { bulkAddFields as bn254BulkAddFields,
   bulkSubFields as bn254BulkSubFields,
@@ -318,6 +318,15 @@ export const AllBenchmarks: React.FC = () => {
           gpuFunc={(inputs: gpuU32Inputs[], batchSize: number) => point_mul(CurveType.BN254, inputs[0], inputs[1], batchSize)}
           gpuInputConverter={(inputs: any[][]) => gpuPointScalarInputConverter(inputs, CurveType.BN254)}
           wasmFunc={(inputs: any[][]) => bn254BulkMulPoints(inputs[0], inputs[1])}
+          wasmInputConverter={(inputs: any[][]) => inputs}
+          batchable={true}
+        />
+        <Benchmark
+          name={'BN-254 Point Scalar Test'}
+          inputsGenerator={(inputSize: number) => pointScalarGenerator(inputSize, CurveType.BN254)}
+          gpuFunc={(inputs: gpuU32Inputs[], batchSize: number) => point_mul(CurveType.BN254, inputs[0], inputs[1], batchSize)}
+          gpuInputConverter={(inputs: any[][]) => gpuPointScalarInputConverter(inputs, CurveType.BN254)}
+          wasmFunc={async (inputs: any[][]) => bn254BulkTSMulPoints(inputs[0], inputs[1])}
           wasmInputConverter={(inputs: any[][]) => inputs}
           batchable={true}
         />
