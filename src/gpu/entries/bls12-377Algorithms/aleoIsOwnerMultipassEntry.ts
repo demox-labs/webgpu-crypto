@@ -2,11 +2,9 @@ import { CurveWGSL } from "../../wgsl/Curve";
 import { FieldModulusWGSL } from "../../wgsl/FieldModulus";
 import { AleoPoseidonConstantsWGSL } from "../../wgsl/AleoPoseidonConstants";
 import { poseidon_multipass_info } from "./aleoPoseidonMultiPass";
-import { BLS12_377CurveBaseWGSL } from "../../wgsl/BLS12-377CurveBaseWGSL";
 import { CurveType, getCurveBaseFunctionsWGSL, getCurveParamsWGSL, workgroupSize } from "../../curveSpecific";
 import { GPUExecution, IShaderCode, IGPUInput, IGPUResult, IEntryInfo, multipassEntryCreator } from "../multipassEntryCreator";
 import { U256WGSL } from "../../wgsl/U256";
-import { BLS12_377ParamsWGSL } from "../../wgsl/BLS12-377Params";
 import { AFFINE_POINT_SIZE, EXT_POINT_SIZE, FIELD_SIZE } from "../../U32Sizes";
 import { gpuU32Inputs } from "../../utils";
 
@@ -69,7 +67,7 @@ export const is_owner_multi = async (
   executionSteps = executionSteps.concat(pointScalarPasses[0]);
 
   // Add poseidon rounds
-  const poseidonRounds = poseidon_multipass_info({ u32Inputs: new Uint32Array(), individualInputSize: 0}, aleoMds, aleoRoundConstants, false);
+  const poseidonRounds = poseidon_multipass_info({ u32Inputs: new Uint32Array(), individualInputSize: 0}, aleoMds, aleoRoundConstants, false, numInputs);
   executionSteps = executionSteps.concat(poseidonRounds[0])
 
   // Add post hash entry
@@ -95,8 +93,6 @@ export const is_owner_multi = async (
     numInputs: numInputs,
     outputSize: fieldArraySize
   };
-
-  console.log("Execution steps: ", executionSteps);
 
   return await multipassEntryCreator(executionSteps, entryInfo);
 }

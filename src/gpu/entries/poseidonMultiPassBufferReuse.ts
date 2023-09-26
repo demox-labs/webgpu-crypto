@@ -8,7 +8,7 @@ import { workgroupSize } from "../curveSpecific";
 
 export const field_poseidon_reuse = async (input1: Array<number>, input2: Array<number>, input3: Array<number>) => {
   const gpu = (await getDevice())!;
-  const [executionSteps, entryInfo] = poseidon_multipass_info_buffers(gpu, input1.length / 8, input1, input2, input3, new Map<number, GPUBuffer[]>());
+  const [executionSteps, entryInfo] = poseidon_multipass_info_buffers(gpu, input1.length / 8, new Uint32Array(input1), new Uint32Array(input2), new Uint32Array(input3), new Map<number, GPUBuffer[]>());
 
   return await multipassEntryCreatorReuseBuffers(gpu, executionSteps, entryInfo);
 };
@@ -16,9 +16,9 @@ export const field_poseidon_reuse = async (input1: Array<number>, input2: Array<
 export const poseidon_multipass_info_buffers = (
   gpu: GPUDevice,
   numInputs: number,
-  input1: Array<number>,
-  aleoMds: Array<number>,
-  aleoRoundConstants: Array<number>,
+  input1: Uint32Array,
+  aleoMds: Uint32Array,
+  aleoRoundConstants: Uint32Array,
   buffersToReuse: Map<number, GPUBuffer[]>,
   useInputs = true
   ): [GPUExecution[], IEntryInfo] => {
@@ -35,7 +35,7 @@ export const poseidon_multipass_info_buffers = (
 
   const firstHashEntry = `
     @group(0) @binding(0)
-    var<storage, read_write> input1: u256s;
+    var<storage, read_write> input1: array<u256>;
     @group(0) @binding(1)
     var<storage, read_write> output: array<array<Field, 9>>;
 
@@ -43,7 +43,7 @@ export const poseidon_multipass_info_buffers = (
     fn main(
       @builtin(global_invocation_id) global_id : vec3<u32>
     ) {
-      var result = poseidon_first_hash_output(input1.u256s[global_id.x]);
+      var result = poseidon_first_hash_output(input1[global_id.x]);
       output[global_id.x] = result;
     }
   `;

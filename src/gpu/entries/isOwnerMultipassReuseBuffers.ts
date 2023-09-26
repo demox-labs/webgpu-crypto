@@ -7,31 +7,32 @@ import { poseidon_multipass_info_buffers } from "./poseidonMultiPassBufferReuse"
 import { CurveType, getCurveBaseFunctionsWGSL, getCurveParamsWGSL, workgroupSize } from "../curveSpecific";
 import { GPUExecution, IShaderCode, IGPUInput, IGPUResult, IEntryInfo, multipassEntryCreatorReuseBuffers } from "./multipassEntryCreatorBufferReuse";
 import { AFFINE_POINT_SIZE, EXT_POINT_SIZE, FIELD_SIZE } from "../U32Sizes";
+import { gpuU32Inputs } from "../utils";
 
 export const is_owner_multi_reuse_buffers = async (
-  cipherTextAffineCoords: Array<number>,
-  encryptedOwnerXs: Array<number>,
-  aleoMds: Array<number>,
-  aleoRoundConstants: Array<number>,
-  scalar: Array<number>,
-  address_x: Array<number>
+  cipherTextAffineCoords: gpuU32Inputs,
+  encryptedOwnerXs: gpuU32Inputs,
+  aleoMds: gpuU32Inputs,
+  aleoRoundConstants: gpuU32Inputs,
+  scalar: gpuU32Inputs,
+  address_x: gpuU32Inputs
   ) => {
   const gpu = await getDevice();
 
   const embededConstantsWGSL = `
     const EMBEDDED_SCALAR: Field = Field(
-      array<u32, 8>(${scalar[0]}, ${scalar[1]}, ${scalar[2]}, ${scalar[3]}, ${scalar[4]}, ${scalar[5]}, ${scalar[6]}, ${scalar[7]})
+      array<u32, 8>(${scalar.u32Inputs[0]}, ${scalar.u32Inputs[1]}, ${scalar.u32Inputs[2]}, ${scalar.u32Inputs[3]}, ${scalar.u32Inputs[4]}, ${scalar.u32Inputs[5]}, ${scalar.u32Inputs[6]}, ${scalar.u32Inputs[7]})
     );
 
     const EMBEDDED_ADDRESS_X: Field = Field(
-      array<u32, 8>(${address_x[0]}, ${address_x[1]}, ${address_x[2]}, ${address_x[3]}, ${address_x[4]}, ${address_x[5]}, ${address_x[6]}, ${address_x[7]})
+      array<u32, 8>(${address_x.u32Inputs[0]}, ${address_x.u32Inputs[1]}, ${address_x.u32Inputs[2]}, ${address_x.u32Inputs[3]}, ${address_x.u32Inputs[4]}, ${address_x.u32Inputs[5]}, ${address_x.u32Inputs[6]}, ${address_x.u32Inputs[7]})
     );
   `;
 
   // Maps size to buffers of that size. Needed to reuse buffers.
   const buffersMap = new Map<number, GPUBuffer[]>();
 
-  const curve = CurveType.BLS12_377
+  const curve = CurveType.BLS12_377;
   const baseModules = [
     AleoPoseidonConstantsWGSL,
     FieldModulusWGSL,
@@ -41,7 +42,7 @@ export const is_owner_multi_reuse_buffers = async (
     CurveWGSL,
     embededConstantsWGSL
   ];
-  const numInputs = cipherTextAffineCoords.length / 16;
+  const numInputs = cipherTextAffineCoords.u32Inputs.length / cipherTextAffineCoords.individualInputSize;
   const fieldArraySize = Uint32Array.BYTES_PER_ELEMENT * numInputs * 8;
 
   const postHashEntry = `
@@ -50,7 +51,7 @@ export const is_owner_multi_reuse_buffers = async (
     @group(0) @binding(1)
     var<storage, read_write> owner_field_x: array<Field>;
     @group(0) @binding(2)
-    var<storage, read_write> output: Fields;
+    var<storage, read_write> output: array<Field>;
 
     @compute @workgroup_size(${workgroupSize})
     fn main(
@@ -61,16 +62,16 @@ export const is_owner_multi_reuse_buffers = async (
 
       var sub = field_sub(owner_to_compare, EMBEDDED_ADDRESS_X);
 
-      output.fields[global_id.x] = field_add(sub, U256_ONE);
+      output[global_id.x] = field_add(sub, U256_ONE);
     }
   `;
 
   let executionSteps: GPUExecution[] = [];
-  const pointScalarPasses = point_mul_multipass(gpu, numInputs, cipherTextAffineCoords, [embededConstantsWGSL], buffersMap);
+  const pointScalarPasses = point_mul_multipass(gpu, numInputs, cipherTextAffineCoords.u32Inputs, [embededConstantsWGSL], buffersMap, curve);
   executionSteps = executionSteps.concat(pointScalarPasses[0]);
 
   // Add poseidon rounds
-  const poseidonRounds = poseidon_multipass_info_buffers(gpu, numInputs, new Array<number>(), aleoMds, aleoRoundConstants, buffersMap, false);
+  const poseidonRounds = poseidon_multipass_info_buffers(gpu, numInputs, new Uint32Array(), aleoMds.u32Inputs, aleoRoundConstants.u32Inputs, buffersMap, false);
   executionSteps = executionSteps.concat(poseidonRounds[0])
 
   // Add post hash entry
@@ -85,7 +86,7 @@ export const is_owner_multi_reuse_buffers = async (
       buffersMap.get(fieldArraySize)![0],
       buffersMap.get(fieldArraySize)![2]
     ],
-    mappedInputs: new Map<number, Uint32Array>([[1, new Uint32Array(encryptedOwnerXs)]])
+    mappedInputs: new Map<number, Uint32Array>([[1, new Uint32Array(encryptedOwnerXs.u32Inputs)]])
   }
   const postHashResultInfo: IGPUResult = {
     resultBuffers: [buffersMap.get(fieldArraySize)![3]]
@@ -110,11 +111,12 @@ export const is_owner_multi_reuse_buffers = async (
 const point_mul_multipass = (
   gpu: GPUDevice,
   numInputs: number,
-  affinePoints: Array<number>,
+  affinePoints: Uint32Array,
   extraBaseShaders: string[],
-  buffersToReuse: Map<number, GPUBuffer[]>
+  buffersToReuse: Map<number, GPUBuffer[]>,
+  curve: CurveType
 ): [GPUExecution[], IEntryInfo] => {
-  let baseModules = [FieldModulusWGSL, U256WGSL, BLS12_377ParamsWGSL, CurveWGSL];
+  let baseModules = [U256WGSL, FieldModulusWGSL, CurveWGSL, getCurveParamsWGSL(curve), getCurveBaseFunctionsWGSL(curve)];
   baseModules = baseModules.concat(extraBaseShaders);
 
   const affinePointsBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * AFFINE_POINT_SIZE;
@@ -151,7 +153,7 @@ const point_mul_multipass = (
     @group(0) @binding(1)
     var<storage, read_write> output: array<Point>;
     @group(0) @binding(2)
-    var<storage, read_write> updatedScalars: Fields;
+    var<storage, read_write> updatedScalars: array<Field>;
     @group(0) @binding(3)
     var<storage, read_write> newTemps: array<Point>;
 
@@ -163,7 +165,7 @@ const point_mul_multipass = (
 
       var multiplied = mul_point_64_bits_start(point, EMBEDDED_SCALAR);
       output[global_id.x] = multiplied.result;
-      updatedScalars.fields[global_id.x] = multiplied.scalar;
+      updatedScalars[global_id.x] = multiplied.scalar;
       newTemps[global_id.x] = multiplied.temp;
     }
   `;
@@ -172,13 +174,13 @@ const point_mul_multipass = (
     @group(0) @binding(0)
     var<storage, read_write> points: array<Point>;
     @group(0) @binding(1)
-    var<storage, read_write> scalars: Fields;
+    var<storage, read_write> scalars: array<Field>;
     @group(0) @binding(2)
     var<storage, read_write> prevTemps: array<Point>;
     @group(0) @binding(3)
     var<storage, read_write> output: array<Point>;
     @group(0) @binding(4)
-    var<storage, read_write> updatedScalars: Fields;
+    var<storage, read_write> updatedScalars: array<Field>;
     @group(0) @binding(5)
     var<storage, read_write> newTemps: array<Point>;
 
@@ -187,11 +189,11 @@ const point_mul_multipass = (
       @builtin(global_invocation_id) global_id : vec3<u32>
     ) {
       var point = points[global_id.x];
-      var scalar = scalars.fields[global_id.x];
+      var scalar = scalars[global_id.x];
       var temp = prevTemps[global_id.x];
       var multipliedIntermediate = mul_point_64_bits(point, scalar, temp);
       output[global_id.x] = multipliedIntermediate.result;
-      updatedScalars.fields[global_id.x] = multipliedIntermediate.scalar;
+      updatedScalars[global_id.x] = multipliedIntermediate.scalar;
       newTemps[global_id.x] = multipliedIntermediate.temp;
     }
   `;
@@ -200,7 +202,7 @@ const point_mul_multipass = (
     @group(0) @binding(0)
     var<storage, read_write> points: array<Point>;
     @group(0) @binding(1)
-    var<storage, read_write> scalars: Fields;
+    var<storage, read_write> scalars: array<Field>;
     @group(0) @binding(2)
     var<storage, read_write> prevTemps: array<Point>;
     @group(0) @binding(3)
@@ -211,7 +213,7 @@ const point_mul_multipass = (
       @builtin(global_invocation_id) global_id : vec3<u32>
     ) {
       var point = points[global_id.x];
-      var scalar = scalars.fields[global_id.x];
+      var scalar = scalars[global_id.x];
       var temp = prevTemps[global_id.x];
       var multiplied = mul_point_64_bits(point, scalar, temp);
       output[global_id.x] = multiplied.result;
@@ -222,7 +224,7 @@ const point_mul_multipass = (
     @group(0) @binding(0)
     var<storage, read_write> mulPoints: array<Point>;
     @group(0) @binding(1)
-    var<storage, read_write> output: Fields;
+    var<storage, read_write> output: array<Field>;
 
     @compute @workgroup_size(${workgroupSize})
     fn main(
@@ -232,7 +234,7 @@ const point_mul_multipass = (
       var z_inverse = field_inverse(point.z);
       var result = field_multiply(point.x, z_inverse);
 
-      output.fields[global_id.x] = result;
+      output[global_id.x] = result;
     }
   `;
 

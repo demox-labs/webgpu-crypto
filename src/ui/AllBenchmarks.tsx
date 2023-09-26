@@ -106,7 +106,7 @@ export const AllBenchmarks: React.FC = () => {
         <Benchmark
           name={'Is Ownership Multi Pass Reuse Buffers'}
           inputsGenerator={cipherTextsGenerator}
-          gpuFunc={(inputs: number[][]) => is_owner_multi_reuse_buffers(inputs[0], inputs[1], inputs[2], inputs[3], inputs[4], inputs[5])}
+          gpuFunc={(inputs: gpuU32Inputs[]) => is_owner_multi_reuse_buffers(inputs[0], inputs[1], inputs[2], inputs[3], inputs[4], inputs[5])}
           gpuInputConverter={gpuCipherTextInputConverter}
           gpuResultConverter={(results: bigint[]) => { return results.map((result) => result === BigInt(1) ? 'true' : 'false')}}
           wasmFunc={(inputs: string[][]) => bulkIsOwner(inputs[0], ownerViewKey)}
