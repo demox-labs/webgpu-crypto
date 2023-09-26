@@ -3,11 +3,18 @@ import { FieldModulusWGSL } from "../wgsl/FieldModulus";
 import { U256WGSL } from "../wgsl/U256";
 import { CurveType, getCurveBaseFunctionsWGSL, getCurveParamsWGSL, workgroupSize } from "../curveSpecific";
 import { GPUExecution, IEntryInfo, IGPUInput, IGPUResult, IShaderCode, multipassEntryCreatorReuseBuffers } from "./multipassEntryCreatorBufferReuse";
+import { gpuU32Inputs } from "../utils";
 
-export const point_mul_multi_reuse = async (input1: Array<number>, input2: Array<number>) => {
+export const point_mul_multi_reuse = async (input1: gpuU32Inputs, input2: gpuU32Inputs) => {
   // eslint-disable-next-line
   const gpu = (await getDevice())!;
-  const [execution, entryInfo, buffers] = point_mul_multipass_info(gpu, input1.length / 16, input1, input2, true);
+  const [execution, entryInfo, buffers] = point_mul_multipass_info(
+    gpu, 
+    input1.u32Inputs.length / input1.individualInputSize, 
+    input1.u32Inputs, 
+    input2.u32Inputs, 
+    true
+  );
 
   const result = await multipassEntryCreatorReuseBuffers(gpu, execution, entryInfo);
 
@@ -21,8 +28,8 @@ export const point_mul_multi_reuse = async (input1: Array<number>, input2: Array
 export const point_mul_multipass_info = (
   gpu: GPUDevice,
   numInputs: number,
-  affinePoints: Array<number>,
-  scalars: Array<number>,
+  affinePoints: Uint32Array,
+  scalars: Uint32Array,
   useInputs = true,
 ): [GPUExecution[], IEntryInfo, GPUBuffer[]] => {
   // TODO: make this a parameter
