@@ -5,7 +5,7 @@ import { aleoMdStrings, aleoRoundConstantStrings } from "../params/AleoPoseidonP
 import { convertCiphertextToDataView, convertBytesToFieldElement, getPrivateOwnerBytes, getNonce } from "../parsers/aleo/RecordParser";
 import { FieldMath } from "./BLS12_377FieldMath";
 import { CurveType, getModulus } from "../gpu/curveSpecific";
-import { bbPoint, bulkGenerateRandomPoints } from "../barretenberg-wasm-loader/wasm-functions";
+import { bbPoint, bulkGenerateConstantPoint, bulkGenerateRandomPoints } from "../barretenberg-wasm-loader/wasm-functions";
 import { bn254 } from "@noble/curves/bn";
 
 export const singleInputGenerator = (inputSize: number, curve: CurveType): bigint[][] => {
@@ -46,7 +46,7 @@ export const singlePointGenerator = async (inputSize: number, curve: CurveType):
       groupArr1.fill(BigInt('2796670805570508460920584878396618987767121022598342527208237783066948667246'));
       return [groupArr1];
     case CurveType.BN254:
-      return [await bulkGenerateRandomPoints(inputSize)];
+      return [await bulkGenerateConstantPoint(inputSize)];
     default:
       throw new Error('Invalid curve type');
       break;

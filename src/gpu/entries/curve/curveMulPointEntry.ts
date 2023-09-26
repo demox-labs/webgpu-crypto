@@ -12,10 +12,6 @@ export const point_mul = async (
   scalars: gpuU32Inputs,
   batchSize?: number
   ) => {
-  // console.log('points:');
-  // console.log(u32ArrayToBigInts(points.u32Inputs).forEach((x) => console.log(x)));
-  console.log('scalars:');
-  console.log(u32ArrayToBigInts(scalars.u32Inputs).forEach((x) => console.log(x)));
   const shaderEntry = `
     @group(0) @binding(0)
     var<storage, read> input1: array<AffinePoint>;

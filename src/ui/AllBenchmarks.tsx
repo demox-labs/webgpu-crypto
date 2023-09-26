@@ -322,15 +322,6 @@ export const AllBenchmarks: React.FC = () => {
           batchable={true}
         />
         <Benchmark
-          name={'BN-254 Point Scalar Test'}
-          inputsGenerator={(inputSize: number) => pointScalarGenerator(inputSize, CurveType.BN254)}
-          gpuFunc={(inputs: gpuU32Inputs[], batchSize: number) => point_mul(CurveType.BN254, inputs[0], inputs[1], batchSize)}
-          gpuInputConverter={(inputs: any[][]) => gpuPointScalarInputConverter(inputs, CurveType.BN254)}
-          wasmFunc={async (inputs: any[][]) => bn254BulkTSMulPoints(inputs[0], inputs[1])}
-          wasmInputConverter={(inputs: any[][]) => inputs}
-          batchable={true}
-        />
-        <Benchmark
           name={'BLS12-377 Point Scalar Windowed'}
           inputsGenerator={(inputSize: number) => pointScalarGenerator(inputSize, CurveType.BLS12_377)}
           gpuFunc={(inputs: gpuU32Inputs[]) => point_mul_windowed(CurveType.BLS12_377, inputs[0], inputs[1])}
