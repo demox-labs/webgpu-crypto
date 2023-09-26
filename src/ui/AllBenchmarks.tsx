@@ -437,7 +437,7 @@ export const AllBenchmarks: React.FC = () => {
           inputsGenerator={(inputSize: number) => pointScalarGenerator(inputSize, CurveType.BN254)}
           gpuFunc={(points: ExtPointType[], scalars: number[], fieldMath: FieldMath) => pippinger_msm(CurveType.BN254, points, scalars)}
           gpuInputConverter={(inputs: any) => pippingerGpuInputConverter(CurveType.BN254, inputs)}
-          wasmFunc={(inputs: any[][]) => bn254PippengerMsm(inputs[0], inputs[1])}
+          wasmFunc={(inputs: any[][]) => bn254NaiveMsm(inputs[0], inputs[1])}
           wasmInputConverter={(inputs: any[][]) => inputs}
           wasmResultConverter={(results: string[]) => results}
         />

@@ -178,6 +178,14 @@ export const bulkDoublePoints = async (points1: bbPoint[]): Promise<string[]> =>
 export const bulkMulPoints = async (points1: bbPoint[], scalars: string[]) => {
   const api = await newBarretenbergApiSync();
   const results: string[] = [];
+  const x = new Fq(BigInt('9488384720951639809707572357479649241125593886843713801844655093259905475658'));
+  const y = new Fq(BigInt('16159185574012703085953752536106955829175932087014915348648613830635631153829'))
+  const point = new Point(x, y);
+  const scalar = new Fr(BigInt('886568852500438792437990774500261955780191638273449720129821949540731274186'));
+  const [resultX, resultY] = await api.pointScalar(point, scalar);
+  console.log(resultX.value.toString(10));
+  console.log(resultY.value.toString(10));
+  
   for (let i = 0; i < points1.length; i++) {
     const point = new Point(new Fq(BigInt(points1[i].x)), new Fq(BigInt(points1[i].y)))
     const scalar = new Fr(BigInt(scalars[i]));

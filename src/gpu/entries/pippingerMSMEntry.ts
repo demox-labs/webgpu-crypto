@@ -113,7 +113,40 @@ export const pippinger_msm = async (
         msms.push(new Map<number, any>());
     }
 
-    bucket(scalars, points, msms, curve);
+    // bucket(scalars, points, msms, curve);
+    ///
+    /// BUCKET METHOD
+    ///
+    let scalarIndex = 0;
+    let pointsIndex = 0;
+    while (pointsIndex < points.length) {
+
+        const scalar = scalars[scalarIndex];
+        const pointToAdd = points[pointsIndex];
+
+        const msmIndex = scalarIndex % msms.length;
+
+        const currentPoint = msms[msmIndex].get(scalar);
+        if (currentPoint === undefined) {
+          msms[msmIndex].set(scalar, pointToAdd);
+        } else {
+          switch (curve) {
+            case CurveType.BLS12_377:
+              msms[msmIndex].set(scalar, currentPoint.add(pointToAdd));
+              break;
+            case CurveType.BN254:
+              msms[msmIndex].set(scalar, bn254AddPoints(currentPoint, pointToAdd));
+              break;
+            default:
+              throw new Error('Invalid curve type');
+          }
+        }
+
+        scalarIndex += 1;
+        if (scalarIndex % msms.length == 0) {
+            pointsIndex += 1;
+        }
+    }
 
     ///
     /// GPU INPUT SETUP & COMPUTATION
