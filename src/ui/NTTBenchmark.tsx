@@ -79,11 +79,11 @@ export const NTTBenchmark: React.FC<NTTBenchmarkProps> = ({
     if (gpuResults.length === 0 && wasmResults.length === 0) {
       setComparison('Run benchmarks to compare results.')
     } else if (gpuResults.length === 0) {
-      setComparison('Run GPU benchmark to compare results.')
+      setComparison('🎮 Run GPU')
     } else if (wasmResults.length === 0) {
-      setComparison('Run WASM benchmark to compare results.')
+      setComparison('👾 Run WASM')
     } else if (gpuResults.length !== wasmResults.length) {
-      setComparison('GPU and WASM results are different lengths');
+      setComparison('⛔️ Different length results');
     } else {
       let gpuResultsDiffIndex = -1;
       for (let i = 0; i < gpuResults.length; i++) {
@@ -93,9 +93,9 @@ export const NTTBenchmark: React.FC<NTTBenchmarkProps> = ({
         }
       }
       if (gpuResultsDiffIndex !== -1) {
-        setComparison(`GPU and WASM results differ at index ${gpuResultsDiffIndex}`);
+        setComparison(`❌ different at index ${gpuResultsDiffIndex}`);
       } else {
-        setComparison('GPU and WASM results are the same');
+        setComparison('✅');
       }
     }
   }, [gpuResults, wasmResults]);

@@ -21,10 +21,11 @@ export const poseidon_multipass_info = (
   input1: gpuU32Inputs,
   aleoMds: gpuU32Inputs,
   aleoRoundConstants: gpuU32Inputs,
-  useInputs = true
+  useInputs = true,
+  numberInputs?: number
   ): [GPUExecution[], IEntryInfo] => {
   const baseModules = [U256WGSL, AleoPoseidonConstantsWGSL, BLS12_377ParamsWGSL, FieldModulusWGSL];
-  const numInputs = input1.u32Inputs.length / input1.individualInputSize;
+  const numInputs = numberInputs ? numberInputs : input1.u32Inputs.length / input1.individualInputSize;
   const nonArrayBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * 8;
   const arrayBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * 8 * 9; // Because 9 fields per array
   const aleoMdsBufferSize = Uint32Array.BYTES_PER_ELEMENT * 9 * 8 * 9;

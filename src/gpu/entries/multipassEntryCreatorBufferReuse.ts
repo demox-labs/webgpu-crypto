@@ -9,8 +9,6 @@ import { workgroupSize } from "../curveSpecific";
  */
 export const multipassEntryCreatorReuseBuffers = async (gpu: GPUDevice, passes: IGPUExecution[], entryInfo: IEntryInfo): Promise<Uint32Array> => {
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  console.log('The passes: ', passes);
-  
   const commandEncoder = gpu.createCommandEncoder();
 
   // Run the passes
@@ -89,7 +87,6 @@ export const multipassEntryCreatorReuseBuffers = async (gpu: GPUDevice, passes: 
   const result = new Uint32Array(arrayBuffer.slice(0));
   gpuReadBuffer.unmap();
 
-  console.log(result);
   return result;
 }
 

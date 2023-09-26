@@ -5,7 +5,6 @@ import { poseidon_multipass_info } from "./aleoPoseidonMultiPass";
 import { CurveType, getCurveBaseFunctionsWGSL, getCurveParamsWGSL, workgroupSize } from "../../curveSpecific";
 import { GPUExecution, IShaderCode, IGPUInput, IGPUResult, IEntryInfo, multipassEntryCreator } from "../multipassEntryCreator";
 import { U256WGSL } from "../../wgsl/U256";
-import { BLS12_377ParamsWGSL } from "../../wgsl/BLS12-377Params";
 import { AFFINE_POINT_SIZE, EXT_POINT_SIZE, FIELD_SIZE } from "../../U32Sizes";
 import { gpuU32Inputs } from "../../utils";
 
@@ -64,11 +63,11 @@ export const is_owner_multi = async (
   `;
 
   let executionSteps: GPUExecution[] = [];
-  const pointScalarPasses = point_mul_multipass(numInputs, cipherTextAffineCoords, [embededConstantsWGSL]);
+  const pointScalarPasses = point_mul_multipass(numInputs, cipherTextAffineCoords, [embededConstantsWGSL], curve);
   executionSteps = executionSteps.concat(pointScalarPasses[0]);
 
   // Add poseidon rounds
-  const poseidonRounds = poseidon_multipass_info({ u32Inputs: new Uint32Array(), individualInputSize: 0}, aleoMds, aleoRoundConstants, false);
+  const poseidonRounds = poseidon_multipass_info({ u32Inputs: new Uint32Array(), individualInputSize: 0}, aleoMds, aleoRoundConstants, false, numInputs);
   executionSteps = executionSteps.concat(poseidonRounds[0])
 
   // Add post hash entry
@@ -95,17 +94,16 @@ export const is_owner_multi = async (
     outputSize: fieldArraySize
   };
 
-  console.log("Execution steps: ", executionSteps);
-
   return await multipassEntryCreator(executionSteps, entryInfo);
 }
 
 const point_mul_multipass = (
   numInputs: number,
   affinePoints: gpuU32Inputs,
-  extraBaseShaders: string[]
+  extraBaseShaders: string[],
+  curve: CurveType
 ): [GPUExecution[], IEntryInfo] => {
-  let baseModules = [U256WGSL, BLS12_377ParamsWGSL, FieldModulusWGSL, CurveWGSL];
+  let baseModules = [U256WGSL, FieldModulusWGSL, CurveWGSL, getCurveParamsWGSL(curve), getCurveBaseFunctionsWGSL(curve)];
   baseModules = baseModules.concat(extraBaseShaders);
   const affinePointsBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * AFFINE_POINT_SIZE; // 2 fields per affine point
   const scalarsBufferSize = Uint32Array.BYTES_PER_ELEMENT * numInputs * FIELD_SIZE;

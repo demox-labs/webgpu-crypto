@@ -106,7 +106,7 @@ export const AllBenchmarks: React.FC = () => {
         <Benchmark
           name={'Is Ownership Multi Pass Reuse Buffers'}
           inputsGenerator={cipherTextsGenerator}
-          gpuFunc={(inputs: number[][]) => is_owner_multi_reuse_buffers(inputs[0], inputs[1], inputs[2], inputs[3], inputs[4], inputs[5])}
+          gpuFunc={(inputs: gpuU32Inputs[]) => is_owner_multi_reuse_buffers(inputs[0], inputs[1], inputs[2], inputs[3], inputs[4], inputs[5])}
           gpuInputConverter={gpuCipherTextInputConverter}
           gpuResultConverter={(results: bigint[]) => { return results.map((result) => result === BigInt(1) ? 'true' : 'false')}}
           wasmFunc={(inputs: string[][]) => bulkIsOwner(inputs[0], ownerViewKey)}
@@ -343,7 +343,7 @@ export const AllBenchmarks: React.FC = () => {
         <Benchmark
           name={'Point Scalar Mul multi pass buffer reuse'}
           inputsGenerator={(inputSize: number) => pointScalarGenerator(inputSize, CurveType.BLS12_377)}
-          gpuFunc={(inputs: number[][]) => point_mul_multi_reuse(inputs[0], inputs[1])}
+          gpuFunc={(inputs: gpuU32Inputs[]) => point_mul_multi_reuse(inputs[0], inputs[1])}
           gpuInputConverter={(inputs: any[][]) => gpuPointScalarInputConverter(inputs, CurveType.BLS12_377)}
           wasmFunc={(inputs: string[][]) => bulkGroupScalarMul(inputs[0], inputs[1])}
           wasmInputConverter={wasmPointMulConverter}
@@ -354,7 +354,7 @@ export const AllBenchmarks: React.FC = () => {
       <Accordion title={'Poseidon Hash'}>
         <Benchmark
           name={'Aleo Poseidon Hash single pass'}
-          inputsGenerator={(inputSize: number) => pointScalarGenerator(inputSize, CurveType.BLS12_377)}
+          inputsGenerator={(inputSize: number) => poseidonGenerator(inputSize, CurveType.BLS12_377)}
           gpuFunc={(inputs: gpuU32Inputs[], batchSize: number) => aleo_poseidon(inputs[0], inputs[1], inputs[2], batchSize)}
           gpuInputConverter={gpuFieldInputConverter}
           wasmFunc={(inputs: string[][]) => bulkPoseidon(inputs[0])}

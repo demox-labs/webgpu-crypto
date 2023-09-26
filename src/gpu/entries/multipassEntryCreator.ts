@@ -25,13 +25,13 @@ export const multipassEntryCreator = async (passes: IGPUExecution[], entryInfo: 
 
     // Create input buffers
     const inputBuffers: GPUBuffer[] = [];
-    for (let i = 0; i < inputData.inputBufferTypes.length; i++) {
-      const mappedInput = inputData.mappedInputs?.get(i);
+    for (let j = 0; j < inputData.inputBufferTypes.length; j++) {
+      const mappedInput = inputData.mappedInputs?.get(j);
       if (mappedInput) {
         const inputBuffer = gpu.createBuffer({
           mappedAtCreation: true,
-          size: inputData.inputBufferSizes[i],
-          usage: inputData.inputBufferUsages[i]
+          size: inputData.inputBufferSizes[j],
+          usage: inputData.inputBufferUsages[j]
         });
         const arrayBufferInput = inputBuffer.getMappedRange();
         new Uint32Array(arrayBufferInput).set(mappedInput);
@@ -39,8 +39,8 @@ export const multipassEntryCreator = async (passes: IGPUExecution[], entryInfo: 
         inputBuffers.push(inputBuffer);
       } else {
         const inputBuffer = gpu.createBuffer({
-          size: inputData.inputBufferSizes[i],
-          usage: inputData.inputBufferUsages[i]
+          size: inputData.inputBufferSizes[j],
+          usage: inputData.inputBufferUsages[j]
         });
         inputBuffers.push(inputBuffer);
       }
