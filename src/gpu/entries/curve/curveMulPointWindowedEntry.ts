@@ -33,10 +33,9 @@ export const point_mul_windowed = async (
       var scalar = input2[global_id.x];
 
       var multiplied = mul_point_windowed(ext_p1, scalar);
-      var z_inverse = field_inverse(multiplied.z);
-      var result = field_multiply(multiplied.x, z_inverse);
+      var x_normalized = normalize_x(multiplied.x, multiplied.z);
 
-      output[global_id.x] = result;
+      output[global_id.x] = x_normalized;
     }
     `;
 

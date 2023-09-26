@@ -29,6 +29,12 @@ const ZERO_AFFINE = AffinePoint (U256_ZERO, U256_ONE);
 // }
 
 fn add_points(p1: Point, p2: Point) -> Point {
+  if (equal(p1.x, U256_ZERO) && equal(p1.y, U256_ONE) && equal(p1.z, U256_ONE)) {
+    return p2;
+  }
+  if (equal(p2.x, U256_ZERO) && equal(p2.y, U256_ONE) && equal(p2.z, U256_ONE)) {
+    return p1;
+  }
   var z1z1 = field_multiply(p1.z, p1.z);
   var z2z2 = field_multiply(p2.z, p2.z);
   var s2 = field_multiply(z1z1, p1.z);

@@ -1,12 +1,12 @@
 /// <reference types="node" resolution-mode="require"/>
-import { Fr } from '../index.js';
+import { Fq } from '../index.js';
 import { BufferReader } from '../../serialize/buffer_reader.js';
 export declare class Point {
-    readonly x: Fr;
-    readonly y: Fr;
+    readonly x: Fq;
+    readonly y: Fq;
     static SIZE_IN_BYTES: number;
     static EMPTY: Point;
-    constructor(x: Fr, y: Fr);
+    constructor(x: Fq, y: Fq);
     static random(): Point;
     static fromBuffer(buffer: Uint8Array | BufferReader): Point;
     static fromString(address: string): Point;

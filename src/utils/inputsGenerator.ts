@@ -1,11 +1,12 @@
 import { ExtPointType } from "@noble/curves/abstract/edwards";
 import { AFFINE_POINT_SIZE, FIELD_SIZE } from "../gpu/U32Sizes";
-import { bigIntToU32Array, bigIntsToU16Array, bigIntsToU32Array, generateRandomFields, gpuU32Inputs, stripFieldSuffix } from "../gpu/utils";
+import { bigIntToU32Array, bigIntsToU16Array, bigIntsToU32Array, generateRandomFields, generateRandomScalars, gpuU32Inputs, stripFieldSuffix } from "../gpu/utils";
 import { aleoMdStrings, aleoRoundConstantStrings } from "../params/AleoPoseidonParams";
 import { convertCiphertextToDataView, convertBytesToFieldElement, getPrivateOwnerBytes, getNonce } from "../parsers/aleo/RecordParser";
 import { FieldMath } from "./BLS12_377FieldMath";
 import { CurveType, getModulus } from "../gpu/curveSpecific";
 import { bbPoint, bulkGenerateRandomPoints } from "../barretenberg-wasm-loader/wasm-functions";
+import { bn254 } from "@noble/curves/bn";
 
 export const singleInputGenerator = (inputSize: number, curve: CurveType): bigint[][] => {
   return [generateRandomFields(inputSize, curve)];
@@ -25,10 +26,10 @@ export const pointScalarGenerator = async (inputSize: number, curve: CurveType):
     case CurveType.BLS12_377:
       const groupArr = new Array(inputSize);
       groupArr.fill(BigInt('2796670805570508460920584878396618987767121022598342527208237783066948667246'));
-      const scalarArr = generateRandomFields(inputSize, curve);
+      const scalarArr = generateRandomScalars(inputSize, curve);
       return [groupArr, scalarArr];
     case CurveType.BN254:
-      return [(await singlePointGenerator(inputSize, curve))[0], generateRandomFields(inputSize, curve)];
+      return [(await singlePointGenerator(inputSize, curve))[0], generateRandomScalars(inputSize, curve)];
     default:
       throw new Error('Invalid curve type');
   }
@@ -184,15 +185,24 @@ export const gpuPointsInputConverter = (inputs: bigint[][]): gpuU32Inputs[] => {
 // After instantiating the FieldMath object here, it needs to be passed anywhere we need to 
 // use the field math library to do operations (like add or multiply) on these points. 
 // Was seeing a "Point is not instance of Point" error otherwise.
-export const pippingerGpuInputConverter = (scalars: bigint[]): [ExtPointType[], number[], FieldMath] => {
-  const fieldMath = new FieldMath();
-  const pointsArr = new Array(scalars.length);
-  const x = BigInt('2796670805570508460920584878396618987767121022598342527208237783066948667246');
-  const y = BigInt('8134280397689638111748378379571739274369602049665521098046934931245960532166');
-  const t = BigInt('3446088593515175914550487355059397868296219355049460558182099906777968652023');
-  const z = BigInt('1');
-  const extPoint = fieldMath.createPoint(x, y , t, z);
-  return [pointsArr.fill(extPoint), Array.from(bigIntsToU16Array(scalars)), fieldMath];
+export const pippingerGpuInputConverter = (curve: CurveType, scalars: bigint[]): [ExtPointType[], number[], FieldMath] => {
+  switch (curve) {
+    case CurveType.BLS12_377:
+      const fieldMath = new FieldMath();
+      const pointsArr = new Array(scalars.length);
+      const x = BigInt('2796670805570508460920584878396618987767121022598342527208237783066948667246');
+      const y = BigInt('8134280397689638111748378379571739274369602049665521098046934931245960532166');
+      const t = BigInt('3446088593515175914550487355059397868296219355049460558182099906777968652023');
+      const z = BigInt('1');
+      const extPoint = fieldMath.createPoint(x, y , t, z);
+      return [pointsArr.fill(extPoint), Array.from(bigIntsToU16Array(scalars)), fieldMath];
+    case CurveType.BN254:
+      const point = new bn254.ProjectivePoint(BigInt("9488384720951639809707572357479649241125593886843713801844655093259905475658"), BigInt("16159185574012703085953752536106955829175932087014915348648613830635631153829"), 1n);
+      const points = new Array(scalars.length);
+      return [points.fill(point), Array.from(bigIntsToU16Array(scalars)), new FieldMath()];
+    default:
+      throw new Error('Invalid curve type');
+    }
 };
 
 export const wasmFieldResultConverter = (results: string[]): string[] => {

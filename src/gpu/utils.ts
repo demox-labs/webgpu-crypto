@@ -1,5 +1,5 @@
 import { FIELD_MODULUS as BLS12_377_MODULUS } from "../params/BLS12_377Constants";
-import { FQ_FIELD_MODULUS as BN254_MODULUS } from "../params/BN254Constants";
+import { FQ_FIELD_MODULUS as BN254_MODULUS, FR_FIELD_MODULUS } from "../params/BN254Constants";
 import { CurveType } from "./curveSpecific";
 
 export const bigIntsToU16Array = (beBigInts: bigint[]): Uint16Array => {
@@ -97,22 +97,6 @@ export const chunkArray = (inputsArray: gpuU32Inputs[], batchSize: number): gpuU
 
 export const generateRandomFields = (inputSize: number, curve: CurveType): bigint[] => {
   const randomBigInts = [];
-  for (let i = 0; i < inputSize; i++) {
-    randomBigInts.push(createRandomField(curve));
-  }
-
-  return randomBigInts;
-};
-
-export const convertBigIntsToWasmFields = (bigInts: bigint[]): string[] => {
-  return bigInts.map(bigInt => bigInt.toString() + 'field');
-};
-
-const createRandomField = (curve: CurveType) => {
-  let bigIntString = '';
-  for (let i = 0; i < 8; i++) {
-    bigIntString += Math.floor(Math.random() * (2**32 - 1));
-  }
   let fieldModulus = BigInt(0);
   switch (curve) {
     case CurveType.BN254:
@@ -124,12 +108,44 @@ const createRandomField = (curve: CurveType) => {
     default:
       throw new Error('Invalid curve type');
   }
-
-  const modResult = BigInt(bigIntString) % fieldModulus;
-  if (modResult > fieldModulus) {
-    console.log(bigIntString);
-    console.log(modResult);
+  for (let i = 0; i < inputSize; i++) {
+    randomBigInts.push(createRandomNumber(fieldModulus));
   }
+
+  return randomBigInts;
+};
+
+export const generateRandomScalars = (inputSize: number, curve: CurveType): bigint[] => {
+  const randomBigInts = [];
+  let fieldModulus = BigInt(0);
+  switch (curve) {
+    case CurveType.BN254:
+      fieldModulus = FR_FIELD_MODULUS;
+      break;
+    case CurveType.BLS12_377:
+      fieldModulus = BLS12_377_MODULUS;
+      break;
+    default:
+      throw new Error('Invalid curve type');
+  }
+  for (let i = 0; i < inputSize; i++) {
+    randomBigInts.push(createRandomNumber(fieldModulus));
+  }
+
+  return randomBigInts;
+};
+
+export const convertBigIntsToWasmFields = (bigInts: bigint[]): string[] => {
+  return bigInts.map(bigInt => bigInt.toString() + 'field');
+};
+
+const createRandomNumber = (modulus: bigint) => {
+  let bigIntString = '';
+  for (let i = 0; i < 8; i++) {
+    bigIntString += Math.floor(Math.random() * (2**32 - 1));
+  }
+  // const modResult = BigInt(2) % modulus;
+  const modResult = BigInt(bigIntString) % modulus;
   return modResult;
 }
 
