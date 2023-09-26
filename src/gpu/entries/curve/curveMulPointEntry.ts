@@ -1,6 +1,6 @@
 import { FIELD_SIZE } from "../../U32Sizes";
 import { CurveType, getCurveBaseFunctionsWGSL, getCurveParamsWGSL } from "../../curveSpecific";
-import { gpuU32Inputs } from "../../utils";
+import { gpuU32Inputs, u32ArrayToBigInts } from "../../utils";
 import { CurveWGSL } from "../../wgsl/Curve";
 import { FieldModulusWGSL } from "../../wgsl/FieldModulus";
 import { U256WGSL } from "../../wgsl/U256";
@@ -12,6 +12,10 @@ export const point_mul = async (
   scalars: gpuU32Inputs,
   batchSize?: number
   ) => {
+  // console.log('points:');
+  // console.log(u32ArrayToBigInts(points.u32Inputs).forEach((x) => console.log(x)));
+  console.log('scalars:');
+  console.log(u32ArrayToBigInts(scalars.u32Inputs).forEach((x) => console.log(x)));
   const shaderEntry = `
     @group(0) @binding(0)
     var<storage, read> input1: array<AffinePoint>;
@@ -33,10 +37,9 @@ export const point_mul = async (
       var scalar = input2[global_id.x];
 
       var multiplied = mul_point(ext_p1, scalar);
-      var z_inverse = field_inverse(multiplied.z);
-      var result = field_multiply(multiplied.x, z_inverse);
+      var x_normalized = normalize_x(multiplied.x, multiplied.z);
 
-      output[global_id.x] = result;
+      output[global_id.x] = x_normalized;
     }
     `;
 

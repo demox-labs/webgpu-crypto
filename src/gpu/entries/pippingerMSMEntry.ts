@@ -1,15 +1,13 @@
 import { CurveWGSL } from "../wgsl/Curve";
 import { FieldModulusWGSL } from "../wgsl/FieldModulus";
-import { BLS12_377CurveBaseWGSL } from "../wgsl/BLS12-377CurveBaseWGSL";
-import { BLS12_377ParamsWGSL } from "../wgsl/BLS12-377Params";
 import { entry } from "./entryCreator"
-import { ExtPointType } from "@noble/curves/abstract/edwards";
-import { CurveType } from '../curveSpecific';
+import { CurveType, bn254AddPoints, bn254PointScalar, getCurveBaseFunctionsWGSL, getCurveParamsWGSL } from '../curveSpecific';
 import { FieldMath } from "../../utils/BLS12_377FieldMath";
 import { bigIntToU32Array, bigIntsToU32Array, gpuU32Inputs, u32ArrayToBigInts } from "../utils";
 import { U256WGSL } from "../wgsl/U256";
 import { EXT_POINT_SIZE, FIELD_SIZE } from "../U32Sizes";
 import { prune } from "../prune";
+import { bn254 } from '@noble/curves/bn';
 
 /// Pippinger Algorithm Summary:
 /// 
@@ -52,13 +50,13 @@ function chunkArray<T>(inputArray: T[], chunkSize = 20000): T[][] {
     }
     
     return tempArray;
-} 
+}
 
 export const pippinger_msm = async (
   curve: CurveType,
-  points: ExtPointType[],
+  points: any[], // ExtPointType or ProjPointType or bigint{ x, y, z }
   scalars: number[], 
-  fieldMath: FieldMath
+  fieldMath?: FieldMath
   ): Promise<Uint32Array> => {
     const C = 16;
 
@@ -68,30 +66,40 @@ export const pippinger_msm = async (
     // Need to setup our 256/C MSMs (T_1, T_2, ..., T_n). We'll do this
     // by via the bucket method for each MSM
     const numMsms = 256/C;
-    const msms: Map<number, ExtPointType>[] = [];
+    const msms: Map<number, any>[] = [];
     for (let i = 0; i < numMsms; i++) {
-        msms.push(new Map<number, ExtPointType>());
+        msms.push(new Map<number, any>());
     }
 
+    // bucket(scalars, points, msms, curve);
     ///
     /// BUCKET METHOD
     ///
     let scalarIndex = 0;
     let pointsIndex = 0;
     while (pointsIndex < points.length) {
-        
+
         const scalar = scalars[scalarIndex];
         const pointToAdd = points[pointsIndex];
 
         const msmIndex = scalarIndex % msms.length;
-        
+
         const currentPoint = msms[msmIndex].get(scalar);
         if (currentPoint === undefined) {
           msms[msmIndex].set(scalar, pointToAdd);
         } else {
-          msms[msmIndex].set(scalar, currentPoint.add(pointToAdd));
+          switch (curve) {
+            case CurveType.BLS12_377:
+              msms[msmIndex].set(scalar, currentPoint.add(pointToAdd));
+              break;
+            case CurveType.BN254:
+              msms[msmIndex].set(scalar, bn254AddPoints(currentPoint, pointToAdd));
+              break;
+            default:
+              throw new Error('Invalid curve type');
+          }
         }
-        
+
         scalarIndex += 1;
         if (scalarIndex % msms.length == 0) {
             pointsIndex += 1;
@@ -104,8 +112,18 @@ export const pippinger_msm = async (
     const pointsConcatenated: bigint[] = [];
     const scalarsConcatenated: number[] = [];
     for (let i = 0; i < msms.length; i++) {
-        Array.from(msms[i].values()).map((x) => { 
-            const expandedPoint = [x.ex, x.ey, x.et, x.ez];
+        Array.from(msms[i].values()).map((x) => {
+          let expandedPoint = [];
+            switch (curve) {
+              case CurveType.BLS12_377:
+                expandedPoint = [x.ex, x.ey, x.et, x.ez];
+                break;
+              case CurveType.BN254:
+                expandedPoint = [x.px, x.py, bn254.CURVE.Fp.mul(x.px, x.py), x.pz]
+                break;
+              default:
+                throw new Error('Invalid curve type');
+            }
             pointsConcatenated.push(...expandedPoint);
         });
         scalarsConcatenated.push(...Array.from(msms[i].keys()))
@@ -121,6 +139,7 @@ export const pippinger_msm = async (
     const gpuResultsAsBigInts = [];
     for (let i = 0; i < chunkedPoints.length; i++) {
         const bufferResult = await point_mul(
+          curve,
           { u32Inputs: bigIntsToU32Array(chunkedPoints[i]), individualInputSize: EXT_POINT_SIZE }, 
           { u32Inputs: Uint32Array.from(chunkedScalars[i]), individualInputSize: FIELD_SIZE }
         );
@@ -131,13 +150,23 @@ export const pippinger_msm = async (
     ///
     /// CONVERT GPU RESULTS BACK TO EXTENDED POINTS
     ///
-    const gpuResultsAsExtendedPoints: ExtPointType[] = [];
+    const gpuResultsAsExtendedPoints: any[] = [];
     for (let i = 0; i < gpuResultsAsBigInts.length; i += 4) {
         const x = gpuResultsAsBigInts[i];
         const y = gpuResultsAsBigInts[i + 1];
         const t = gpuResultsAsBigInts[i + 2];
         const z = gpuResultsAsBigInts[i + 3];
-        const extendedPoint = fieldMath.createPoint(x, y, t, z);
+        let extendedPoint = null;
+        switch (curve) {
+          case CurveType.BLS12_377:
+            extendedPoint = fieldMath!.createPoint(x, y, t, z);
+            break;
+          case CurveType.BN254:
+            extendedPoint = new bn254.ProjectivePoint(x, y, z);
+            break;
+          default:
+            throw new Error('Invalid curve type');
+        }
         gpuResultsAsExtendedPoints.push(extendedPoint);
     }
 
@@ -147,35 +176,75 @@ export const pippinger_msm = async (
     const msmResults = [];
     const bucketing = msms.map(msm => msm.size);
     let prevBucketSum = 0;
+    
     for (const bucket of bucketing) {
-      let currentSum = fieldMath.customEdwards.ExtendedPoint.ZERO;
-      for (let i = 0; i < bucket; i++) {
-        currentSum = currentSum.add(gpuResultsAsExtendedPoints[i + prevBucketSum]);
+      let currentSum = null;
+      switch (curve) {
+        case CurveType.BLS12_377:
+          currentSum = fieldMath!.customEdwards.ExtendedPoint.ZERO;
+          for (let i = 0; i < bucket; i++) {
+            currentSum = currentSum.add(gpuResultsAsExtendedPoints[i + prevBucketSum]);
+          }
+          msmResults.push(currentSum);
+          prevBucketSum += bucket;
+          break;
+        case CurveType.BN254:
+          currentSum = bn254.ProjectivePoint.ZERO;
+          for (let i = 0; i < bucket; i++) {
+            currentSum = bn254AddPoints(currentSum, gpuResultsAsExtendedPoints[i + prevBucketSum]);
+          }
+          msmResults.push(currentSum);
+          prevBucketSum += bucket;
+          break;
+        default:
+          throw new Error('Invalid curve type');
       }
-      msmResults.push(currentSum);
-      prevBucketSum += bucket;
     }
 
     ///
     /// SOLVE FOR ORIGINAL MSM
     ///
-    let originalMsmResult = msmResults[0];
-    for (let i = 1; i < msmResults.length; i++) {
-        originalMsmResult = originalMsmResult.multiplyUnsafe(BigInt(Math.pow(2, C)));
-        originalMsmResult = originalMsmResult.add(msmResults[i]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let originalMsmResult = (msmResults as any)[0];
+    switch (curve) {
+      case CurveType.BLS12_377:
+        for (let i = 1; i < msmResults.length; i++) {
+          originalMsmResult = originalMsmResult.multiplyUnsafe(BigInt(Math.pow(2, C)));
+          originalMsmResult = originalMsmResult.add(msmResults[i]);
+        }
+        break;
+      case CurveType.BN254:
+        for (let i = 1; i < msmResults.length; i++) {
+          originalMsmResult = bn254PointScalar(originalMsmResult, BigInt(Math.pow(2, C)));
+          originalMsmResult = bn254AddPoints(originalMsmResult, (msmResults[i] as any));
+        }
+        break;
     }
 
     ///
     /// CONVERT TO AFFINE POINT FOR FINAL RESULT
     ///
-    const affineResult = originalMsmResult.toAffine();
-    const u32XCoord = bigIntToU32Array(affineResult.x);
+    let affineResultX = null;
+    switch (curve) {
+      case CurveType.BLS12_377:
+        affineResultX = originalMsmResult.toAffine().x;
+        break;
+      case CurveType.BN254:
+        const z = originalMsmResult.pz;
+        const iz = bn254.CURVE.Fp.inv(z);
+        const iz2 = bn254.CURVE.Fp.sqr(iz);
+        affineResultX = bn254.CURVE.Fp.mul(originalMsmResult.px, iz2);
+        break;
+      default:
+        throw new Error('Invalid curve type');
+    }
     
+    const u32XCoord = bigIntToU32Array(affineResultX);
     return u32XCoord;
-    // return { x: affineResult.x, y: affineResult.y };
 }
 
 const point_mul = async (
+    curve: CurveType,
     input1: gpuU32Inputs,
     input2: gpuU32Inputs
     ) => {
@@ -202,7 +271,7 @@ const point_mul = async (
       `;
   
     const shaderCode = prune(
-      [U256WGSL, FieldModulusWGSL, CurveWGSL, BLS12_377CurveBaseWGSL, BLS12_377ParamsWGSL].join(''),
+      [U256WGSL, getCurveParamsWGSL(curve), FieldModulusWGSL, CurveWGSL, getCurveBaseFunctionsWGSL(curve)].join(''),
       ['mul_point_32_bit_scalar']
     );
   

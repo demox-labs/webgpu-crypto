@@ -18,7 +18,7 @@ struct MulPointIntermediate {
 }
 
 fn mul_point_32_bit_scalar(p: Point, scalar: u32) -> Point {
-  var result: Point = Point (U256_ZERO, U256_ONE, U256_ZERO, U256_ONE);
+  var result: Point = ZERO_POINT;
   var temp = p;
   var scalar_iter = scalar;
   while (!(scalar_iter == 0u)) {
@@ -35,7 +35,7 @@ fn mul_point_32_bit_scalar(p: Point, scalar: u32) -> Point {
 }
 
 fn mul_point(p: Point, scalar: Field) -> Point {
-  var result: Point = Point (U256_ZERO, U256_ONE, U256_ZERO, U256_ONE);
+  var result: Point = ZERO_POINT;
   var temp = p;
   var scalar_iter = scalar;
   while (!equal(scalar_iter, U256_ZERO)) {
@@ -52,7 +52,7 @@ fn mul_point(p: Point, scalar: Field) -> Point {
 }
 
 fn mul_point_64_bits_start(p: Point, scalar: Field) -> MulPointIntermediate { 
-  var result: Point = Point (U256_ZERO, U256_ONE, U256_ZERO, U256_ONE);
+  var result: Point = ZERO_POINT;
   var temp = p;
   var scalar_iter = scalar;
   for (var i = 0u; i < 64u; i = i + 1u) {
@@ -98,7 +98,7 @@ fn mul_point_64_bits(p: Point, scalar: Field, t: Point) -> MulPointIntermediate 
 }
 
 fn mul_point_test(p: Point, scalar: Field) -> Point {
-  var result: Point = Point (U256_ZERO, U256_ONE, U256_ONE, U256_ZERO);
+  var result: Point = ZERO_POINT;
   var temp = p;
   var scalar_iter = scalar;
   while (!equal(scalar_iter, U256_ZERO)) {
@@ -130,13 +130,13 @@ fn get_bits(x: Field, start: u32, length: u32) -> u32 {
 fn mul_point_windowed(p: Point, scalar: Field) -> Point {
   // Pre-computation
   var precomputed: array<Point, 16> = array<Point, 16>();
-  precomputed[0] = Point(U256_ZERO, U256_ONE, U256_ZERO, U256_ONE);  // Neutral element
+  precomputed[0] = ZERO_POINT;  // Neutral element
   precomputed[1] = p;
   for (var i: u32 = 2; i < 16; i = i + 1) {
     precomputed[i] = add_points(precomputed[i - 1], p);
   }
   // Initialize result
-  var result: Point = Point(U256_ZERO, U256_ONE, U256_ZERO, U256_ONE); // Neutral element
+  var result: Point = ZERO_POINT; // Neutral element
   // Calculate the number of windows
   let num_windows: u32 = (256 + 3) / 4;  // number of bits divided by the window size, rounded up
   // Multiply

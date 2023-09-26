@@ -13,7 +13,7 @@ interface PippingerBenchmarkProps {
   gpuInputConverter: (scalars: bigint[]) => [ExtPointType[], number[], FieldMath];
   gpuResultConverter?: (results: bigint[]) => string[];
   wasmFunc: (inputs: any[][]) => Promise<string[]>;
-  wasmInputConverter: (inputs: any[][]) => string[][];
+  wasmInputConverter: (inputs: any[][]) => any[][];
   wasmResultConverter: (results: string[]) => string[];
 }
 

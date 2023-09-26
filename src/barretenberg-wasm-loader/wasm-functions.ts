@@ -1,5 +1,5 @@
 import { newBarretenbergApiSync } from "./dest/browser";
-import { Fq, Fr } from "./dest/browser/types";
+import { Fq, Fr, Point } from "./dest/browser/types";
 
 export const addFields = async (f1: string, f2: string) => {
   const api = await newBarretenbergApiSync();
@@ -129,14 +129,17 @@ export interface bbPoint {
 }
 
 export const bulkGenerateRandomPoints = async (numPoints: number) => {
-  const api = await newBarretenbergApiSync();
-  const points: bbPoint[] = [];
-  for (let i = 0; i < numPoints; i++) {
-    const point = await api.randomPoint();
-    points.push({ x: point.x.value.toString(10), y: point.y.value.toString(10) });
-  }
+  // const api = await newBarretenbergApiSync();
+  // const points: bbPoint[] = [];
+  // for (let i = 0; i < numPoints; i++) {
+  //   const point = await api.randomPoint();
+  //   points.push({ x: point.x.value.toString(10), y: point.y.value.toString(10) });
+  // }
 
-  return points;
+  // return points;
+  const points = new Array(numPoints);
+  const constPoint = { x: "9488384720951639809707572357479649241125593886843713801844655093259905475658", y: "16159185574012703085953752536106955829175932087014915348648613830635631153829" };
+  return points.fill(constPoint);
 };
 
 export const bulkAddPoints = async (points1: bbPoint[], points2: bbPoint[]) => {
@@ -170,4 +173,43 @@ export const bulkDoublePoints = async (points1: bbPoint[]): Promise<string[]> =>
   await api.destroy();
 
   return results;
+};
+
+export const bulkMulPoints = async (points1: bbPoint[], scalars: string[]) => {
+  const api = await newBarretenbergApiSync();
+  const results: string[] = [];
+  const x = new Fq(BigInt('9488384720951639809707572357479649241125593886843713801844655093259905475658'));
+  const y = new Fq(BigInt('16159185574012703085953752536106955829175932087014915348648613830635631153829'))
+  const point = new Point(x, y);
+  const scalar = new Fr(BigInt('886568852500438792437990774500261955780191638273449720129821949540731274186'));
+  const [resultX, resultY] = await api.pointScalar(point, scalar);
+  console.log(resultX.value.toString(10));
+  console.log(resultY.value.toString(10));
+  
+  for (let i = 0; i < points1.length; i++) {
+    const point = new Point(new Fq(BigInt(points1[i].x)), new Fq(BigInt(points1[i].y)))
+    const scalar = new Fr(BigInt(scalars[i]));
+    const [resultX, resultY] = await api.pointScalar(point, scalar);
+    results.push(resultX.value.toString(10));
+  }
+
+  await api.destroy();
+
+  return results;
+}
+
+export const naive_msm = async (points: bbPoint[], scalars: string[]): Promise<string[]> => {
+  const api = await newBarretenbergApiSync();
+  const apiPoints = points.map((p) => { return new Point(new Fq(BigInt(p.x)), new Fq(BigInt(p.y))) });
+  const apiScalars = scalars.map((s) => { return new Fr(BigInt(s)) });
+  const [resultX, resultY] = await api.naiveMsm(apiPoints, apiScalars);
+  return [resultX.value.toString(10)];
+};
+
+export const pippenger_msm = async (points: bbPoint[], scalars: string[]): Promise<string[]> => {
+  const api = await newBarretenbergApiSync();
+  const apiPoints = points.map((p) => { return new Point(new Fq(BigInt(p.x)), new Fq(BigInt(p.y))) });
+  const apiScalars = scalars.map((s) => { return new Fr(BigInt(s)) });
+  const [resultX, resultY] = await api.pippengerMsm(apiPoints, apiScalars);
+  return [resultX.value.toString(10)];
 };

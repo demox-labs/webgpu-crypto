@@ -1,9 +1,7 @@
-import { ExtPointType } from "@noble/curves/abstract/edwards";
-import { FieldMath } from "../../utils/BLS12_377FieldMath";
 import { CurveWGSL } from "../wgsl/Curve";
 import { FieldModulusWGSL } from "../wgsl/FieldModulus";
-import { CurveType, getCurveBaseFunctionsWGSL, getCurveParamsWGSL, workgroupSize } from "../curveSpecific";
-import { bigIntToU32Array, gpuU32Inputs, u32ArrayToBigInts } from "../utils";
+import { CurveType, getCurveBaseFunctionsWGSL, getCurveParamsWGSL, sumExtPoints, workgroupSize } from "../curveSpecific";
+import { gpuU32Inputs, u32ArrayToBigInts } from "../utils";
 import { IEntryInfo, IGPUInput, IGPUResult, IShaderCode, multipassEntryCreator } from "./multipassEntryCreator";
 import { GPUExecution } from "./multipassEntryCreator";
 import { U256WGSL } from "../wgsl/U256";
@@ -11,38 +9,23 @@ import { AFFINE_POINT_SIZE, EXT_POINT_SIZE, FIELD_SIZE } from "../U32Sizes";
 
 export const naive_msm = async (
   input1: gpuU32Inputs,
-  input2: gpuU32Inputs
+  input2: gpuU32Inputs,
+  curve: CurveType
   ) => {
-  const [execution, entryInfo] = point_mul_multipass_info(input1.u32Inputs.length / input1.individualInputSize, input1, input2, true);
+  const [execution, entryInfo] = point_mul_multipass_info(input1, input2, curve);
 
   const bufferResult = await multipassEntryCreator(execution, entryInfo);
   const bigIntResult = u32ArrayToBigInts(bufferResult || new Uint32Array(0));
 
-  const fieldMath = new FieldMath();
-  const pointArray: ExtPointType[] = [];
-
-  // convert big int result to extended points
-  for (let i = 0; i < bigIntResult.length; i += 4) {
-    const x = bigIntResult[i];
-    const y = bigIntResult[i + 1];
-    const t = bigIntResult[i + 2];
-    const z = bigIntResult[i + 3];
-    const point = fieldMath.createPoint(x, y, t, z);
-    pointArray.push(point);
-  }
-  const affineResult = fieldMath.addPoints(pointArray);
-  const u32XCoord = bigIntToU32Array(affineResult.x);
-  return u32XCoord;
+  return sumExtPoints(curve, bigIntResult);
 }
 
 export const point_mul_multipass_info = (
-  numInputs: number,
   affinePoints: gpuU32Inputs,
   scalars: gpuU32Inputs,
-  useInputs = true
+  curve: CurveType
 ): [GPUExecution[], IEntryInfo] => {
-  // TODO: make this curve paramaterizable
-  const curve = CurveType.BLS12_377;
+  const numInputs = affinePoints.u32Inputs.length / affinePoints.individualInputSize;
   const baseModules = [
     U256WGSL,
     getCurveParamsWGSL(curve),
@@ -149,22 +132,6 @@ export const point_mul_multipass_info = (
     }
   `;
 
-  const inverseStepEntry = `
-    @group(0) @binding(0)
-    var<storage, read> mulPoints: array<Point>;
-    @group(0) @binding(1)
-    var<storage, read_write> output: array<Point>;
-
-    @compute @workgroup_size(${workgroupSize})
-    fn main(
-      @builtin(global_invocation_id) global_id : vec3<u32>
-    ) {
-      var point = mulPoints[global_id.x];
-
-      output[global_id.x] = point;
-    }
-  `;
-
   const executionSteps: GPUExecution[] = [];
 
   // Step 1: Calculate extended points
@@ -176,9 +143,7 @@ export const point_mul_multipass_info = (
     inputBufferTypes: ["read-only-storage"],
     inputBufferSizes: [affinePointsBufferSize],
     inputBufferUsages: [GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST],
-    mappedInputs: useInputs
-      ? new Map<number, Uint32Array>([[0, affinePoints.u32Inputs]])
-      : undefined
+    mappedInputs: new Map<number, Uint32Array>([[0, affinePoints.u32Inputs]])
   }
   const calcExtendedPointsResult: IGPUResult = {
     resultBufferTypes: ["storage"],
@@ -240,24 +205,6 @@ export const point_mul_multipass_info = (
   }
   const finalMulPointStep = new GPUExecution(finalMultPointShader, finalMulPointInputs, finalMulPointResult);
   executionSteps.push(finalMulPointStep);
-
-  // Step 3: Inverse and multiply points
-  const inverseShader: IShaderCode = {
-    code: [...baseModules, inverseStepEntry].join("\n"),
-    entryPoint: "main"
-  }
-  const inverseInputs: IGPUInput = {
-    inputBufferTypes: ["read-only-storage"],
-    inputBufferSizes: [pointsBufferSize],
-    inputBufferUsages: [GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST]
-  }
-  const inverseResult: IGPUResult = {
-    resultBufferTypes: ["storage"],
-    resultBufferSizes: [pointsBufferSize],
-    resultBufferUsages: [GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC]
-  }
-  const inverseStep = new GPUExecution(inverseShader, inverseInputs, inverseResult);
-  executionSteps.push(inverseStep);
 
   const entryInfo: IEntryInfo = {
     numInputs: numInputs,

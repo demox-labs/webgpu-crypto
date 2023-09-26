@@ -31,7 +31,7 @@ import { point_mul_multi_reuse } from '../gpu/entries/pointScalarMultipassReuseB
 import { pippinger_msm } from '../gpu/entries/pippingerMSMEntry';
 import { ExtPointType } from '@noble/curves/abstract/edwards';
 import { field_entry } from '../gpu/entries/field/fieldEntry';
-import { CurveType } from '../gpu/curveSpecific';
+import { CurveType, bn254BulkTSMulPoints } from '../gpu/curveSpecific';
 import { PippingerBenchmark } from './PippingerBenchmark';
 import { bulkAddFields as bn254BulkAddFields,
   bulkSubFields as bn254BulkSubFields,
@@ -43,6 +43,9 @@ import { bulkAddFields as bn254BulkAddFields,
   ntt as bn254NTT,
   bulkAddPoints as bn254BulkAddPoints, 
   bulkDoublePoints as bn254BulkDoublePoints,
+  bulkMulPoints as bn254BulkMulPoints,
+  naive_msm as bn254NaiveMsm,
+  pippenger_msm as bn254PippengerMsm,
   bbPoint
 } from '../barretenberg-wasm-loader/wasm-functions';
 import {
@@ -297,7 +300,6 @@ export const AllBenchmarks: React.FC = () => {
           gpuInputConverter={bn254PointsGPUInputConverter}
           wasmFunc={(inputs: bbPoint[][]) => bn254BulkAddPoints(inputs[0], inputs[1])}
           wasmInputConverter={(inputs: bbPoint[][]) => inputs}
-          wasmResultConverter={(results: string[]) => results}
           batchable={true}
         />
         <Benchmark
@@ -315,9 +317,17 @@ export const AllBenchmarks: React.FC = () => {
           inputsGenerator={(inputSize: number) => pointScalarGenerator(inputSize, CurveType.BN254)}
           gpuFunc={(inputs: gpuU32Inputs[], batchSize: number) => point_mul(CurveType.BN254, inputs[0], inputs[1], batchSize)}
           gpuInputConverter={(inputs: any[][]) => gpuPointScalarInputConverter(inputs, CurveType.BN254)}
-          wasmFunc={(inputs: string[][]) => bulkGroupScalarMul(inputs[0], inputs[1])}
-          wasmInputConverter={wasmPointMulConverter}
-          wasmResultConverter={(results: string[]) => { return results.map((result) => stripGroupSuffix(result))}}
+          wasmFunc={(inputs: any[][]) => bn254BulkMulPoints(inputs[0], inputs[1])}
+          wasmInputConverter={(inputs: any[][]) => inputs}
+          batchable={true}
+        />
+        <Benchmark
+          name={'BN-254 Point Scalar Test'}
+          inputsGenerator={(inputSize: number) => pointScalarGenerator(inputSize, CurveType.BN254)}
+          gpuFunc={(inputs: gpuU32Inputs[], batchSize: number) => point_mul(CurveType.BN254, inputs[0], inputs[1], batchSize)}
+          gpuInputConverter={(inputs: any[][]) => gpuPointScalarInputConverter(inputs, CurveType.BN254)}
+          wasmFunc={async (inputs: any[][]) => bn254BulkTSMulPoints(inputs[0], inputs[1])}
+          wasmInputConverter={(inputs: any[][]) => inputs}
           batchable={true}
         />
         <Benchmark
@@ -385,24 +395,51 @@ export const AllBenchmarks: React.FC = () => {
       </Accordion>
       <Accordion title='MSM'>
         <Benchmark
-          name={'Naive MSM'}
+          name={'BLS12-377 Naive MSM'}
           inputsGenerator={(inputSize: number) => pointScalarGenerator(inputSize, CurveType.BLS12_377)}
           // change to custom summation function using FieldMath.addPoints
-          gpuFunc={(inputs: gpuU32Inputs[]) => naive_msm(inputs[0], inputs[1])}
+          gpuFunc={(inputs: gpuU32Inputs[]) => naive_msm(inputs[0], inputs[1], CurveType.BLS12_377)}
           gpuInputConverter={(inputs: any[][]) => gpuPointScalarInputConverter(inputs, CurveType.BLS12_377)}
           wasmFunc={(inputs: string[][]) => msm(inputs[0], inputs[1])}
           wasmInputConverter={wasmPointMulConverter}
           wasmResultConverter={(results: string[]) => { return results.map((result) => stripGroupSuffix(result))}}
           batchable={false}
         />
+        <Benchmark
+          name={'BN-254 Naive MSM'}
+          inputsGenerator={(inputSize: number) => pointScalarGenerator(inputSize, CurveType.BN254)}
+          // change to custom summation function using FieldMath.addPoints
+          gpuFunc={(inputs: gpuU32Inputs[]) => naive_msm(inputs[0], inputs[1], CurveType.BN254)}
+          gpuInputConverter={(inputs: any[][]) => gpuPointScalarInputConverter(inputs, CurveType.BN254)}
+          wasmFunc={(inputs: any[][]) => bn254NaiveMsm(inputs[0], inputs[1])}
+          batchable={true}
+        />
+        <Benchmark
+          name={'BN-254 bberg pippenger'}
+          inputsGenerator={(inputSize: number) => pointScalarGenerator(inputSize, CurveType.BN254)}
+          // change to custom summation function using FieldMath.addPoints
+          gpuFunc={(inputs: gpuU32Inputs[]) => naive_msm(inputs[0], inputs[1], CurveType.BN254)}
+          gpuInputConverter={(inputs: any[][]) => gpuPointScalarInputConverter(inputs, CurveType.BN254)}
+          wasmFunc={(inputs: any[][]) => bn254PippengerMsm(inputs[0], inputs[1])}
+          batchable={true}
+        />
         <PippingerBenchmark
-          name={'Pippinger MSM'}
+          name={'BLS12-377 Pippinger MSM'}
           inputsGenerator={(inputSize: number) => pointScalarGenerator(inputSize, CurveType.BLS12_377)}
           gpuFunc={(points: ExtPointType[], scalars: number[], fieldMath: FieldMath) => pippinger_msm(CurveType.BLS12_377, points, scalars, fieldMath)}
-          gpuInputConverter={pippingerGpuInputConverter}
+          gpuInputConverter={(inputs: any) => pippingerGpuInputConverter(CurveType.BLS12_377, inputs)}
           wasmFunc={(inputs: string[][]) => msm(inputs[0], inputs[1])}
           wasmInputConverter={wasmPointMulConverter}
           wasmResultConverter={(results: string[]) => { return results.map((result) => stripGroupSuffix(result))}}
+        />
+        <PippingerBenchmark
+          name={'BN254 Pippinger MSM'}
+          inputsGenerator={(inputSize: number) => pointScalarGenerator(inputSize, CurveType.BN254)}
+          gpuFunc={(points: ExtPointType[], scalars: number[], fieldMath: FieldMath) => pippinger_msm(CurveType.BN254, points, scalars)}
+          gpuInputConverter={(inputs: any) => pippingerGpuInputConverter(CurveType.BN254, inputs)}
+          wasmFunc={(inputs: any[][]) => bn254NaiveMsm(inputs[0], inputs[1])}
+          wasmInputConverter={(inputs: any[][]) => inputs}
+          wasmResultConverter={(results: string[]) => results}
         />
       </Accordion>
       <Accordion title='NTT'>

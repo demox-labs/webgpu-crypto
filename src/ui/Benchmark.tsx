@@ -11,8 +11,8 @@ interface BenchmarkProps {
   gpuInputConverter: (inputs: any[][]) => gpuU32Inputs[] | bigint[][];
   gpuResultConverter?: (results: bigint[]) => string[];
   wasmFunc: (inputs: any[][]) => Promise<string[]>;
-  wasmInputConverter: (inputs: any[][]) => any[][];
-  wasmResultConverter: (results: string[]) => string[];
+  wasmInputConverter?: (inputs: any[][]) => any[][];
+  wasmResultConverter?: (results: string[]) => string[];
   batchable: boolean;
 }
 
@@ -76,14 +76,14 @@ export const Benchmark: React.FC<BenchmarkProps> = (
   }, [gpuResults, wasmResults]);
 
   const runWasm = async () => {
-    const wasmInputs = wasmInputConverter(inputs);
+    const wasmInputs = wasmInputConverter ? wasmInputConverter(inputs) : inputs;
     setWasmRunning(true);
     const wasmStart = performance.now();
     const results: string[] = await wasmFunc(wasmInputs);
     const wasmEnd = performance.now();
     const wasmPerformance = wasmEnd - wasmStart;
     setWasmTime(wasmPerformance);
-    const comparableWasmResults = wasmResultConverter(results);
+    const comparableWasmResults = wasmResultConverter ? wasmResultConverter(results) : results;
     console.log(comparableWasmResults);
     setWasmResults(comparableWasmResults);
     const benchMarkResult = [inputSize, "WASM", wasmPerformance];

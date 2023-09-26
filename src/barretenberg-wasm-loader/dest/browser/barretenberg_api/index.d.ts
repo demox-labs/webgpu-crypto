@@ -57,6 +57,7 @@ export declare class BarretenbergApi {
     acirSerializeProofIntoFields(acirComposerPtr: Ptr, proofBuf: Uint8Array, numInnerPublicInputs: number): Promise<Fr[]>;
     acirSerializeVerificationKeyIntoFields(acirComposerPtr: Ptr): Promise<[Fr[], Fr]>;
     fft(coeff: Fr[], evaulation_domain: Ptr): Promise<Fr[]>;
+    pointScalar(p: Point, scalar: Fr): Promise<[Fq, Fq]>;
     randomPolynomial(degree: number): Promise<Fr[]>;
     newEvaluationDomain(degree: number): Promise<Ptr>;
 }
@@ -68,6 +69,9 @@ export declare class BarretenbergApiSync {
     addPoints(p1X: Fq, p1Y: Fq, p2X: Fq, p2Y: Fq): [Fq, Fq];
     doublePoint(pX: Fq, pY: Fq): [Fq, Fq];
     addFields(left: Fq, right: Fq): Fq;
+    pointScalar(p: Point, scalar: Fr): [Fq, Fq];
+    naiveMsm(points: Point[], scalars: Fr[]): [Fq, Fq];
+    pippengerMsm(points: Point[], scalars: Fr[]): [Fq, Fq];
     subFields(left: Fq, right: Fq): Fq;
     mulFields(left: Fq, right: Fq): Fq;
     invertField(input: Fq): Fq;
