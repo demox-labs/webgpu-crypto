@@ -44,8 +44,9 @@ Note -- running webgpu functions will only work on [browsers compatible](https:/
 
 ## Preview of Benchmarks
 
-<img width="1102" alt="Screenshot 2023-09-27 at 4 16 14 PM" src="https://github.com/demox-labs/webgpu-crypto/assets/1102811/e6c4f31b-ed8d-46c8-a09c-5861da03ebed">
-<img width="1153" alt="Screenshot 2023-09-27 at 4 16 25 PM" src="https://github.com/demox-labs/webgpu-crypto/assets/1102811/9be1241a-c956-4281-94d5-807d7e98ec6b">
+<img width="1102" alt="benchmarks-preview-1" src="https://github.com/demox-labs/webgpu-crypto/assets/1102811/a1f91dca-371f-4202-b35b-fb2fe75263e7">
+<img width="1153" alt="benchmarks-preview-2" src="https://github.com/demox-labs/webgpu-crypto/assets/1102811/ec95b3a9-9315-462a-b593-ac7e0e334c47">
+
 
 ## Trouble Shooting
 
