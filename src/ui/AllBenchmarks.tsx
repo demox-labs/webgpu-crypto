@@ -79,6 +79,7 @@ import { BN254ParamsWGSL } from '../gpu/wgsl/BN254Params';
 import { ROOTS_OF_UNITY as BLS12_377_ROOTS, FIELD_MODULUS as BLS12_377_MODULUS } from '../params/BLS12_377Constants';
 import { FR_FIELD_MODULUS as BN254_FR, FQ_FIELD_MODULUS as BN254_FQ, ROOTS_OF_UNITY as BN254_ROOTS } from '../params/BN254Constants';
 import { point_double } from '../gpu/entries/curve/curveDoublePointEntry';
+import { aleo_poseidon_reuse } from '../gpu/entries/poseidonMultiPassBufferReuse';
 
 export const AllBenchmarks: React.FC = () => {
   return (
@@ -376,7 +377,7 @@ export const AllBenchmarks: React.FC = () => {
         <Benchmark
           name={'Aleo Poseidon Hash multi pass reuse'}
           inputsGenerator={(inputSize: number) => poseidonGenerator(inputSize, CurveType.BLS12_377)}
-          gpuFunc={(inputs: gpuU32Inputs[]) => aleo_poseidon_multi(inputs[0], inputs[1], inputs[2])}
+          gpuFunc={(inputs: gpuU32Inputs[]) => aleo_poseidon_reuse(inputs[0], inputs[1], inputs[2])}
           gpuInputConverter={gpuFieldInputConverter}
           wasmFunc={(inputs: string[][]) => bulkPoseidon(inputs[0])}
           wasmInputConverter={wasmBigIntToFieldConverter}
