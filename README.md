@@ -42,6 +42,11 @@ yarn start
 ```
 Note -- running webgpu functions will only work on [browsers compatible](https://caniuse.com/webgpu) with webgpu.
 
+## Preview of Benchmarks
+
+<img width="1102" alt="Screenshot 2023-09-27 at 4 16 14 PM" src="https://github.com/demox-labs/webgpu-crypto/assets/1102811/e6c4f31b-ed8d-46c8-a09c-5861da03ebed">
+<img width="1153" alt="Screenshot 2023-09-27 at 4 16 25 PM" src="https://github.com/demox-labs/webgpu-crypto/assets/1102811/9be1241a-c956-4281-94d5-807d7e98ec6b">
+
 ## Trouble Shooting
 
 Common issues:
