@@ -357,7 +357,7 @@ export const AllBenchmarks: React.FC = () => {
         <Benchmark
           name={'Aleo Poseidon Hash single pass'}
           inputsGenerator={(inputSize: number) => poseidonGenerator(inputSize, CurveType.BLS12_377)}
-          gpuFunc={(inputs: gpuU32Inputs[], batchSize: number) => aleo_poseidon(inputs[0], inputs[1], inputs[2], batchSize)}
+          gpuFunc={(inputs: gpuU32Inputs[], batchSize: number) => aleo_poseidon(inputs[0], batchSize)}
           gpuInputConverter={gpuFieldInputConverter}
           wasmFunc={(inputs: string[][]) => bulkPoseidon(inputs[0])}
           wasmInputConverter={wasmBigIntToFieldConverter}

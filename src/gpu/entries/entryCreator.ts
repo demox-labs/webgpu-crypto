@@ -1,4 +1,4 @@
-import { chunkArray, gpuU32Inputs } from "../utils";
+import { chunkArray, chunkGPUInputs, gpuU32Inputs } from "../utils";
 
 export interface entryOptions {
   u32SizePerOutput: number,
@@ -9,16 +9,20 @@ export const batchedEntry = async(
   inputData: gpuU32Inputs[],
   shaderCode: string,
   u32SizePerOutput: number,
-  batchSize?: number
+  batchSize?: number,
+  inputsToBatch?: number[]
   ) => {
   const u32SizePerFirstInput = inputData[0].individualInputSize;
   const totalInputs = inputData[0].u32Inputs.length/ u32SizePerFirstInput;
   const totalExpectedOutputs = totalInputs;
   batchSize = batchSize ?? totalInputs;
+  inputsToBatch = inputsToBatch ?? []; // default to batching all inputs
   let chunkedInputs = [ inputData ];
+  console.log('chunkedInputs ', chunkedInputs.slice());
   if (batchSize < totalInputs) {
-    chunkedInputs = chunkArray(inputData, batchSize);
+    chunkedInputs = chunkGPUInputs(inputData, batchSize, inputsToBatch);
   }
+  console.log('chunkedInputs after ', chunkedInputs.slice());
   const outputResult: Uint32Array = new Uint32Array(totalExpectedOutputs * u32SizePerOutput);
   for (let i = 0; i < chunkedInputs.length; i++) {
     const batchResult = await entry(chunkedInputs[i], shaderCode, u32SizePerOutput);

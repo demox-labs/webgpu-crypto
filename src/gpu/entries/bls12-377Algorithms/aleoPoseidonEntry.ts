@@ -4,15 +4,23 @@ import { AleoPoseidonWGSL } from "../../wgsl/AleoPoseidon";
 import { AleoPoseidonConstantsWGSL } from "../../wgsl/AleoPoseidonConstants";
 import { U256WGSL } from "../../wgsl/U256";
 import { batchedEntry } from "../entryCreator";
-import { gpuU32Inputs } from "../../utils";
+import { bigIntsToU32Array, gpuU32Inputs } from "../../utils";
 import { FIELD_SIZE } from "../../U32Sizes";
+import { prune } from "../../prune";
+import { aleoMdStrings, aleoRoundConstantStrings } from "../../../params/AleoPoseidonParams";
 
 export const aleo_poseidon = async (
   fields: gpuU32Inputs,
-  aleoMds: gpuU32Inputs,
-  roundConstants: gpuU32Inputs,
   batchSize?: number
   ) => {
+  const aleoMds = { 
+    u32Inputs: bigIntsToU32Array(aleoMdStrings.map((arr) => arr.map((str) => BigInt(str))).flat()),
+    individualInputSize: FIELD_SIZE
+  }
+  const roundConstants = {
+    u32Inputs: bigIntsToU32Array(aleoRoundConstantStrings.map((arr) => arr.map((str) => BigInt(str))).flat()),
+    individualInputSize: FIELD_SIZE
+  }
   const shaderEntry = `
     @group(0) @binding(0)
     var<storage, read> input1: array<Field>;
@@ -32,9 +40,13 @@ export const aleo_poseidon = async (
     }
   `;
 
-  const shaderModules = [AleoPoseidonConstantsWGSL, U256WGSL, BLS12_377ParamsWGSL, FieldModulusWGSL, AleoPoseidonWGSL, shaderEntry];
+  const shaderModules = [AleoPoseidonConstantsWGSL, U256WGSL, BLS12_377ParamsWGSL, FieldModulusWGSL, AleoPoseidonWGSL];
+  const shaderCode = prune(
+    shaderModules.join('\n'),
+    ['aleo_poseidon']
+  ) + shaderEntry;
 
-  return await batchedEntry([fields, aleoMds, roundConstants], shaderModules.join(''), FIELD_SIZE, batchSize);
+  return await batchedEntry([fields, aleoMds, roundConstants], shaderCode, FIELD_SIZE, batchSize, [0]);
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
