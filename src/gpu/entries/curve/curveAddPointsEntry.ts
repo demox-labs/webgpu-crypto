@@ -1,5 +1,6 @@
 import { FIELD_SIZE } from "../../U32Sizes";
 import { CurveType, getCurveBaseFunctionsWGSL, getCurveParamsWGSL } from "../../curveSpecific";
+import { prune } from "../../prune";
 import { gpuU32Inputs } from "../../utils";
 import { CurveWGSL } from "../../wgsl/Curve";
 import { FieldModulusWGSL } from "../../wgsl/FieldModulus";
@@ -43,9 +44,13 @@ export const point_add = async (
   const curveParams = getCurveParamsWGSL(curve);
   const curveBaseFunctions = getCurveBaseFunctionsWGSL(curve);
 
-  const shaderModules = [U256WGSL, curveParams, FieldModulusWGSL, curveBaseFunctions, CurveWGSL, shaderEntry];
+  const shaderModules = [U256WGSL, curveParams, FieldModulusWGSL, curveBaseFunctions, CurveWGSL];
+  const shaderCode = prune(
+    shaderModules.join('\n'),
+    ['field_multiply', 'add_points', 'normalize_x']
+  ) + shaderEntry;
 
-  return await batchedEntry([points_a, points_b], shaderModules.join(''), FIELD_SIZE, batchSize);
+  return await batchedEntry([points_a, points_b], shaderCode, FIELD_SIZE, batchSize);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
