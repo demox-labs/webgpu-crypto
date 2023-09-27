@@ -6,6 +6,7 @@ import { workgroupSize } from "../../curveSpecific";
 import { U256WGSL } from "../../wgsl/U256";
 import { BLS12_377ParamsWGSL } from "../../wgsl/BLS12-377Params";
 import { gpuU32Inputs } from "../../utils";
+import { prune } from "../../prune";
 
 export const aleo_poseidon_multi = async (
   input1: gpuU32Inputs,
@@ -102,8 +103,12 @@ export const poseidon_multipass_info = (
   const executionSteps: GPUExecution[] = [];
 
   // Add first hash step
+  const firstHashEntryShaderCode = prune(
+    [...baseModules, PoseidonFirstHashOutputWGSL].join('\n'),
+    ['poseidon_first_hash_output']
+  ) + firstHashEntry;
   const firstHashShader: IShaderCode = {
-    code: [...baseModules, PoseidonFirstHashOutputWGSL, firstHashEntry].join('\n'),
+    code: firstHashEntryShaderCode,
     entryPoint: "main"
   };
   const firstHashInputs: IGPUInput = {
@@ -121,9 +126,13 @@ export const poseidon_multipass_info = (
   executionSteps.push(firstHashExecution);
 
   // Add first 4 full round executions
-  for (let i = 0; i < 4; i++) { 
+  for (let i = 0; i < 4; i++) {
+    const fullRoundShaderCode = prune(
+      [...baseModules, PoseidonRoundFullWGSL].join('\n'),
+      ['poseidon_round_full']
+    ) + fullRoundEntry(i);
     const fullRoundShader: IShaderCode = {
-      code: [...baseModules, PoseidonRoundFullWGSL, fullRoundEntry(i)].join('\n'),
+      code: fullRoundShaderCode,
       entryPoint: "main"
     };
     const fullRoundInputs: IGPUInput = {
@@ -146,9 +155,13 @@ export const poseidon_multipass_info = (
   }
 
   // Add the 31 partial round executions
-  for (let i = 0; i < 31; i++) { 
+  for (let i = 0; i < 31; i++) {
+    const partialRoundShaderCode = prune(
+      [...baseModules, PoseidonRoundPartialWGSL].join('\n'),
+      ['poseidon_round_partial']
+    ) + partialRoundEntry(i + 4);
     const partialRoundShader: IShaderCode = {
-      code: [...baseModules, PoseidonRoundPartialWGSL, partialRoundEntry(i + 4)].join('\n'),
+      code: partialRoundShaderCode,
       entryPoint: "main"
     };
     const partialRoundInputs: IGPUInput = {
@@ -171,9 +184,13 @@ export const poseidon_multipass_info = (
   }
 
   // Add final 4 full round executions
-  for (let i = 0; i < 4; i++) { 
+  for (let i = 0; i < 4; i++) {
+    const fullRoundShaderCode = prune(
+      [...baseModules, PoseidonRoundFullWGSL].join('\n'),
+      ['poseidon_round_full']
+    ) + fullRoundEntry(i + 35);
     const fullRoundShader: IShaderCode = {
-      code: [...baseModules, PoseidonRoundFullWGSL, fullRoundEntry(i + 35)].join('\n'),
+      code: fullRoundShaderCode,
       entryPoint: "main"
     };
     const fullRoundInputs: IGPUInput = {
@@ -196,8 +213,12 @@ export const poseidon_multipass_info = (
   }
 
   // Add final step
+  const finalStepShaderCode = prune(
+    [U256WGSL, BLS12_377ParamsWGSL, FieldModulusWGSL].join('\n'),
+    []
+  ) + finalEntry;
   const finalShader: IShaderCode = {
-    code: [U256WGSL, BLS12_377ParamsWGSL, FieldModulusWGSL, finalEntry].join('\n'),
+    code: finalStepShaderCode,
     entryPoint: "main"
   };
   const finalInputs: IGPUInput = {
