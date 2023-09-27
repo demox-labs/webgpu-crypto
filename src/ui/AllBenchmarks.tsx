@@ -79,6 +79,7 @@ import { BN254ParamsWGSL } from '../gpu/wgsl/BN254Params';
 import { ROOTS_OF_UNITY as BLS12_377_ROOTS, FIELD_MODULUS as BLS12_377_MODULUS } from '../params/BLS12_377Constants';
 import { FR_FIELD_MODULUS as BN254_FR, FQ_FIELD_MODULUS as BN254_FQ, ROOTS_OF_UNITY as BN254_ROOTS } from '../params/BN254Constants';
 import { point_double } from '../gpu/entries/curve/curveDoublePointEntry';
+import { aleo_poseidon_reuse } from '../gpu/entries/poseidonMultiPassBufferReuse';
 
 export const AllBenchmarks: React.FC = () => {
   return (
@@ -87,7 +88,7 @@ export const AllBenchmarks: React.FC = () => {
         <Benchmark
           name={'Is Ownership Single Pass'}
           inputsGenerator={cipherTextsGenerator}
-          gpuFunc={(inputs: gpuU32Inputs[]) => is_owner(inputs[0], inputs[1], inputs[2], inputs[3], inputs[4], inputs[5])}
+          gpuFunc={(inputs: gpuU32Inputs[], batchSize: number) => is_owner(inputs[0], inputs[1], inputs[2], inputs[3], inputs[4], inputs[5], batchSize)}
           gpuInputConverter={gpuCipherTextInputConverter}
           gpuResultConverter={(results: bigint[]) => { return results.map((result) => result === BigInt(0) ? 'true' : 'false')}}
           wasmFunc={(inputs: string[][]) => bulkIsOwner(inputs[0], ownerViewKey)}
@@ -324,7 +325,7 @@ export const AllBenchmarks: React.FC = () => {
         <Benchmark
           name={'BLS12-377 Point Scalar Windowed'}
           inputsGenerator={(inputSize: number) => pointScalarGenerator(inputSize, CurveType.BLS12_377)}
-          gpuFunc={(inputs: gpuU32Inputs[]) => point_mul_windowed(CurveType.BLS12_377, inputs[0], inputs[1])}
+          gpuFunc={(inputs: gpuU32Inputs[], batchSize: number) => point_mul_windowed(CurveType.BLS12_377, inputs[0], inputs[1], batchSize)}
           gpuInputConverter={(inputs: any[][]) => gpuPointScalarInputConverter(inputs, CurveType.BLS12_377)}
           wasmFunc={(inputs: string[][]) => bulkGroupScalarMul(inputs[0], inputs[1])}
           wasmInputConverter={wasmPointMulConverter}
@@ -356,7 +357,7 @@ export const AllBenchmarks: React.FC = () => {
         <Benchmark
           name={'Aleo Poseidon Hash single pass'}
           inputsGenerator={(inputSize: number) => poseidonGenerator(inputSize, CurveType.BLS12_377)}
-          gpuFunc={(inputs: gpuU32Inputs[], batchSize: number) => aleo_poseidon(inputs[0], inputs[1], inputs[2], batchSize)}
+          gpuFunc={(inputs: gpuU32Inputs[], batchSize: number) => aleo_poseidon(inputs[0], batchSize)}
           gpuInputConverter={gpuFieldInputConverter}
           wasmFunc={(inputs: string[][]) => bulkPoseidon(inputs[0])}
           wasmInputConverter={wasmBigIntToFieldConverter}
@@ -376,7 +377,7 @@ export const AllBenchmarks: React.FC = () => {
         <Benchmark
           name={'Aleo Poseidon Hash multi pass reuse'}
           inputsGenerator={(inputSize: number) => poseidonGenerator(inputSize, CurveType.BLS12_377)}
-          gpuFunc={(inputs: gpuU32Inputs[]) => aleo_poseidon_multi(inputs[0], inputs[1], inputs[2])}
+          gpuFunc={(inputs: gpuU32Inputs[]) => aleo_poseidon_reuse(inputs[0], inputs[1], inputs[2])}
           gpuInputConverter={gpuFieldInputConverter}
           wasmFunc={(inputs: string[][]) => bulkPoseidon(inputs[0])}
           wasmInputConverter={wasmBigIntToFieldConverter}
@@ -403,7 +404,7 @@ export const AllBenchmarks: React.FC = () => {
           gpuFunc={(inputs: gpuU32Inputs[]) => naive_msm(inputs[0], inputs[1], CurveType.BN254)}
           gpuInputConverter={(inputs: any[][]) => gpuPointScalarInputConverter(inputs, CurveType.BN254)}
           wasmFunc={(inputs: any[][]) => bn254NaiveMsm(inputs[0], inputs[1])}
-          batchable={true}
+          batchable={false}
         />
         <Benchmark
           name={'BN-254 bberg pippenger'}
@@ -412,7 +413,7 @@ export const AllBenchmarks: React.FC = () => {
           gpuFunc={(inputs: gpuU32Inputs[]) => naive_msm(inputs[0], inputs[1], CurveType.BN254)}
           gpuInputConverter={(inputs: any[][]) => gpuPointScalarInputConverter(inputs, CurveType.BN254)}
           wasmFunc={(inputs: any[][]) => bn254PippengerMsm(inputs[0], inputs[1])}
-          batchable={true}
+          batchable={false}
         />
         <PippingerBenchmark
           name={'BLS12-377 Pippinger MSM'}

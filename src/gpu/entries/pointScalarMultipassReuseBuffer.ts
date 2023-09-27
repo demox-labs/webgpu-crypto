@@ -4,6 +4,7 @@ import { U256WGSL } from "../wgsl/U256";
 import { CurveType, getCurveBaseFunctionsWGSL, getCurveParamsWGSL, workgroupSize } from "../curveSpecific";
 import { GPUExecution, IEntryInfo, IGPUInput, IGPUResult, IShaderCode, multipassEntryCreatorReuseBuffers } from "./multipassEntryCreatorBufferReuse";
 import { gpuU32Inputs } from "../utils";
+import { prune } from "../prune";
 
 export const point_mul_multi_reuse = async (input1: gpuU32Inputs, input2: gpuU32Inputs) => {
   // eslint-disable-next-line
@@ -203,8 +204,12 @@ export const point_mul_multipass_info = (
   const executionSteps: GPUExecution[] = [];
 
   // Step 1: Calculate extended points
+  const calcExtendedPointsShaderCode = prune(
+    baseModules.join(''),
+    ['field_multiply']
+  ) + calcExtendedPointsEntry;
   const calcExtendedPointsShader: IShaderCode = {
-    code: [...baseModules, calcExtendedPointsEntry].join("\n"),
+    code: calcExtendedPointsShaderCode,
     entryPoint: "main"
   }
   const calcExtendedPointsInputs: IGPUInput = {
@@ -220,8 +225,12 @@ export const point_mul_multipass_info = (
   executionSteps.push(calcExtendedPointsStep);
 
   // Step 2: Multiply points by scalars
+  const mulPointFirstStepEntryShaderCode = prune(
+    baseModules.join(''),
+    ['mul_point_64_bits_start']
+  ) + mulPointFirstStepEntry;
   const firstMulPointShader: IShaderCode = {
-    code: [...baseModules, mulPointFirstStepEntry].join("\n"),
+    code: mulPointFirstStepEntryShaderCode,
     entryPoint: "main"
   }
   const firstMulPointInputs: IGPUInput = {
@@ -238,8 +247,12 @@ export const point_mul_multipass_info = (
   executionSteps.push(firstMulPointStep);
 
   // Add the intermediate steps of the execution
+  const mulPointIntermediateStepEntryShaderCode = prune(
+    baseModules.join(''),
+    ['mul_point_64_bits']
+  ) + mulPointIntermediateStepEntry;
   const multPointShader: IShaderCode = {
-    code: [...baseModules, mulPointIntermediateStepEntry].join("\n"),
+    code: mulPointIntermediateStepEntryShaderCode,
     entryPoint: "main"
   }
   // intermediate step 1
@@ -264,8 +277,12 @@ export const point_mul_multipass_info = (
   
 
   // Add the final step of the execution
+  const mulPointFinalStepShaderCode = prune(
+    baseModules.join(''),
+    ['mul_point_64_bits']
+  ) + mulPointFinalStepEntry;
   const finalMultPointShader: IShaderCode = {
-    code: [...baseModules, mulPointFinalStepEntry].join("\n"),
+    code: mulPointFinalStepShaderCode,
     entryPoint: "main"
   }
   const finalMulPointInputs: IGPUInput = {
@@ -278,8 +295,12 @@ export const point_mul_multipass_info = (
   executionSteps.push(finalMulPointStep);
 
   // Step 3: Inverse and multiply points
+  const inverseStepShaderCode = prune(
+    baseModules.join(''),
+    ['field_inverse', 'field_multiply']
+  ) + inverseStepEntry;
   const inverseShader: IShaderCode = {
-    code: [...baseModules, inverseStepEntry].join("\n"),
+    code: inverseStepShaderCode,
     entryPoint: "main"
   }
   const inverseInputs: IGPUInput = {

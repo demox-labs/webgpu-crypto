@@ -69,16 +69,14 @@ export const is_owner = async (
     FieldModulusWGSL,
     AleoPoseidonWGSL,
     getCurveBaseFunctionsWGSL(curve),
-    CurveWGSL,
-    shaderEntry
+    CurveWGSL
   ];
-  // const shaderCode = prune(
-  //   shaderModules.join(''),
-  //   ['field_multiply', 'mul_point_windowed', 'field_inverse', 'aleo_poseidon', 'field_sub']
-  // ) + shaderEntry;
-  const shaderCode = shaderModules.join('');
+  const shaderCode = prune(
+    shaderModules.join(''),
+    ['field_multiply', 'mul_point_windowed', 'field_inverse', 'aleo_poseidon', 'field_sub']
+  ) + shaderEntry;
 
-  return await batchedEntry([cipherTextAffineCoords, encryptedOwnerXs, aleoMds, aleoRoundConstants], shaderCode, FIELD_SIZE, batchSize);
+  return await batchedEntry([cipherTextAffineCoords, encryptedOwnerXs, aleoMds, aleoRoundConstants], shaderCode, FIELD_SIZE, batchSize, [0, 1]);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

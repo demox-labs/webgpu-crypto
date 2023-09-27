@@ -6,6 +6,7 @@ import { GPUExecution } from "../multipassEntryCreator";
 import { U256WGSL } from "../../wgsl/U256";
 import { AFFINE_POINT_SIZE, EXT_POINT_SIZE, FIELD_SIZE } from "../../U32Sizes";
 import { gpuU32Inputs } from "../../utils";
+import { prune } from "../../prune";
 
 export const point_mul_multi = async (input1: gpuU32Inputs, input2: gpuU32Inputs) => {
   const [execution, entryInfo] = point_mul_multipass_info(input1.u32Inputs.length / input1.individualInputSize, input1, input2, true);
@@ -19,7 +20,6 @@ export const point_mul_multipass_info = (
   scalars: gpuU32Inputs,
   useInputs = true,
 ): [GPUExecution[], IEntryInfo] => {
-  // TODO: make this curve paramaterizable
   const curve = CurveType.BLS12_377;
   const baseModules = [
     U256WGSL,
@@ -148,8 +148,12 @@ export const point_mul_multipass_info = (
   const executionSteps: GPUExecution[] = [];
 
   // Step 1: Calculate extended points
+  const calcExtendedPointsShaderCode = prune(
+    baseModules.join(''),
+    ['field_multiply']
+  ) + calcExtendedPointsEntry;
   const calcExtendedPointsShader: IShaderCode = {
-    code: [...baseModules, calcExtendedPointsEntry].join("\n"),
+    code: calcExtendedPointsShaderCode,
     entryPoint: "main"
   }
   const calcExtendedPointsInputs: IGPUInput = {
@@ -169,8 +173,12 @@ export const point_mul_multipass_info = (
   executionSteps.push(calcExtendedPointsStep);
 
   // Step 2: Multiply points by scalars
+  const mulPointFirstStepEntryShaderCode = prune(
+    baseModules.join(''),
+    ['mul_point_64_bits_start']
+  ) + mulPointFirstStepEntry;
   const firstMulPointShader: IShaderCode = {
-    code: [...baseModules, mulPointFirstStepEntry].join("\n"),
+    code: mulPointFirstStepEntryShaderCode,
     entryPoint: "main"
   }
   const firstMulPointInputs: IGPUInput = {
@@ -187,8 +195,12 @@ export const point_mul_multipass_info = (
   const firstMulPointStep = new GPUExecution(firstMulPointShader, firstMulPointInputs, firstMulPointOutputs);
   executionSteps.push(firstMulPointStep);
   for (let i = 0; i < 2; i++) {
+    const mulPointIntermediateStepEntryShaderCode = prune(
+      baseModules.join(''),
+      ['mul_point_64_bits']
+    ) + mulPointIntermediateStepEntry;
     const multPointShader: IShaderCode = {
-      code: [...baseModules, mulPointIntermediateStepEntry].join("\n"),
+      code: mulPointIntermediateStepEntryShaderCode,
       entryPoint: "main"
     }
     const mulPointInputs: IGPUInput = {
@@ -204,8 +216,12 @@ export const point_mul_multipass_info = (
     const mulPointStep = new GPUExecution(multPointShader, mulPointInputs, mulPointResult);
     executionSteps.push(mulPointStep);
   }
+  const mulPointFinalStepShaderCode = prune(
+    baseModules.join(''),
+    ['mul_point_64_bits']
+  ) + mulPointFinalStepEntry;
   const finalMultPointShader: IShaderCode = {
-    code: [...baseModules, mulPointFinalStepEntry].join("\n"),
+    code: mulPointFinalStepShaderCode,
     entryPoint: "main"
   }
   const finalMulPointInputs: IGPUInput = {
@@ -222,8 +238,12 @@ export const point_mul_multipass_info = (
   executionSteps.push(finalMulPointStep);
 
   // Step 3: Inverse and multiply points
+  const inverseStepShaderCode = prune(
+    baseModules.join(''),
+    ['field_inverse', 'field_multiply']
+  ) + inverseStepEntry;
   const inverseShader: IShaderCode = {
-    code: [...baseModules, inverseStepEntry].join("\n"),
+    code: inverseStepShaderCode,
     entryPoint: "main"
   }
   const inverseInputs: IGPUInput = {

@@ -273,7 +273,7 @@ const point_mul = async (
     const shaderCode = prune(
       [U256WGSL, getCurveParamsWGSL(curve), FieldModulusWGSL, CurveWGSL, getCurveBaseFunctionsWGSL(curve)].join(''),
       ['mul_point_32_bit_scalar']
-    );
+    )+ shaderEntry;
   
-    return await entry([input1, input2], shaderCode + shaderEntry, EXT_POINT_SIZE);
+    return await entry([input1, input2], shaderCode, EXT_POINT_SIZE);
 }

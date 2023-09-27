@@ -5,6 +5,7 @@ import { CurveWGSL } from "../../wgsl/Curve";
 import { FieldModulusWGSL } from "../../wgsl/FieldModulus";
 import { U256WGSL } from "../../wgsl/U256";
 import { batchedEntry } from "../entryCreator"
+import { prune } from "../../prune";
 
 export const point_mul = async (
   curve: CurveType,
@@ -44,11 +45,15 @@ export const point_mul = async (
     getCurveParamsWGSL(curve),
     FieldModulusWGSL,
     getCurveBaseFunctionsWGSL(curve),
-    CurveWGSL,
-    shaderEntry
+    CurveWGSL
   ];
 
-  return await batchedEntry([points, scalars], shaderModules.join(''), FIELD_SIZE, batchSize);
+  const shaderCode = prune(
+    shaderModules.join(''),
+    ['field_multiply', 'mul_point', 'field_inverse', 'normalize_x']
+  ) + shaderEntry;
+
+  return await batchedEntry([points, scalars], shaderCode, FIELD_SIZE, batchSize);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -95,6 +95,41 @@ export const chunkArray = (inputsArray: gpuU32Inputs[], batchSize: number): gpuU
   return chunkedArray;
 };
 
+export const chunkGPUInputs = (inputsArray: gpuU32Inputs[], batchSize: number, inputsToBatch: number[]): gpuU32Inputs[][] => {
+  const chunkedArray: gpuU32Inputs[][] = [];
+  const numInputs = inputsArray[0].u32Inputs.length / inputsArray[0].individualInputSize;
+  
+  let numBatched = 0
+  while (numBatched < numInputs) {
+    const chunkedInputs: gpuU32Inputs[] = [];
+    for (let i = 0; i < inputsArray.length; i++) {
+      const bufferData = inputsArray[i];
+      const shouldBatch = inputsToBatch.length === 0 || inputsToBatch.includes(i);
+      if (shouldBatch) {
+        const chunkedGpuU32Inputs = bufferData.u32Inputs.slice(numBatched * bufferData.individualInputSize, (numBatched + batchSize) * bufferData.individualInputSize);
+        chunkedInputs.push({
+          u32Inputs: chunkedGpuU32Inputs,
+          individualInputSize: bufferData.individualInputSize
+        });
+      } else {
+        // This isn't an input that we should batch, so we assume that it should be the same every pass
+        chunkedInputs.push(bufferData);
+      }
+    }
+    numBatched += batchSize;
+    chunkedArray.push(chunkedInputs);
+  }
+
+  return chunkedArray;
+};
+
+const pushOrCreateArray = (array: any[], index: number, value: any) => {
+  if (!array[index]) {
+    array[index] = [];
+  }
+  array[index].push(value);
+}
+
 export const generateRandomFields = (inputSize: number, curve: CurveType): bigint[] => {
   const randomBigInts = [];
   let fieldModulus = BigInt(0);

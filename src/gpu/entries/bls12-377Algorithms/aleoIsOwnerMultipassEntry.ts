@@ -7,6 +7,7 @@ import { GPUExecution, IShaderCode, IGPUInput, IGPUResult, IEntryInfo, multipass
 import { U256WGSL } from "../../wgsl/U256";
 import { AFFINE_POINT_SIZE, EXT_POINT_SIZE, FIELD_SIZE } from "../../U32Sizes";
 import { gpuU32Inputs } from "../../utils";
+import { prune } from "../../prune";
 
 export const is_owner_multi = async (
   cipherTextAffineCoords: gpuU32Inputs,
@@ -61,6 +62,10 @@ export const is_owner_multi = async (
       output[global_id.x] = field_add(sub, U256_ONE);
     }
   `;
+  const postHashShaderCode = prune(
+    baseModules.join(''),
+    ['field_sub', 'field_add']
+  ) + postHashEntry;
 
   let executionSteps: GPUExecution[] = [];
   const pointScalarPasses = point_mul_multipass(numInputs, cipherTextAffineCoords, [embededConstantsWGSL], curve);
@@ -72,7 +77,7 @@ export const is_owner_multi = async (
 
   // Add post hash entry
   const postHashShader: IShaderCode = { 
-    code: [...baseModules, postHashEntry].join("\n"),
+    code: postHashShaderCode,
     entryPoint: "main"
   };
   const postHashInputs: IGPUInput = {
@@ -127,6 +132,10 @@ const point_mul_multipass = (
       output[global_id.x] = ext_p1;
     }
   `;
+  const calcExtendedPointsShaderCode = prune(
+    baseModules.join(''),
+    ['field_multiply']
+  ) + calcExtendedPointsEntry;
 
   const mulPointFirstStepEntry = `
     @group(0) @binding(0)
@@ -150,6 +159,10 @@ const point_mul_multipass = (
       newTemps[global_id.x] = multiplied.temp;
     }
   `;
+  const mulPointFirstStepEntryShaderCode = prune(
+    baseModules.join(''),
+    ['mul_point_64_bits_start']
+  ) + mulPointFirstStepEntry;
 
   const mulPointIntermediateStepEntry = `
     @group(0) @binding(0)
@@ -178,6 +191,10 @@ const point_mul_multipass = (
       newTemps[global_id.x] = multipliedIntermediate.temp;
     }
   `;
+  const mulPointIntermediateStepEntryShaderCode = prune(
+    baseModules.join(''),
+    ['mul_point_64_bits']
+  ) + mulPointIntermediateStepEntry;
 
   const mulPointFinalStepEntry = `
     @group(0) @binding(0)
@@ -200,6 +217,10 @@ const point_mul_multipass = (
       output[global_id.x] = multiplied.result;
     }
   `;
+  const mulPointFinalStepShaderCode = prune(
+    baseModules.join(''),
+    ['mul_point_64_bits']
+  ) + mulPointFinalStepEntry;
 
   const inverseStepEntry = `
     @group(0) @binding(0)
@@ -218,12 +239,16 @@ const point_mul_multipass = (
       output[global_id.x] = result;
     }
   `;
+  const inverseStepShaderCode = prune(
+    baseModules.join(''),
+    ['field_inverse', 'field_multiply']
+  ) + inverseStepEntry;
 
   const executionSteps: GPUExecution[] = [];
 
   // Step 1: Calculate extended points
   const calcExtendedPointsShader: IShaderCode = {
-    code: [...baseModules, calcExtendedPointsEntry].join("\n"),
+    code: calcExtendedPointsShaderCode,
     entryPoint: "main"
   }
   const calcExtendedPointsInputs: IGPUInput = {
@@ -242,7 +267,7 @@ const point_mul_multipass = (
 
   // Step 2: Multiply points by scalars
   const firstMulPointShader: IShaderCode = {
-    code: [...baseModules, mulPointFirstStepEntry].join("\n"),
+    code: mulPointFirstStepEntryShaderCode,
     entryPoint: "main"
   }
   const firstMulPointInputs: IGPUInput = {
@@ -259,7 +284,7 @@ const point_mul_multipass = (
   executionSteps.push(firstMulPointStep);
   for (let i = 0; i < 2; i++) {
     const multPointShader: IShaderCode = {
-      code: [...baseModules, mulPointIntermediateStepEntry].join("\n"),
+      code: mulPointIntermediateStepEntryShaderCode,
       entryPoint: "main"
     }
     const mulPointInputs: IGPUInput = {
@@ -276,7 +301,7 @@ const point_mul_multipass = (
     executionSteps.push(mulPointStep);
   }
   const finalMultPointShader: IShaderCode = {
-    code: [...baseModules, mulPointFinalStepEntry].join("\n"),
+    code: mulPointFinalStepShaderCode,
     entryPoint: "main"
   }
   const finalMulPointInputs: IGPUInput = {
@@ -294,7 +319,7 @@ const point_mul_multipass = (
 
   // Step 3: Inverse and multiply points
   const inverseShader: IShaderCode = {
-    code: [...baseModules, inverseStepEntry].join("\n"),
+    code: inverseStepShaderCode,
     entryPoint: "main"
   }
   const inverseInputs: IGPUInput = {
