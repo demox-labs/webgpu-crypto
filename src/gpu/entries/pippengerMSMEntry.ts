@@ -9,7 +9,7 @@ import { EXT_POINT_SIZE, FIELD_SIZE } from "../U32Sizes";
 import { prune } from "../prune";
 import { bn254 } from '@noble/curves/bn';
 
-/// Pippinger Algorithm Summary:
+/// pippenger Algorithm Summary:
 /// 
 /// Great explanation of algorithm can be found here:
 /// https://www.youtube.com/watch?v=Bl5mQA7UL2I
@@ -52,7 +52,7 @@ function chunkArray<T>(inputArray: T[], chunkSize = 20000): T[][] {
     return tempArray;
 }
 
-export const pippinger_msm = async (
+export const pippenger_msm = async (
   curve: CurveType,
   points: any[], // ExtPointType or ProjPointType or bigint{ x, y, z }
   scalars: number[], 

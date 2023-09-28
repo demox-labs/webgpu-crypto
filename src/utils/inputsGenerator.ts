@@ -185,7 +185,7 @@ export const gpuPointsInputConverter = (inputs: bigint[][]): gpuU32Inputs[] => {
 // After instantiating the FieldMath object here, it needs to be passed anywhere we need to 
 // use the field math library to do operations (like add or multiply) on these points. 
 // Was seeing a "Point is not instance of Point" error otherwise.
-export const pippingerGpuInputConverter = (curve: CurveType, scalars: bigint[]): [ExtPointType[], number[], FieldMath] => {
+export const pippengerGpuInputConverter = (curve: CurveType, scalars: bigint[]): [ExtPointType[], number[], FieldMath] => {
   switch (curve) {
     case CurveType.BLS12_377:
       const fieldMath = new FieldMath();

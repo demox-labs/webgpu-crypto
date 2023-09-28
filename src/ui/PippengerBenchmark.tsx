@@ -6,7 +6,7 @@ import CSVExportButton from './CSVExportButton';
 import { ExtPointType } from '@noble/curves/abstract/edwards';
 import { FieldMath } from '../utils/BLS12_377FieldMath';
 
-interface PippingerBenchmarkProps {
+interface pippengerBenchmarkProps {
   name: string;
   inputsGenerator: (inputSize: number) => Promise<any[][]>;
   gpuFunc: (points: ExtPointType[], scalars: number[], fieldMath: FieldMath) => Promise<Uint32Array>;
@@ -17,7 +17,7 @@ interface PippingerBenchmarkProps {
   wasmResultConverter: (results: string[]) => string[];
 }
 
-export const PippingerBenchmark: React.FC<PippingerBenchmarkProps> = (
+export const PippengerBenchmark: React.FC<pippengerBenchmarkProps> = (
   {name, inputsGenerator, gpuFunc, gpuInputConverter, gpuResultConverter, wasmFunc, wasmInputConverter, wasmResultConverter}
   ) => {
   const initialDefaultInputSize = 1_000;

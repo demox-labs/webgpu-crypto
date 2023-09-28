@@ -28,11 +28,11 @@ import { naive_msm } from '../gpu/entries/naiveMSMEntry';
 import { point_add } from '../gpu/entries/curve/curveAddPointsEntry';
 import { point_mul_windowed } from '../gpu/entries/curve/curveMulPointWindowedEntry';
 import { point_mul_multi_reuse } from '../gpu/entries/pointScalarMultipassReuseBuffer';
-import { pippinger_msm } from '../gpu/entries/pippingerMSMEntry';
+import { pippenger_msm } from '../gpu/entries/pippengerMSMEntry';
 import { ExtPointType } from '@noble/curves/abstract/edwards';
 import { field_entry } from '../gpu/entries/field/fieldEntry';
 import { CurveType, bn254BulkTSMulPoints } from '../gpu/curveSpecific';
-import { PippingerBenchmark } from './PippingerBenchmark';
+import { PippengerBenchmark } from './PippengerBenchmark';
 import { bulkAddFields as bn254BulkAddFields,
   bulkSubFields as bn254BulkSubFields,
   bulkMulFields as bn254BulkMulFields,
@@ -67,7 +67,7 @@ import {
   gpuPointScalarInputConverter,
   wasmPointMulConverter,
   poseidonGenerator,
-  pippingerGpuInputConverter,
+  pippengerGpuInputConverter,
   ownerViewKey,
   bn254PointsGPUInputConverter,
   singlePointGenerator,
@@ -415,20 +415,20 @@ export const AllBenchmarks: React.FC = () => {
           wasmFunc={(inputs: any[][]) => bn254PippengerMsm(inputs[0], inputs[1])}
           batchable={false}
         />
-        <PippingerBenchmark
-          name={'BLS12-377 Pippinger MSM'}
+        <PippengerBenchmark
+          name={'BLS12-377 Pippenger MSM'}
           inputsGenerator={(inputSize: number) => pointScalarGenerator(inputSize, CurveType.BLS12_377)}
-          gpuFunc={(points: ExtPointType[], scalars: number[], fieldMath: FieldMath) => pippinger_msm(CurveType.BLS12_377, points, scalars, fieldMath)}
-          gpuInputConverter={(inputs: any) => pippingerGpuInputConverter(CurveType.BLS12_377, inputs)}
+          gpuFunc={(points: ExtPointType[], scalars: number[], fieldMath: FieldMath) => pippenger_msm(CurveType.BLS12_377, points, scalars, fieldMath)}
+          gpuInputConverter={(inputs: any) => pippengerGpuInputConverter(CurveType.BLS12_377, inputs)}
           wasmFunc={(inputs: string[][]) => msm(inputs[0], inputs[1])}
           wasmInputConverter={wasmPointMulConverter}
           wasmResultConverter={(results: string[]) => { return results.map((result) => stripGroupSuffix(result))}}
         />
-        <PippingerBenchmark
-          name={'BN254 Pippinger MSM'}
+        <PippengerBenchmark
+          name={'BN254 Pippenger MSM'}
           inputsGenerator={(inputSize: number) => pointScalarGenerator(inputSize, CurveType.BN254)}
-          gpuFunc={(points: ExtPointType[], scalars: number[], fieldMath: FieldMath) => pippinger_msm(CurveType.BN254, points, scalars)}
-          gpuInputConverter={(inputs: any) => pippingerGpuInputConverter(CurveType.BN254, inputs)}
+          gpuFunc={(points: ExtPointType[], scalars: number[], fieldMath: FieldMath) => pippenger_msm(CurveType.BN254, points, scalars)}
+          gpuInputConverter={(inputs: any) => pippengerGpuInputConverter(CurveType.BN254, inputs)}
           wasmFunc={(inputs: any[][]) => bn254NaiveMsm(inputs[0], inputs[1])}
           wasmInputConverter={(inputs: any[][]) => inputs}
           wasmResultConverter={(results: string[]) => results}
@@ -444,7 +444,7 @@ export const AllBenchmarks: React.FC = () => {
         />
         {/* This should include the polynomial generator but it's very slow for bn-254 */}
         <NTTBenchmark
-          name={'NTT BN-254'}
+          name={'NTT BN254'}
           fieldParamsWGSL={BN254ParamsWGSL}
           wasmNTT={bn254NTT}
           rootsOfUnity={BN254_ROOTS}

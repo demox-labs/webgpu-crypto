@@ -9,7 +9,7 @@ describe('dummyTest', () => {
   });
 });
 
-// describe('pippingerMSM', () => {
+// describe('pippengerMSM', () => {
 //   let browser: Browser;
 //   beforeAll(async () => {
 //     browser = await puppeteer.launch({
@@ -55,7 +55,7 @@ describe('dummyTest', () => {
 //     }
 //     const scalarsAsU16s = Array.from(bigIntsToU16Array(scalars));
 
-//     const result = await ((await browser.pages())[0]).evaluate(`(pippinger_msm)([${extendedPoints}], [${scalarsAsU16s}], [${fieldMath}])`);
+//     const result = await ((await browser.pages())[0]).evaluate(`(pippenger_msm)([${extendedPoints}], [${scalarsAsU16s}], [${fieldMath}])`);
 //     const arr = Object.values(result as object);
 //     const uint32ArrayResult = new Uint32Array(arr);
 //     const bigIntsResult = u32ArrayToBigInts(uint32ArrayResult);
