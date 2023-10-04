@@ -18,11 +18,9 @@ export const batchedEntry = async(
   batchSize = batchSize ?? totalInputs;
   inputsToBatch = inputsToBatch ?? []; // default to batching all inputs
   let chunkedInputs = [ inputData ];
-  console.log('chunkedInputs ', chunkedInputs.slice());
   if (batchSize < totalInputs) {
     chunkedInputs = chunkGPUInputs(inputData, batchSize, inputsToBatch);
   }
-  console.log('chunkedInputs after ', chunkedInputs.slice());
   const outputResult: Uint32Array = new Uint32Array(totalExpectedOutputs * u32SizePerOutput);
   for (let i = 0; i < chunkedInputs.length; i++) {
     const batchResult = await entry(chunkedInputs[i], shaderCode, u32SizePerOutput);

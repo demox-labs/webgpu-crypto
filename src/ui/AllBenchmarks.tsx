@@ -46,7 +46,8 @@ import { bulkAddFields as bn254BulkAddFields,
   bulkMulPoints as bn254BulkMulPoints,
   naive_msm as bn254NaiveMsm,
   pippenger_msm as bn254PippengerMsm,
-  bbPoint
+  bbPoint,
+  bulkMul2Fields
 } from '../barretenberg-wasm-loader/wasm-functions';
 import {
   cipherTextsGenerator,
@@ -188,6 +189,16 @@ export const AllBenchmarks: React.FC = () => {
           wasmFunc={(inputs: string[][]) => bulkDoubleFields(inputs[0])}
           wasmInputConverter={wasmBigIntToFieldConverter}
           wasmResultConverter={wasmFieldResultConverter}
+          batchable={true}
+        />
+        <Benchmark
+          name={'BN254 Double Fields'}
+          inputsGenerator={(inputSize: number) => singleInputGenerator(inputSize, CurveType.BN254)}
+          gpuFunc={(inputs: gpuU32Inputs[], batchSize: number) => field_entry('field_double', CurveType.BN254, inputs, batchSize)}
+          gpuInputConverter={gpuFieldInputConverter}
+          wasmFunc={(inputs: string[][]) => bulkMul2Fields(inputs[0])}
+          wasmInputConverter={(inputs: string[][]) => inputs.map((input) => input.map((field) => field.toString()))}
+          wasmResultConverter={(results: string[]) => results}
           batchable={true}
         />
         <Benchmark

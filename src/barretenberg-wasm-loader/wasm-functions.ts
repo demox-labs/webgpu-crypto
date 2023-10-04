@@ -52,6 +52,20 @@ export const bulkMulFields = async(fields1: string[], fields2: string[]) => {
   return results;
 };
 
+export const bulkMul2Fields = async(fields1: string[]) => {
+  const api = await newBarretenbergApiSync();
+  const results: string[] = [];
+  for (let i = 0; i < fields1.length; i++) {
+    const fr1: Fq = new Fq(BigInt(fields1[i]));
+    const fr2: Fq = new Fq(BigInt(2));
+    const result = api.mulFields(fr1, fr2);
+    results.push(result.value.toString(10));
+  }
+  
+  await api.destroy();
+  return results;
+};
+
 export const bulkInvertFields = async(fields: string[]) => {
   const api = await newBarretenbergApiSync();
   const results: string[] = [];
