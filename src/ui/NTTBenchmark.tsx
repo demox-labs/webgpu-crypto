@@ -9,16 +9,23 @@ import { U256WGSL } from '../gpu/wgsl/U256';
 import { FieldModulusWGSL } from '../gpu/wgsl/FieldModulus';
 import { prune } from '../gpu/prune';
 
-
 function bit_reverse(a: bigint[]): bigint[] {
   const n = a.length;
   const logN = Math.log2(n);
 
+  const reverseBits = (num: number, bits: number): number => {
+    let reversed = 0;
+    for (let i = 0; i < bits; i++) {
+      reversed = (reversed << 1) | (num & 1);
+      num >>= 1;
+    }
+    return reversed;
+  };
+
   for (let i = 0; i < n; i++) {
-    const j = i.toString(2).padStart(logN, '0').split('').reverse().join('');
-    const rev = parseInt(j, 2);
+    const rev = reverseBits(i, logN);
     if (i < rev) {
-        [a[i], a[rev]] = [a[rev], a[i]];
+      [a[i], a[rev]] = [a[rev], a[i]];
     }
   }
   return a;
@@ -138,10 +145,13 @@ export const NTTBenchmark: React.FC<NTTBenchmarkProps> = ({
     const gpuEnd = performance.now();
     const gpuPerformance = gpuEnd - gpuStart;
 
-    setGpuTime(gpuPerformance / numEvaluations);
+    setGpuTime(gpuPerformance);
 
     const bigIntResult = u32ArrayToBigInts(result || new Uint32Array(0));
     const results = bigIntResult.map(r => r.toString());
+
+    const benchMarkResult = [inputSize, "GPU", gpuPerformance];
+    setBenchmarkResults([...benchmarkResults, benchMarkResult]);
 
     setGpuResults(results);
     setGpuRunning(false);
