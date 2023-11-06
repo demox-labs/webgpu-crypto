@@ -174,6 +174,8 @@ export const bulkGenerateRandomPoints = async (numPoints: number) => {
     points.push({ x: point.x.value.toString(10), y: point.y.value.toString(10) });
   }
 
+  await api.destroy();
+
   return points;
 };
 
@@ -217,7 +219,7 @@ export const bulkDoublePoints = async (points1: bbPoint[]): Promise<string[]> =>
 };
 
 export const bulkMulPoints = async (points1: bbPoint[], scalars: string[]) => {
-  const api = await Barretenberg.new();
+  const api = await Barretenberg.new(1);
   const results: string[] = [];
   // const x = new Fq(BigInt('9488384720951639809707572357479649241125593886843713801844655093259905475658'));
   // const y = new Fq(BigInt('16159185574012703085953752536106955829175932087014915348648613830635631153829'))
@@ -283,6 +285,8 @@ export const pippenger_msm = async (points: bbPoint[], scalars: string[]): Promi
   const apiPoints = points.map((p) => { return new Point(new Fq(BigInt(p.x)), new Fq(BigInt(p.y))) });
   const apiScalars = scalars.map((s) => { return new Fr(BigInt(s)) });
   const [resultX, resultY] = await api.pippengerMsm(apiPoints, apiScalars);
+
+  await api.destroy();
   return [resultX.value.toString(10)];
 };
 
