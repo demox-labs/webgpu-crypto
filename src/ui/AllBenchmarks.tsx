@@ -31,11 +31,14 @@ import { point_mul_multi_reuse } from '../gpu/entries/pointScalarMultipassReuseB
 import { pippenger_msm } from '../gpu/entries/pippengerMSMEntry';
 import { ExtPointType } from '@noble/curves/abstract/edwards';
 import { field_entry } from '../gpu/entries/field/fieldEntry';
-import { CurveType, bn254BulkTSMulPoints } from '../gpu/curveSpecific';
+import { CurveType } from '../gpu/curveSpecific';
 import { PippengerBenchmark } from './PippengerBenchmark';
-import { bulkAddFields as bn254BulkAddFields,
+import {
+  bulkAddFields as bn254BulkAddFields,
+  bulkAddFieldsThreaded as bn254BulkAddFieldsThreaded,
   bulkSubFields as bn254BulkSubFields,
   bulkMulFields as bn254BulkMulFields,
+  bulkMulPointsMultiThreaded as bn254BulkMulPointsThreaded,
   bulkInvertFields as bn254BulkInvertFields,
   bulkPowFields as bn254BulkPowFields,
   bulkPowFields17 as bn254BulkPowFields17,
@@ -46,6 +49,7 @@ import { bulkAddFields as bn254BulkAddFields,
   bulkMulPoints as bn254BulkMulPoints,
   naive_msm as bn254NaiveMsm,
   pippenger_msm as bn254PippengerMsm,
+  pippenger_msm_single_threaded as bn254PippengerMsmSingleThreaded,
   bbPoint,
   bulkMul2Fields
 } from '../barretenberg-wasm-loader/wasm-functions';
@@ -137,6 +141,16 @@ export const AllBenchmarks: React.FC = () => {
           gpuFunc={(inputs: gpuU32Inputs[], batchSize: number) => field_entry('field_add', CurveType.BN254, inputs, batchSize)}
           gpuInputConverter={gpuFieldInputConverter}
           wasmFunc={(inputs: string[][]) => bn254BulkAddFields(inputs[0], inputs[1])}
+          wasmInputConverter={(inputs: string[][]) => inputs.map((input) => input.map((field) => field.toString()))}
+          wasmResultConverter={(results: string[]) => results}
+          batchable={true}
+        />
+        <Benchmark
+          name={'BN254 Add Fields Threaded'}
+          inputsGenerator={(inputSize: number) => doubleInputGenerator(inputSize, CurveType.BN254)}
+          gpuFunc={(inputs: gpuU32Inputs[], batchSize: number) => field_entry('field_add', CurveType.BN254, inputs, batchSize)}
+          gpuInputConverter={gpuFieldInputConverter}
+          wasmFunc={(inputs: string[][]) => bn254BulkAddFieldsThreaded(inputs[0], inputs[1])}
           wasmInputConverter={(inputs: string[][]) => inputs.map((input) => input.map((field) => field.toString()))}
           wasmResultConverter={(results: string[]) => results}
           batchable={true}
@@ -334,6 +348,15 @@ export const AllBenchmarks: React.FC = () => {
           batchable={true}
         />
         <Benchmark
+          name={'BN-254 Point Scalar Threaded'}
+          inputsGenerator={(inputSize: number) => pointScalarGenerator(inputSize, CurveType.BN254)}
+          gpuFunc={(inputs: gpuU32Inputs[], batchSize: number) => point_mul(CurveType.BN254, inputs[0], inputs[1], batchSize)}
+          gpuInputConverter={(inputs: any[][]) => gpuPointScalarInputConverter(inputs, CurveType.BN254)}
+          wasmFunc={(inputs: any[][]) => bn254BulkMulPointsThreaded(inputs[0], inputs[1])}
+          wasmInputConverter={(inputs: any[][]) => inputs}
+          batchable={true}
+        />
+        <Benchmark
           name={'BLS12-377 Point Scalar Windowed'}
           inputsGenerator={(inputSize: number) => pointScalarGenerator(inputSize, CurveType.BLS12_377)}
           gpuFunc={(inputs: gpuU32Inputs[], batchSize: number) => point_mul_windowed(CurveType.BLS12_377, inputs[0], inputs[1], batchSize)}
@@ -436,11 +459,20 @@ export const AllBenchmarks: React.FC = () => {
           wasmResultConverter={(results: string[]) => { return results.map((result) => stripGroupSuffix(result))}}
         />
         <PippengerBenchmark
-          name={'BN254 Pippenger MSM'}
+          name={'BN254 Pippenger MSM Multi Threaded'}
           inputsGenerator={(inputSize: number) => pointScalarGenerator(inputSize, CurveType.BN254)}
           gpuFunc={(points: ExtPointType[], scalars: number[], fieldMath: FieldMath) => pippenger_msm(CurveType.BN254, points, scalars)}
           gpuInputConverter={(inputs: any) => pippengerGpuInputConverter(CurveType.BN254, inputs)}
           wasmFunc={(inputs: any[][]) => bn254NaiveMsm(inputs[0], inputs[1])}
+          wasmInputConverter={(inputs: any[][]) => inputs}
+          wasmResultConverter={(results: string[]) => results}
+        />
+        <PippengerBenchmark
+          name={'BN254 Pippenger MSM Single Threaded'}
+          inputsGenerator={(inputSize: number) => pointScalarGenerator(inputSize, CurveType.BN254)}
+          gpuFunc={(points: ExtPointType[], scalars: number[], fieldMath: FieldMath) => pippenger_msm(CurveType.BN254, points, scalars)}
+          gpuInputConverter={(inputs: any) => pippengerGpuInputConverter(CurveType.BN254, inputs)}
+          wasmFunc={(inputs: any[][]) => bn254PippengerMsmSingleThreaded(inputs[0], inputs[1])}
           wasmInputConverter={(inputs: any[][]) => inputs}
           wasmResultConverter={(results: string[]) => results}
         />

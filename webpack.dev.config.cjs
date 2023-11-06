@@ -17,6 +17,15 @@ const config = {
   module: {
     rules: [
       {
+        test: /\.wasm$/,
+        type: 'asset/inline',
+      },
+      {
+        test: /\.worker\.ts$/,
+        loader: 'worker-loader',
+        options: { inline: 'no-fallback' },
+      },
+      {
         test: /\.(ts|js)x?$/i,
         exclude: /node_modules/,
         use: {
@@ -68,6 +77,10 @@ const config = {
     hot: true,
     client: {
       overlay: false
+    },
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp',
     }
   },
 };
