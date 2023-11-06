@@ -48,6 +48,7 @@ import {
   bulkDoublePoints as bn254BulkDoublePoints,
   bulkMulPoints as bn254BulkMulPoints,
   naive_msm as bn254NaiveMsm,
+  naive_msm_single_threaded as bn254NaiveMsmSingleThreaded,
   pippenger_msm as bn254PippengerMsm,
   pippenger_msm_single_threaded as bn254PippengerMsmSingleThreaded,
   bbPoint,
@@ -432,7 +433,7 @@ export const AllBenchmarks: React.FC = () => {
           batchable={false}
         />
         <Benchmark
-          name={'BN-254 Naive MSM'}
+          name={'BN-254 Naive MSM Multi Threaded'}
           inputsGenerator={(inputSize: number) => pointScalarGenerator(inputSize, CurveType.BN254)}
           // change to custom summation function using FieldMath.addPoints
           gpuFunc={(inputs: gpuU32Inputs[]) => naive_msm(inputs[0], inputs[1], CurveType.BN254)}
@@ -441,6 +442,15 @@ export const AllBenchmarks: React.FC = () => {
           batchable={false}
         />
         <Benchmark
+          name={'BN-254 Naive MSM Single Threaded'}
+          inputsGenerator={(inputSize: number) => pointScalarGenerator(inputSize, CurveType.BN254)}
+          // change to custom summation function using FieldMath.addPoints
+          gpuFunc={(inputs: gpuU32Inputs[]) => naive_msm(inputs[0], inputs[1], CurveType.BN254)}
+          gpuInputConverter={(inputs: any[][]) => gpuPointScalarInputConverter(inputs, CurveType.BN254)}
+          wasmFunc={(inputs: any[][]) => bn254NaiveMsmSingleThreaded(inputs[0], inputs[1])}
+          batchable={false}
+        />
+        {/* <Benchmark
           name={'BN-254 bberg pippenger'}
           inputsGenerator={(inputSize: number) => pointScalarGenerator(inputSize, CurveType.BN254)}
           // change to custom summation function using FieldMath.addPoints
@@ -448,7 +458,7 @@ export const AllBenchmarks: React.FC = () => {
           gpuInputConverter={(inputs: any[][]) => gpuPointScalarInputConverter(inputs, CurveType.BN254)}
           wasmFunc={(inputs: any[][]) => bn254PippengerMsm(inputs[0], inputs[1])}
           batchable={false}
-        />
+        /> */}
         <PippengerBenchmark
           name={'BLS12-377 Pippenger MSM'}
           inputsGenerator={(inputSize: number) => pointScalarGenerator(inputSize, CurveType.BLS12_377)}
@@ -463,7 +473,7 @@ export const AllBenchmarks: React.FC = () => {
           inputsGenerator={(inputSize: number) => pointScalarGenerator(inputSize, CurveType.BN254)}
           gpuFunc={(points: ExtPointType[], scalars: number[], fieldMath: FieldMath) => pippenger_msm(CurveType.BN254, points, scalars)}
           gpuInputConverter={(inputs: any) => pippengerGpuInputConverter(CurveType.BN254, inputs)}
-          wasmFunc={(inputs: any[][]) => bn254NaiveMsm(inputs[0], inputs[1])}
+          wasmFunc={(inputs: any[][]) => bn254PippengerMsm(inputs[0], inputs[1])}
           wasmInputConverter={(inputs: any[][]) => inputs}
           wasmResultConverter={(results: string[]) => results}
         />

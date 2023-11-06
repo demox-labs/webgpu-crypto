@@ -17,10 +17,6 @@ const config = {
   module: {
     rules: [
       {
-        test: /\.wasm$/,
-        type: 'asset/inline',
-      },
-      {
         test: /\.worker\.ts$/,
         loader: 'worker-loader',
         options: { inline: 'no-fallback' },

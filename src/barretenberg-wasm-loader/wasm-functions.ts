@@ -248,6 +248,16 @@ export const bulkMulPointsMultiThreaded = async (points1: bbPoint[], scalars: st
   return results;
 }
 
+export const naive_msm_single_threaded = async (points: bbPoint[], scalars: string[]): Promise<string[]> => {
+  const api = await Barretenberg.new(1);
+  const apiPoints = points.map((p) => { return new Point(new Fq(BigInt(p.x)), new Fq(BigInt(p.y))) });
+  const apiScalars = scalars.map((s) => { return new Fr(BigInt(s)) });
+  const [resultX, resultY] = await api.naiveMsm(apiPoints, apiScalars);
+
+  await api.destroy();
+  return [resultX.value.toString(10)];
+};
+
 export const naive_msm = async (points: bbPoint[], scalars: string[]): Promise<string[]> => {
   const api = await Barretenberg.new();
   const apiPoints = points.map((p) => { return new Point(new Fq(BigInt(p.x)), new Fq(BigInt(p.y))) });
@@ -267,7 +277,7 @@ export const pippenger_msm = async (points: bbPoint[], scalars: string[]): Promi
 };
 
 export const pippenger_msm_single_threaded = async (points: bbPoint[], scalars: string[]): Promise<string[]> => {
-  const api = await Barretenberg.new(8);
+  const api = await Barretenberg.new(1);
   const apiPoints = points.map((p) => { return new Point(new Fq(BigInt(p.x)), new Fq(BigInt(p.y))) });
   const apiScalars = scalars.map((s) => { return new Fr(BigInt(s)) });
   const [resultX, resultY] = await api.pippengerMsm(apiPoints, apiScalars);
