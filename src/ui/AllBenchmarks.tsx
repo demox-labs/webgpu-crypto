@@ -44,6 +44,7 @@ import {
   bulkPowFields17 as bn254BulkPowFields17,
   bulkSqrtFields as bn254BulkSqrtFields, 
   ntt as bn254NTT,
+  ntt_single_threaded as bn254NTTSingleThreaded,
   bulkAddPoints as bn254BulkAddPoints, 
   bulkDoublePoints as bn254BulkDoublePoints,
   bulkMulPoints as bn254BulkMulPoints,
@@ -500,6 +501,13 @@ export const AllBenchmarks: React.FC = () => {
           name={'NTT BN254'}
           fieldParamsWGSL={BN254ParamsWGSL}
           wasmNTT={bn254NTT}
+          rootsOfUnity={BN254_ROOTS}
+          fieldModulus={BN254_FR}
+        />
+        <NTTBenchmark
+          name={'NTT BN254 Single Threaded'}
+          fieldParamsWGSL={BN254ParamsWGSL}
+          wasmNTT={bn254NTTSingleThreaded}
           rootsOfUnity={BN254_ROOTS}
           fieldModulus={BN254_FR}
         />

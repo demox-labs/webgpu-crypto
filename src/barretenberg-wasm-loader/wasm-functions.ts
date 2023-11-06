@@ -141,6 +141,16 @@ export const randomPolynomial = async (degree: number) => {
   return result;
 }
 
+export const ntt_single_threaded = async (polynomialCoefficients: string[]) => {
+  const api = await Barretenberg.new(1);
+  const evaluationDomain = await api.newEvaluationDomain(polynomialCoefficients.length);
+  const polyCoeffs = polynomialCoefficients.map((c) => new Fr(BigInt(c)));
+  const result = await api.fft(polyCoeffs, evaluationDomain);
+
+  await api.destroy();
+  return result.map((r: any) => r.value.toString());
+}
+
 export const ntt = async (polynomialCoefficients: string[]) => {
   const api = await Barretenberg.new();
   const evaluationDomain = await api.newEvaluationDomain(polynomialCoefficients.length);
@@ -148,7 +158,7 @@ export const ntt = async (polynomialCoefficients: string[]) => {
   const result = await api.fft(polyCoeffs, evaluationDomain);
 
   await api.destroy();
-  return result.map((r) => r.value.toString());
+  return result.map((r: any) => r.value.toString());
 }
 
 export interface bbPoint {
