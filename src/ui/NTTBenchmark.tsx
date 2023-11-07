@@ -111,6 +111,7 @@ export const NTTBenchmark: React.FC<NTTBenchmarkProps> = ({
     const wasmInputs = inputs;
     setWasmRunning(true);
     const wasmStart = performance.now();
+    
     const results: string[] = await wasmNTT(wasmInputs[0]);
     const wasmEnd = performance.now();
     const wasmPerformance = wasmEnd - wasmStart;

@@ -13,6 +13,7 @@
     "whosinmyswamp": "sudo lsof -i :4000"
   },
   "dependencies": {
+    "@demox-labs/aztec-bb.js": "^0.12.0",
     "@noble/curves": "^0.9.1",
     "@webgpu/types": "^0.1.30",
     "bech32": "^2.0.0",

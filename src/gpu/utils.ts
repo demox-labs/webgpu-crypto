@@ -179,7 +179,7 @@ const createRandomNumber = (modulus: bigint) => {
   for (let i = 0; i < 8; i++) {
     bigIntString += Math.floor(Math.random() * (2**32 - 1));
   }
-  // const modResult = BigInt(2) % modulus;
+  // const modResult = BigInt(1) % modulus;
   const modResult = BigInt(bigIntString) % modulus;
   return modResult;
 }
