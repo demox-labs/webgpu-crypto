@@ -50,8 +50,6 @@ import {
   bulkMulPoints as bn254BulkMulPoints,
   naive_msm as bn254NaiveMsm,
   naive_msm_single_threaded as bn254NaiveMsmSingleThreaded,
-  pippenger_msm as bn254PippengerMsm,
-  pippenger_msm_single_threaded as bn254PippengerMsmSingleThreaded,
   bbPoint,
   bulkMul2Fields
 } from '../barretenberg-wasm-loader/wasm-functions';

@@ -1253,6 +1253,9 @@
   resolved "https://registry.yarnpkg.com/@csstools/selector-specificity/-/selector-specificity-2.2.0.tgz#2cbcf822bf3764c9658c4d2e568bd0c0cb748016"
   integrity sha512-+OJ9konv95ClSTOJCmMZqpd5+YGsB2S+x6w3E1oaM8UuR5j8nTNHYSz8c9BEPGDOCMQYIEEGlVPj/VY64iTbGw==
 
+"@demox-labs/aleo-sdk-web@file:../demox-aleo/aleo/wasm":
+  version "0.3.25"
+
 "@demox-labs/aztec-bb.js@^0.12.0":
   version "0.12.0"
   resolved "https://registry.yarnpkg.com/@demox-labs/aztec-bb.js/-/aztec-bb.js-0.12.0.tgz#a9d1d00264a508fff37a820a9f6e41dd8c027732"

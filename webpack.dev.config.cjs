@@ -12,7 +12,8 @@ const config = {
   },
   entry: "./src/index.tsx",
   experiments: {
-    asyncWebAssembly: true
+    asyncWebAssembly: true,
+    topLevelAwait: true,
   },
   module: {
     rules: [
