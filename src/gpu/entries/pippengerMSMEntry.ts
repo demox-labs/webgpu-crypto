@@ -7,7 +7,7 @@ import { bigIntToU32Array, bigIntsToU32Array, gpuU32Inputs, u32ArrayToBigInts } 
 import { U256WGSL } from "../wgsl/U256";
 import { EXT_POINT_SIZE, FIELD_SIZE } from "../U32Sizes";
 import { prune } from "../prune";
-import { bn254 } from '@noble/curves/bn';
+import { bn254 } from '@noble/curves/bn254';
 
 /// pippenger Algorithm Summary:
 /// 
