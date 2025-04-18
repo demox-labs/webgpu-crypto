@@ -1,12 +1,12 @@
 import { ExtPointType } from "@noble/curves/abstract/edwards";
+import { bn254 } from "@noble/curves/bn254";
+import { bbPoint, bulkGenerateConstantPoint } from "../barretenberg-wasm-loader/wasm-functions";
+import { CurveType, getModulus } from "../gpu/curveSpecific";
 import { AFFINE_POINT_SIZE, FIELD_SIZE } from "../gpu/U32Sizes";
 import { bigIntToU32Array, bigIntsToU16Array, bigIntsToU32Array, generateRandomFields, generateRandomScalars, gpuU32Inputs, stripFieldSuffix } from "../gpu/utils";
 import { aleoMdStrings, aleoRoundConstantStrings } from "../params/AleoPoseidonParams";
-import { convertCiphertextToDataView, convertBytesToFieldElement, getPrivateOwnerBytes, getNonce } from "../parsers/aleo/RecordParser";
+import { convertBytesToFieldElement, convertCiphertextToDataView, getNonce, getPrivateOwnerBytes } from "../parsers/aleo/RecordParser";
 import { FieldMath } from "./BLS12_377FieldMath";
-import { CurveType, getModulus } from "../gpu/curveSpecific";
-import { bbPoint, bulkGenerateConstantPoint, bulkGenerateRandomPoints } from "../barretenberg-wasm-loader/wasm-functions";
-import { bn254 } from "@noble/curves/bn";
 
 export const singleInputGenerator = (inputSize: number, curve: CurveType): bigint[][] => {
   return [generateRandomFields(inputSize, curve)];
@@ -106,7 +106,7 @@ export const bn254WasmSquaresResultConverter = (results: string[]): string[] => 
   return bigIntResults.map((result) => (result * result % getModulus(CurveType.BN254)).toString());
 }
 
-export const poseidonGenerator = (inputSize: number, curve: CurveType): bigint[][] => { 
+export const poseidonGenerator = (inputSize: number, curve: CurveType): bigint[][] => {
   const firstInput = generateRandomFields(inputSize, curve);
   const secondInput = aleoMdStrings.map((arr) => arr.map((str) => BigInt(str))).flat();
   const thirdInput = aleoRoundConstantStrings.map((arr) => arr.map((str) => BigInt(str))).flat();
@@ -182,8 +182,8 @@ export const gpuPointsInputConverter = (inputs: bigint[][]): gpuU32Inputs[] => {
   return pointInputs.map((input) => { return { u32Inputs: bigIntsToU32Array(input), individualInputSize: AFFINE_POINT_SIZE }});
 }
 
-// After instantiating the FieldMath object here, it needs to be passed anywhere we need to 
-// use the field math library to do operations (like add or multiply) on these points. 
+// After instantiating the FieldMath object here, it needs to be passed anywhere we need to
+// use the field math library to do operations (like add or multiply) on these points.
 // Was seeing a "Point is not instance of Point" error otherwise.
 export const pippengerGpuInputConverter = (curve: CurveType, scalars: bigint[]): [ExtPointType[], number[], FieldMath] => {
   switch (curve) {

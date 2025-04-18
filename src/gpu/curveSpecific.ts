@@ -1,15 +1,15 @@
+import { ExtPointType } from "@noble/curves/abstract/edwards";
+import { ProjPointType } from "@noble/curves/abstract/weierstrass";
+import { bn254 } from '@noble/curves/bn254';
+import { bbPoint } from "../barretenberg-wasm-loader/wasm-functions";
 import { FIELD_MODULUS as BLS12_377_FIELD_MODULUS } from "../params/BLS12_377Constants";
 import { FQ_FIELD_MODULUS as BN254_FIELD_MODULUS } from "../params/BN254Constants";
-import { BLS12_377ParamsWGSL } from "./wgsl/BLS12-377Params";
-import { BN254ParamsWGSL } from "./wgsl/BN254Params";
-import { BN254CurveBaseWGSL } from "./wgsl/BN254CurveBaseWGSL";
-import { BLS12_377CurveBaseWGSL } from "./wgsl/BLS12-377CurveBaseWGSL";
-import { ExtPointType } from "@noble/curves/abstract/edwards";
 import { FieldMath } from "../utils/BLS12_377FieldMath";
 import { bigIntToU32Array } from "./utils";
-import { bn254 } from '@noble/curves/bn';
-import { ProjPointType } from "@noble/curves/abstract/weierstrass";
-import { bbPoint } from "../barretenberg-wasm-loader/wasm-functions";
+import { BLS12_377CurveBaseWGSL } from "./wgsl/BLS12-377CurveBaseWGSL";
+import { BLS12_377ParamsWGSL } from "./wgsl/BLS12-377Params";
+import { BN254CurveBaseWGSL } from "./wgsl/BN254CurveBaseWGSL";
+import { BN254ParamsWGSL } from "./wgsl/BN254Params";
 
 export const workgroupSize = 64;
 
