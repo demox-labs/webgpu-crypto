@@ -88,14 +88,15 @@ const sumExtPointsBN254 = (flattenedPoints: bigint[]) => {
     const x = flattenedPoints[i];
     const y = flattenedPoints[i + 1];
     const z = flattenedPoints[i + 3];
-    const point = new curve.ProjectivePoint(x, y, z);
+    const point = new curve.G1.ProjectivePoint(x, y, z);
     pointArray.push(point);
   }
-  const extResult = pointArray.reduce((acc, point) => {return bn254AddPoints(acc, point)}, curve.ProjectivePoint.ZERO);
+  const extResult = pointArray.reduce((acc, point) => {
+    return bn254AddPoints(acc, point)}, curve.G1.ProjectivePoint.ZERO);
   const z = extResult.pz;
-  const iz = curve.CURVE.Fp.inv(z);
-  const iz2 = curve.CURVE.Fp.sqr(iz);
-  const actualResult = curve.CURVE.Fp.mul(extResult.px, iz2);
+  const iz = curve.fields.Fp.inv(z);
+  const iz2 = curve.fields.Fp.sqr(iz);
+  const actualResult = curve.fields.Fp.mul(extResult.px, iz2);
   // const affineResult = extResult.toAffine();
   const u32XCoord = bigIntToU32Array(actualResult);
   return u32XCoord;
@@ -104,7 +105,7 @@ const sumExtPointsBN254 = (flattenedPoints: bigint[]) => {
 export const bn254BulkTSMulPoints = (points1: bbPoint[], scalars: string[]) => {
   const results: string[] = [];
   for (let i = 0; i < points1.length; i++) {
-    const point = new bn254.ProjectivePoint(BigInt(points1[i].x), BigInt(points1[i].y), BigInt(1));
+    const point = new bn254.G1.ProjectivePoint(BigInt(points1[i].x), BigInt(points1[i].y), BigInt(1));
     const scalar = BigInt(scalars[i]);
     const result = bn254PointScalar(point, scalar);
     const affineX = bn254NormalizePointX(result);
@@ -114,7 +115,7 @@ export const bn254BulkTSMulPoints = (points1: bbPoint[], scalars: string[]) => {
 };
 
 export const bn254AddPoints = (p1: ProjPointType<bigint>, p2: ProjPointType<bigint>) => {
-  const fp = bn254.CURVE.Fp;
+  const fp = bn254.fields.Fp;
   if (p1.px === BigInt(0) && p1.py === BigInt(1) && p1.pz === BigInt(0)) {
     return p2;
   }
@@ -153,11 +154,11 @@ export const bn254AddPoints = (p1: ProjPointType<bigint>, p2: ProjPointType<bigi
   z_result = fp.mul(z_result, z_result);
   z_result = fp.sub(z_result, z1z1);
   z_result = fp.mul(z_result, h);
-  return new bn254.ProjectivePoint(x_result, y_result, z_result);
+  return new bn254.G1.ProjectivePoint(x_result, y_result, z_result);
 };
 
 export const bn254PointScalar = (p: ProjPointType<bigint>, scalar: bigint) => {
-  let result = bn254.ProjectivePoint.ZERO;
+  let result = bn254.G1.ProjectivePoint.ZERO;
   let temp = p;
   let scalar_iter = scalar;
   while (scalar_iter !== 0n) {
@@ -173,13 +174,13 @@ export const bn254PointScalar = (p: ProjPointType<bigint>, scalar: bigint) => {
 
 export const bn254NormalizePointX = (p: ProjPointType<bigint>) => {
   const z = p.pz;
-  const iz = bn254.CURVE.Fp.inv(z);
-  const iz2 = bn254.CURVE.Fp.sqr(iz);
-  return bn254.CURVE.Fp.mul(p.px, iz2);
+  const iz = bn254.fields.Fp.inv(z);
+  const iz2 = bn254.fields.Fp.sqr(iz);
+  return bn254.fields.Fp.mul(p.px, iz2);
 };
 
 const bn254DoublePoint = (p: ProjPointType<bigint>) => {
-  const fp = bn254.CURVE.Fp;
+  const fp = bn254.fields.Fp;
   let T0 = fp.mul(p.px, p.px);
   let T1 = fp.mul(p.py, p.py);
   let T2 = fp.mul(T1, T1);
@@ -201,5 +202,5 @@ const bn254DoublePoint = (p: ProjPointType<bigint>) => {
   let y_result = fp.sub(T1, x_result);
   y_result = fp.mul(T3, y_result);
   y_result = fp.sub(y_result, T2);
-  return new bn254.ProjectivePoint(x_result, y_result, z_result);
+  return new bn254.G1.ProjectivePoint(x_result, y_result, z_result);
 };

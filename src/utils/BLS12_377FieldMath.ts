@@ -55,7 +55,7 @@ export class FieldMath {
 
   }
 
-  getPointFromX = (x_field: bigint): ExtPointType => {
+  getPointFromX(x_field: bigint): ExtPointType {
     // Compute y^2 = (a - x^2) / (1 + d * x^2) mod F (a = -1 for aleo (or 1 less than the field size))
 
     const xSquared = this.Fp.sqr(x_field);
@@ -83,21 +83,21 @@ export class FieldMath {
     }
   }
 
-  createPoint = (x: bigint, y: bigint, t: bigint, z: bigint): ExtPointType => {
+  createPoint(x: bigint, y: bigint, t: bigint, z: bigint): ExtPointType {
     return new this.customEdwards.ExtendedPoint(x, y, z, t);
   }
 
-  addPoints = (points: ExtPointType[]): AffinePoint<bigint> => {
+  addPoints(points: ExtPointType[]): AffinePoint<bigint> {
     // iterate through the points and add all of them up together
     const extPointResult = points.reduce((acc, point) => {return acc.add(point)}, this.customEdwards.ExtendedPoint.ZERO);
     return extPointResult.toAffine();
   }
 
-  subtract = (x: bigint, y: bigint): bigint => {
+  subtract(x: bigint, y: bigint): bigint {
     return this.Fp.sub(x, y);
   }
 
-  multiply = (nonce_x: bigint, nonce_y: bigint, scalar: bigint): { x: bigint, y: bigint } => {
+  multiply(nonce_x: bigint, nonce_y: bigint, scalar: bigint): { x: bigint, y: bigint } {
     // Get the curve point in extended coordinates
     const aleoEdwards = this.customEdwards;
     const point = aleoEdwards.ExtendedPoint.fromAffine({ x: nonce_x, y: nonce_y });
@@ -114,7 +114,7 @@ export class FieldMath {
     return unsafeResultAffine;
   }
 
-  poseidonHash = (recordViewKey: bigint): bigint => {
+  poseidonHash(recordViewKey: bigint): bigint {
     const aleoPoseidonOpts: PoseidonOpts = {
       Fp: this.Fp,
       t: 9,
@@ -138,7 +138,7 @@ export class FieldMath {
     return secondHashOutput[1];
   }
 
-  poseidonHashFast = (recordViewKey: bigint): bigint => {
+  poseidonHashFast(recordViewKey: bigint): bigint {
     // const expectedResultBigInt = BigInt(expectedResult);
     const aleoPoseidonOpts: PoseidonOpts = {
       Fp: this.Fp,
@@ -175,7 +175,7 @@ export class FieldMath {
     return secondHashOutput[1];
   }
 
-  instantiateCustomEdwards = (): CurveFn => {
+  instantiateCustomEdwards(): CurveFn {
     // https://github.com/AleoHQ/snarkVM/blob/testnet3/curves/src/edwards_bls12/parameters.rs#L45
     const aleoCofactor = BigInt(4);
     // big int representations of https://github.com/AleoHQ/snarkVM/blob/testnet3/curves/src/edwards_bls12/parameters.rs#L43

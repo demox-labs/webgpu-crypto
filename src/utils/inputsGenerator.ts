@@ -197,7 +197,7 @@ export const pippengerGpuInputConverter = (curve: CurveType, scalars: bigint[]):
       const extPoint = fieldMath.createPoint(x, y , t, z);
       return [pointsArr.fill(extPoint), Array.from(bigIntsToU16Array(scalars)), fieldMath];
     case CurveType.BN254:
-      const point = new bn254.ProjectivePoint(BigInt("9488384720951639809707572357479649241125593886843713801844655093259905475658"), BigInt("16159185574012703085953752536106955829175932087014915348648613830635631153829"), 1n);
+      const point = new bn254.G1.ProjectivePoint(BigInt("9488384720951639809707572357479649241125593886843713801844655093259905475658"), BigInt("16159185574012703085953752536106955829175932087014915348648613830635631153829"), 1n);
       const points = new Array(scalars.length);
       return [points.fill(point), Array.from(bigIntsToU16Array(scalars)), new FieldMath()];
     default:
