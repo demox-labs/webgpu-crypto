@@ -1,20 +1,20 @@
+import { bn254 } from '@noble/curves/bn254';
+import { FieldMath } from "../../utils/BLS12_377FieldMath";
+import { EXT_POINT_SIZE, FIELD_SIZE } from "../U32Sizes";
+import { CurveType, bn254AddPoints, bn254PointScalar, getCurveBaseFunctionsWGSL, getCurveParamsWGSL } from '../curveSpecific';
+import { prune } from "../prune";
+import { bigIntToU32Array, bigIntsToU32Array, gpuU32Inputs, u32ArrayToBigInts } from "../utils";
 import { CurveWGSL } from "../wgsl/Curve";
 import { FieldModulusWGSL } from "../wgsl/FieldModulus";
-import { entry } from "./entryCreator"
-import { CurveType, bn254AddPoints, bn254PointScalar, getCurveBaseFunctionsWGSL, getCurveParamsWGSL } from '../curveSpecific';
-import { FieldMath } from "../../utils/BLS12_377FieldMath";
-import { bigIntToU32Array, bigIntsToU32Array, gpuU32Inputs, u32ArrayToBigInts } from "../utils";
 import { U256WGSL } from "../wgsl/U256";
-import { EXT_POINT_SIZE, FIELD_SIZE } from "../U32Sizes";
-import { prune } from "../prune";
-import { bn254 } from '@noble/curves/bn254';
+import { entry } from "./entryCreator";
 
 /// pippenger Algorithm Summary:
-/// 
+///
 /// Great explanation of algorithm can be found here:
 /// https://www.youtube.com/watch?v=Bl5mQA7UL2I
 ///
-/// 1) Break down each 256bit scalar k into 256/c, c bit scalars 
+/// 1) Break down each 256bit scalar k into 256/c, c bit scalars
 ///    ** Note: c = 16 seems to be optimal per source mentioned above
 ///
 /// 2) Set up 256/c different MSMs T_1, T_2, ..., T_c where
@@ -27,7 +27,7 @@ import { bn254 } from '@noble/curves/bn254';
 ///
 /// 3) Use Bucket Method to efficiently compute each MSM
 ///    * Create 2^c - 1 buckets where each bucket represents a c-bit scalar
-///    * In each bucket, keep a running sum of all the points that are mutliplied 
+///    * In each bucket, keep a running sum of all the points that are mutliplied
 ///      by the corresponding scalar
 ///    * T_i = 1(SUM(Points)) + 2(SUM(Points)) + ... + (2^c - 1)(SUM(Points))
 ///
@@ -43,19 +43,19 @@ function chunkArray<T>(inputArray: T[], chunkSize = 20000): T[][] {
     let index = 0;
     const arrayLength = inputArray.length;
     const tempArray = [];
-    
+
     while (index < arrayLength) {
         tempArray.push(inputArray.slice(index, index + chunkSize));
         index += chunkSize;
     }
-    
+
     return tempArray;
 }
 
 export const pippenger_msm = async (
   curve: CurveType,
   points: any[], // ExtPointType or ProjPointType or bigint{ x, y, z }
-  scalars: number[], 
+  scalars: number[],
   fieldMath?: FieldMath
   ): Promise<Uint32Array> => {
     const C = 16;
@@ -119,7 +119,7 @@ export const pippenger_msm = async (
                 expandedPoint = [x.ex, x.ey, x.et, x.ez];
                 break;
               case CurveType.BN254:
-                expandedPoint = [x.px, x.py, bn254.CURVE.Fp.mul(x.px, x.py), x.pz]
+                expandedPoint = [x.px, x.py, bn254.fields.Fp.mul(x.px, x.py), x.pz]
                 break;
               default:
                 throw new Error('Invalid curve type');
@@ -132,7 +132,7 @@ export const pippenger_msm = async (
     // Need to consider GPU buffer and memory limits so need to chunk
     // the concatenated inputs into reasonable sizes. The ratio of points
     // to scalars is 4:1 since we expanded the point object into its
-    // x, y, t, z coordinates. 
+    // x, y, t, z coordinates.
     const chunkedPoints = chunkArray(pointsConcatenated, 44_000);
     const chunkedScalars = chunkArray(scalarsConcatenated, 11_000);
 
@@ -140,10 +140,10 @@ export const pippenger_msm = async (
     for (let i = 0; i < chunkedPoints.length; i++) {
         const bufferResult = await point_mul(
           curve,
-          { u32Inputs: bigIntsToU32Array(chunkedPoints[i]), individualInputSize: EXT_POINT_SIZE }, 
+          { u32Inputs: bigIntsToU32Array(chunkedPoints[i]), individualInputSize: EXT_POINT_SIZE },
           { u32Inputs: Uint32Array.from(chunkedScalars[i]), individualInputSize: FIELD_SIZE }
         );
-        
+
         gpuResultsAsBigInts.push(...u32ArrayToBigInts(bufferResult || new Uint32Array(0)));
     }
 
@@ -162,7 +162,7 @@ export const pippenger_msm = async (
             extendedPoint = fieldMath!.createPoint(x, y, t, z);
             break;
           case CurveType.BN254:
-            extendedPoint = new bn254.ProjectivePoint(x, y, z);
+            extendedPoint = new bn254.G1.ProjectivePoint(x, y, z);
             break;
           default:
             throw new Error('Invalid curve type');
@@ -176,7 +176,7 @@ export const pippenger_msm = async (
     const msmResults = [];
     const bucketing = msms.map(msm => msm.size);
     let prevBucketSum = 0;
-    
+
     for (const bucket of bucketing) {
       let currentSum = null;
       switch (curve) {
@@ -189,7 +189,7 @@ export const pippenger_msm = async (
           prevBucketSum += bucket;
           break;
         case CurveType.BN254:
-          currentSum = bn254.ProjectivePoint.ZERO;
+          currentSum = bn254.G1.ProjectivePoint.ZERO;
           for (let i = 0; i < bucket; i++) {
             currentSum = bn254AddPoints(currentSum, gpuResultsAsExtendedPoints[i + prevBucketSum]);
           }
@@ -231,14 +231,14 @@ export const pippenger_msm = async (
         break;
       case CurveType.BN254:
         const z = originalMsmResult.pz;
-        const iz = bn254.CURVE.Fp.inv(z);
-        const iz2 = bn254.CURVE.Fp.sqr(iz);
-        affineResultX = bn254.CURVE.Fp.mul(originalMsmResult.px, iz2);
+        const iz = bn254.fields.Fp.inv(z);
+        const iz2 = bn254.fields.Fp.sqr(iz);
+        affineResultX = bn254.fields.Fp.mul(originalMsmResult.px, iz2);
         break;
       default:
         throw new Error('Invalid curve type');
     }
-    
+
     const u32XCoord = bigIntToU32Array(affineResultX);
     return u32XCoord;
 }
@@ -255,7 +255,7 @@ const point_mul = async (
       var<storage, read> input2: array<u32>;
       @group(0) @binding(2)
       var<storage, read_write> output: array<Point>;
-  
+
       @compute @workgroup_size(64)
       fn main(
         @builtin(global_invocation_id)
@@ -263,17 +263,17 @@ const point_mul = async (
       ) {
         var extended_point = input1[global_id.x];
         var scalar = input2[global_id.x];
-  
+
         var result = mul_point_32_bit_scalar(extended_point, scalar);
-  
+
         output[global_id.x] = result;
       }
       `;
-  
+
     const shaderCode = prune(
       [U256WGSL, getCurveParamsWGSL(curve), FieldModulusWGSL, CurveWGSL, getCurveBaseFunctionsWGSL(curve)].join(''),
       ['mul_point_32_bit_scalar']
     )+ shaderEntry;
-  
+
     return await entry([input1, input2], shaderCode, EXT_POINT_SIZE);
 }
